@@ -5,9 +5,7 @@ function getCSSVariableValue(variableName) {
   return getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
   }
   
-  // URL for the COG
-  // const url = 'https://elevationeuwest.blob.core.windows.net/copernicus-dem/COP30_hh/Copernicus_DSM_COG_10_N33_00_W117_00_DEM.tif?st=2025-03-20T20%3A05%3A29Z&se=2025-03-21T20%3A50%3A29Z&sp=rl&sv=2024-05-04&sr=c&skoid=9c8ff44a-6a2c-4dfb-b298-1c9212f64d9a&sktid=72f988bf-86f1-41af-91ab-2d7cd011db47&skt=2025-03-21T20%3A03%3A27Z&ske=2025-03-28T20%3A03%3A27Z&sks=b&skv=2024-05-04&sig=yb/QDMfmuGK%2BTzoxeUzh18nLGdtGHuzoncXRmA0gWX4%3D';
-  
+
   // map initialization
   const map = L.map('map').setView([33.8734, -115.9010], 10);
   
