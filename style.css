@@ -7,6 +7,46 @@
 }
 
 #map {
-width: 100%;
+width: 50%;
 height:600px; /* Adjust as needed */
+float: right;
+}
+
+body {
+    margin: 0;
+    font-family: 'Public Sans', sans-serif;
+}
+
+.navbar {
+    background-color: black;
+    color: white;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 100px;
+}
+
+.nav-list {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    width: 100%;
+}
+
+.nav-item {
+    margin: 0 20px;
+    font-size: 14pt;
+}
+
+.nav-item a {
+    color: white;
+    text-decoration: none;
+}
+
+.center-links {
+    display: flex;
+    flex-grow: 1;
+    justify-content: center;
 }
