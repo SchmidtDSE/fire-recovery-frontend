@@ -6,15 +6,29 @@
 --quinary-color: rgb(171, 219, 32);
 }
 
+body {
+    margin: 0;
+    font-family: 'Public Sans', sans-serif;
+}
+
+.hero-image {
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+}
+
+.home .hero-image {
+    height: 400px;
+}
+
+.page .hero-image {
+    height: 280px;
+}
+
 #map {
 width: 50%;
 height:600px; /* Adjust as needed */
 float: right;
-}
-
-body {
-    margin: 0;
-    font-family: 'Public Sans', sans-serif;
 }
 
 .navbar {
