@@ -100,3 +100,26 @@ h1 {
     justify-content: center;
 }
 
+.site-footer {
+    background-color: black;
+    height: 80px;
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
+    color: white;
+}
+
+.footer-nav ul {
+    list-style-type: none; /* Remove default list styling */
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 30px; /* Space between each link */
+}
+
+.footer-nav a {
+    color: white;
+    text-decoration: none; /* Remove underline from links */
+    font-size: 1rem; /* Adjust font size as needed */
+}
