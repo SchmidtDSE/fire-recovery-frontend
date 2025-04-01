@@ -78,11 +78,7 @@ h3 {
     left: 0;
 }
 
-#map {
-    width: 50%;
-    height: 600px;
-    float: right;
-}
+
 
 .navbar {
     background-color: black;
@@ -190,14 +186,50 @@ h3 {
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    font-family: 'Public Sans', sans-serif;
+    font-size: 14pt;
 }
 
 .custom-file-upload:hover {
-    background-color: #f1f1f1;
+    background-color: #BBB7AD;
 }
 
 .status-message {
     margin-left: 10px;
-    font-size: 1em;
+    font-size: 10pt;
     vertical-align: middle;
+}
+
+/* Map view buttons */
+.map-container {
+    width: 50%;
+    float: right;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.button-container {
+    display: flex;
+    width: 100%; /* Assuming this container's width matches the map */
+  }
+  
+  .map-button {
+    flex: 1; /* Distribute space equally */
+    margin: 0; /* Remove default margin to ensure they touch */
+    padding: 20px; /* Add some padding for visual appeal */
+    border: none; /* Optional: remove default border */
+    background-color: #FFFDFF; /* Example background color */
+    color: black;
+    cursor: pointer;
+    font-family: 'Public Sans', sans-serif; /* Set the font family */
+    font-size: 14pt; /* Set the font size */
+  }
+  
+  .map-button:hover {
+    background-color: #BBB7AD; /* Darken on hover */
+  }
+
+#map {
+    height: 600px;
+    width: 100%; 
 }

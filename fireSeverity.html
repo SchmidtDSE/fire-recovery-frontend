@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700&display=swap" rel="stylesheet">
     <title>Fire Recovery: Fire Severity</title>
     <link rel="stylesheet" type="text/css" href="./style.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -32,7 +33,18 @@
     </div>
 </header>
 
-<div id="map"></div>
+<!-- map view buttons -->
+<div class="map-container">
+    <div class="button-container">
+        <button class="map-button">Street Map</button>
+        <button class="map-button">Satellite Map</button>
+        <button class="map-button">Vegetation Map</button>
+    </div>
+
+    <div id="map"></div>
+</div>
+
+<!-- upload shapefile -->
 <label for="uploadShapefile" class="custom-file-upload">Upload Shapefile</label>
 <input type="file" id="uploadShapefile" accept=".zip" style="display:none"/>
 <span id="uploadStatus" class="status-message"></span>
