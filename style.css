@@ -176,3 +176,28 @@ h3 {
     padding-top: 20px;
     padding-bottom: 30px;
 }
+
+/****************************** FIRE SEVERITY PAGE ******************************/ 
+
+.custom-file-upload {
+    display: inline-block;
+    padding: 10px 20px;
+    margin: 20px;
+    font-size: 1em;
+    color: #000;
+    background-color: #FFFDFF;
+    border: 1px solid #000;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.custom-file-upload:hover {
+    background-color: #f1f1f1;
+}
+
+.status-message {
+    margin-left: 10px;
+    font-size: 1em;
+    vertical-align: middle;
+}

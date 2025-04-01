@@ -32,11 +32,10 @@
     </div>
 </header>
 
-<main>
-    <p>This is the Fire Severity page</p>
-</main>
-
 <div id="map"></div>
+<label for="uploadShapefile" class="custom-file-upload">Upload Shapefile</label>
+<input type="file" id="uploadShapefile" accept=".zip" style="display:none"/>
+<span id="uploadStatus" class="status-message"></span>
 
 <!-- Pages noted in footer need to be created -->
 <footer class="site-footer">
@@ -54,10 +53,11 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
 crossorigin=""></script>
-<!-- georaster api -->
-<script src="https://unpkg.com/georaster"></script>
-<!-- georaster layer for leaflet -->
-<script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
+<!-- library for handling zipped shapefiles -->
+<script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
+<script src="https://unpkg.com/shapefile@latest/shapefile.min.js"></script>
+<!-- Leaflet filelayer for handling file uploads directly -->
+<script src="https://unpkg.com/leaflet-filelayer/dist/leaflet.filelayer.js"></script>
 <!-- global javascript file -->
 <script src="scriptHeaderImage.js"></script>
 <!-- veg model map vis -->
