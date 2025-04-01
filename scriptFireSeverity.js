@@ -50,6 +50,17 @@ document.querySelectorAll('.map-button').forEach(button => {
     });
 });
 
+// Function to define the style for the GeoJSON layer
+function geoJsonStyle(feature) {
+    return {
+        color: '#900505',    // Set the outline color to red
+        weight: 2,       // Line weight/thickness
+        opacity: 1.0,    // Line opacity
+        fillColor: 'red', // Fill color inside the shape
+        fillOpacity: 0.3 // Opacity of the fill color
+    };
+}
+
 // Handle shapefile upload using shp.js
 document.getElementById('uploadShapefile').addEventListener('change', function(event) {
     const file = event.target.files[0];
@@ -65,8 +76,8 @@ document.getElementById('uploadShapefile').addEventListener('change', function(e
     const reader = new FileReader();
     reader.onload = function(e) {
         shp(e.target.result).then(function(data) {
-            // Add the GeoJSON layer to the dedicated layer group
-            L.geoJSON(data).addTo(geoJsonLayerGroup);
+            // Add GeoJSON with the defined style
+            L.geoJSON(data, { style: geoJsonStyle }).addTo(geoJsonLayerGroup);
 
             // Display upload complete message
             uploadStatus.textContent = `${file.name} was uploaded successfully.`;
