@@ -168,7 +168,7 @@ h3 {
 }
 
 .info-box h2 {
-    font-size: 24
+    font-size: 24px;
     color: white;
     line-height: 1.2;
     margin: 10;

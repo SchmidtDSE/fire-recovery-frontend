@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fire Recovery: Fire Severity</title>
     <link rel="stylesheet" type="text/css" href="./style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin="anonymous"/>
 
 </head>
 <body>
@@ -33,6 +36,8 @@
     <p>This is the Fire Severity page</p>
 </main>
 
+<div id="map"></div>
+
 <!-- Pages noted in footer need to be created -->
 <footer class="site-footer">
     <nav class="footer-nav">
@@ -44,9 +49,19 @@
     </nav>
 </footer>
 
-    <!-- javascript file -->
-    <script src="script.js"></script>
 
+<!-- load leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+crossorigin=""></script>
+<!-- georaster api -->
+<script src="https://unpkg.com/georaster"></script>
+<!-- georaster layer for leaflet -->
+<script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
+<!-- global javascript file -->
+<script src="scriptHeaderImage.js"></script>
+<!-- veg model map vis -->
+<script src="scriptFireSeverity.js"></script>
 
    
 </body>
