@@ -20,6 +20,24 @@ h1 {
     text-align: left;
 }
 
+h2 {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+    line-height: 1.2;
+    text-align: left;
+}
+
+h3 {
+    font-size: 18px;
+    font-weight: 200;
+    color: white;
+    margin: 0;
+    line-height: 1.2;
+    text-align: left;
+}
+
 .hero-image {
     width: 100%;
     height: 400px;
@@ -122,4 +140,39 @@ h1 {
     color: white;
     text-decoration: none; /* Remove underline from links */
     font-size: 1rem; /* Adjust font size as needed */
+}
+
+/* CONTAINERS FOR HOME PAGE NAV BOXES */
+.home-nav-container {
+    display: flex;
+    justify-content: center; /* Center all boxes width-wise */
+    gap: 60px; /* Space between each box */
+    padding-top: 60px;
+    padding-bottom: 100px;
+}
+
+.info-box {
+    background-color: black;
+    width: 280px;
+    height: 450px;
+    position: relative;
+    border-radius: 20px;
+}
+
+.textbox {
+    color: white;
+    position: absolute;
+    top: 0;
+    text-align: left;
+    padding: 30px;
+}
+
+.info-box h2 {
+    font-size: 24
+    color: white;
+    line-height: 1.2;
+    margin: 10;
+    text-align: left; /* Align text to the left */
+    padding-top: 20px;
+    padding-bottom: 30px;
 }
