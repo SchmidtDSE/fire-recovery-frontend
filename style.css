@@ -32,10 +32,14 @@ h2 {
 h3 {
     font-size: 18px;
     font-weight: 200;
-    color: white;
+    color: black;
     margin: 0;
     line-height: 1.2;
     text-align: left;
+}
+
+.textbox h3 {
+    color: white; /* Override color for h3 inside .textbox */
 }
 
 .hero-image {
@@ -174,11 +178,23 @@ h3 {
 }
 
 /****************************** FIRE SEVERITY PAGE ******************************/ 
+/* Container to hold both form and map */
+.form-map-container {
+    display: flex;
+}
 
+/* Upload button, date section, and their container */
+.upload-and-date-container {
+    width: 50%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Styling for the upload button */
 .custom-file-upload {
     display: inline-block;
     padding: 10px 20px;
-    margin: 20px;
+    margin: 20px 0;
     font-size: 1em;
     color: #000;
     background-color: #FFFDFF;
@@ -194,46 +210,92 @@ h3 {
     background-color: #BBB7AD;
 }
 
+/* Status message styling */
 .status-message {
     margin-left: 10px;
     font-size: 10pt;
     vertical-align: middle;
 }
 
-/* Map view buttons */
+/* Space between shapefile button and h3 heading */
+.date-section-heading {
+    margin-top: 60px;
+    font-weight: bold;
+}
+
+/* Styling for the form */
+.date-form {
+    margin-top: 20px;
+}
+
+/* Styling for the date fields */
+.date-field-container {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.date-field {
+    padding: 10px;
+    font-size: 1em;
+    color: #000;
+    background-color: #FFFDFF;
+    border: 1px solid #000;
+    border-radius: 5px;
+    width: 280px; /* Fixed width for the date fields */
+    box-sizing: border-box;
+    font-family: 'Public Sans', sans-serif;
+}
+
+/* Styling for labels */
+.date-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14pt;
+    font-family: 'Public Sans', sans-serif;
+    width: 280px; /* Ensures label aligns with date field width */
+}
+
+/* Styling for submit button matches custom file upload styling */
+.form-submit-button {
+    display: inline-block;
+}
+
+/* Map view and its buttons */
 .map-container {
     width: 50%;
-    float: right;
     box-sizing: border-box;
     position: relative;
 }
 
 .button-container {
     display: flex;
-    width: 100%; /* Assuming this container's width matches the map */
-  }
-  
-  .map-button {
-    flex: 1; /* Distribute space equally */
-    margin: 0; /* Remove default margin to ensure they touch */
-    padding: 20px; /* Add some padding for visual appeal */
-    border: none; /* Optional: remove default border */
-    background-color: #FFFDFF; /* Example background color */
+    width: 100%; /* width matches the map */
+}
+
+.map-button {
+    flex: 1; /* space equally */
+    margin: 0; /* buttons touch */
+    padding: 20px; 
+    border: none;
+    background-color: #FFFDFF;
     color: black;
     cursor: pointer;
-    font-family: 'Public Sans', sans-serif; /* Set the font family */
-    font-size: 14pt; /* Set the font size */
-  }
-  
-  .map-button:hover {
-    border: 4px solid #BBB7AD;
-  }
+    font-family: 'Public Sans', sans-serif;
+    font-size: 14pt;
+}
 
-  .map-button.active {
+.map-button:hover {
     border: 4px solid #BBB7AD;
+}
+
+.map-button.active {
+    border: 4px solid #BBB7AD;
+    filter: drop-shadow(1px 1px 4px rgba(0, 0, 0, 0.6));
 }
 
 #map {
     height: 600px;
-    width: 100%; 
+    width: 100%;
 }

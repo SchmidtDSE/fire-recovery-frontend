@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,10 +8,10 @@
     <title>Fire Recovery: Fire Severity</title>
     <link rel="stylesheet" type="text/css" href="./style.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin="anonymous"/>
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous" />
 
 </head>
+
 <body>
 
     <nav class="navbar">
@@ -25,56 +26,75 @@
         </ul>
     </nav>
 
-<!-- HEADER IMAGE -->
-<header class="hero-image">
-    <div class="black-bar"></div>
-    <div class="hero-text-box">
-        <h1>Assess Fire Severity</h1>
+    <!-- HEADER IMAGE -->
+    <header class="hero-image">
+        <div class="black-bar"></div>
+        <div class="hero-text-box">
+            <h1>Assess Fire Severity</h1>
+        </div>
+    </header>
+
+    <div class="form-map-container">
+        <!-- upload shapefile -->
+        <div class="upload-and-date-container">
+            <label for="uploadShapefile" class="custom-file-upload">Upload Shapefile</label>
+            <input type="file" id="uploadShapefile" accept=".zip" style="display:none" />
+            <span id="uploadStatus" class="status-message"></span>
+
+            <h3 class="date-section-heading">Set date range for fire:</h3>
+
+            <form id="date-form" class="date-form">
+                <div class="date-field-container">
+                    <label class="date-label" for="ignition-date">Date of Ignition:</label>
+                    <input class="date-field" type="date" id="ignition-date" name="ignitionDate" required>
+                </div>
+
+                <div class="date-field-container">
+                    <label class="date-label" for="suppression-date">Date of Suppression:</label>
+                    <input class="date-field" type="date" id="suppression-date" name="suppressionDate" required>
+                </div>
+
+                <button type="submit" class="form-submit-button custom-file-upload">Submit</button>
+            </form>
+        </div>
+
+        <!-- map view buttons -->
+        <div class="map-container">
+            <div class="button-container">
+                <button class="map-button">Street Map</button>
+                <button class="map-button">Satellite Map</button>
+                <button class="map-button">Vegetation Map</button>
+            </div>
+
+            <div id="map"></div>
+        </div>
     </div>
-</header>
 
-<!-- map view buttons -->
-<div class="map-container">
-    <div class="button-container">
-        <button class="map-button">Street Map</button>
-        <button class="map-button">Satellite Map</button>
-        <button class="map-button">Vegetation Map</button>
-    </div>
-
-    <div id="map"></div>
-</div>
-
-<!-- upload shapefile -->
-<label for="uploadShapefile" class="custom-file-upload">Upload Shapefile</label>
-<input type="file" id="uploadShapefile" accept=".zip" style="display:none"/>
-<span id="uploadStatus" class="status-message"></span>
-
-<!-- Pages noted in footer need to be created -->
-<footer class="site-footer">
-    <nav class="footer-nav">
-        <ul>
-            <li><a href="#methodology">Methodology</a></li>
-            <li><a href="#contact">Contact</a></li>
-            <li><a href="#about">About</a></li>
-        </ul>
-    </nav>
-</footer>
+    <!-- Pages noted in footer need to be created -->
+    <footer class="site-footer">
+        <nav class="footer-nav">
+            <ul>
+                <li><a href="#methodology">Methodology</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="#about">About</a></li>
+            </ul>
+        </nav>
+    </footer>
 
 
-<!-- load leaflet -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-crossorigin=""></script>
-<!-- library for handling zipped shapefiles -->
-<script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
-<script src="https://unpkg.com/shapefile@latest/shapefile.min.js"></script>
-<!-- Leaflet filelayer for handling file uploads directly -->
-<script src="https://unpkg.com/leaflet-filelayer/dist/leaflet.filelayer.js"></script>
-<!-- global javascript file -->
-<script src="scriptHeaderImage.js"></script>
-<!-- veg model map vis -->
-<script src="scriptFireSeverity.js"></script>
+    <!-- load leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- library for handling zipped shapefiles -->
+    <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
+    <script src="https://unpkg.com/shapefile@latest/shapefile.min.js"></script>
+    <!-- Leaflet filelayer for handling file uploads directly -->
+    <script src="https://unpkg.com/leaflet-filelayer/dist/leaflet.filelayer.js"></script>
+    <!-- global javascript file -->
+    <script src="scriptHeaderImage.js"></script>
+    <!-- veg model map vis -->
+    <script src="scriptFireSeverity.js"></script>
 
-   
 </body>
+
 </html>
