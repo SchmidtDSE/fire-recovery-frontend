@@ -226,8 +226,12 @@ h3 {
   }
   
   .map-button:hover {
-    background-color: #BBB7AD; /* Darken on hover */
+    border: 4px solid #BBB7AD;
   }
+
+  .map-button.active {
+    border: 4px solid #BBB7AD;
+}
 
 #map {
     height: 600px;

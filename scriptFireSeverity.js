@@ -15,8 +15,8 @@ const satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}
     attribution: 'Imagery ©2023 Google'
 });
 
-// Placeholder for Vegetation Map layer
-const vegetationLayer = L.layerGroup(); // Use a LayerGroup as a placeholder
+// Placeholder for Vegetation Map layer (will use street map for visibility)
+const vegetationLayer = streetMapLayer; // Set vegetationLayer to streetMapLayer 
 
 // Add default layer (Street Map) to the map
 streetMapLayer.addTo(map);
@@ -27,7 +27,7 @@ const geoJsonLayerGroup = L.layerGroup().addTo(map);
 // Function to switch tile layers while preserving shapefiles
 function switchToLayer(layer) {
     map.eachLayer(l => {
-        if (l !== layer && (l === streetMapLayer || l === satelliteLayer || l === vegetationLayer)) {
+        if (l !== layer && (l === streetMapLayer || l === satelliteLayer)) {
             map.removeLayer(l); // Remove only base layers, leaving GeoJSON layers unaffected
         }
     });
@@ -36,9 +36,15 @@ function switchToLayer(layer) {
     }
 }
 
-// Button event listeners for switching views
 document.querySelectorAll('.map-button').forEach(button => {
     button.addEventListener('click', () => {
+        // Remove 'active' class from all buttons
+        document.querySelectorAll('.map-button').forEach(btn => btn.classList.remove('active'));
+        
+        // Add 'active' class to the clicked button
+        button.classList.add('active');
+        
+        // Remaining logic for switching map layers...
         const buttonText = button.textContent.trim();
         if (buttonText === 'Street Map') {
             switchToLayer(streetMapLayer);
@@ -54,15 +60,15 @@ document.querySelectorAll('.map-button').forEach(button => {
 function geoJsonStyle(feature) {
     return {
         color: '#900505',    // Set the outline color to red
-        weight: 2,       // Line weight/thickness
-        opacity: 1.0,    // Line opacity
-        fillColor: 'red', // Fill color inside the shape
-        fillOpacity: 0.3 // Opacity of the fill color
+        weight: 2,           // Line weight/thickness
+        opacity: 1.0,        // Line opacity
+        fillColor: 'red',    // Fill color inside the shape
+        fillOpacity: 0.3     // Opacity of the fill color
     };
 }
 
 // Handle shapefile upload using shp.js
-document.getElementById('uploadShapefile').addEventListener('change', function(event) {
+document.getElementById('uploadShapefile').addEventListener('change', function (event) {
     const file = event.target.files[0];
     const uploadStatus = document.getElementById('uploadStatus');
 
@@ -74,15 +80,15 @@ document.getElementById('uploadShapefile').addEventListener('change', function(e
 
     // Read and parse the shapefile
     const reader = new FileReader();
-    reader.onload = function(e) {
-        shp(e.target.result).then(function(data) {
+    reader.onload = function (e) {
+        shp(e.target.result).then(function (data) {
             // Add GeoJSON with the defined style
             L.geoJSON(data, { style: geoJsonStyle }).addTo(geoJsonLayerGroup);
 
             // Display upload complete message
             uploadStatus.textContent = `${file.name} was uploaded successfully.`;
             uploadStatus.style.color = 'black'; // Success message color
-        }).catch(function(error) {
+        }).catch(function (error) {
             console.error("Error while parsing shapefile:", error);
             uploadStatus.textContent = "Upload failed. Please try again.";
             uploadStatus.style.color = 'red'; // Error message color
