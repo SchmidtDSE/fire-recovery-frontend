@@ -27,7 +27,8 @@ function getCSSVariableValue(variableName) {
 
   
   // ****************** USE BELOW FOR LOADING FROM LOCAL ******************
-  fetch('../elevation_cog/Copernicus_DSM_COG_10_N33_00_W117_00_DEM.tif')
+//   fetch('../COGs/Copernicus_DSM_COG_10_N33_00_W117_00_DEM.tif')
+  fetch('../COGs/JOTRcog_rasterized10.tif')
   .then(response => response.arrayBuffer())
   .then(arrayBuffer => {
       parseGeoraster(arrayBuffer).then(georaster => {
