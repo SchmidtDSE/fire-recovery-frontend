@@ -61,7 +61,7 @@
         <!-- map view buttons -->
         <div class="map-container">
             <div class="button-container">
-                <button class="map-button">Street Map</button>
+                <button class="map-button active">Street Map</button>
                 <button class="map-button">Satellite Map</button>
                 <button class="map-button">Vegetation Map</button>
             </div>
@@ -90,10 +90,11 @@
     <script src="https://unpkg.com/shapefile@latest/shapefile.min.js"></script>
     <!-- Leaflet filelayer for handling file uploads directly -->
     <script src="https://unpkg.com/leaflet-filelayer/dist/leaflet.filelayer.js"></script>
-    <!-- global javascript file -->
     <script src="scriptHeaderImage.js"></script>
+    <!-- global javascript file -->
+    <script type="module" src="scriptFireSeverity.js"></script>
     <!-- veg model map vis -->
-    <script src="scriptFireSeverity.js"></script>
+    <script type="module" src="scriptVegetationMap.js"></script>
 
 </body>
 

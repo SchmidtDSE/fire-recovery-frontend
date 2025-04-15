@@ -5,7 +5,7 @@ const map = L.map('map').setView([33.8734, -115.9010], 10);
 
 // Define tile layers
 const streetMapLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
+    maxZoom: 20,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 });
 
@@ -36,25 +36,45 @@ function switchToLayer(layer) {
     }
 }
 
+
+import { loadVegetationLayer } from './scriptVegetationMap.js'; // Make sure the path is correct
+
 document.querySelectorAll('.map-button').forEach(button => {
     button.addEventListener('click', () => {
-        // Remove 'active' class from all buttons
         document.querySelectorAll('.map-button').forEach(btn => btn.classList.remove('active'));
-        
-        // Add 'active' class to the clicked button
         button.classList.add('active');
-        
-        // Remaining logic for switching map layers...
+
         const buttonText = button.textContent.trim();
         if (buttonText === 'Street Map') {
             switchToLayer(streetMapLayer);
         } else if (buttonText === 'Satellite Map') {
             switchToLayer(satelliteLayer);
         } else if (buttonText === 'Vegetation Map') {
-            switchToLayer(vegetationLayer);
+            loadVegetationLayer(); // Call the function to handle vegetation layer
         }
     });
 });
+
+
+// document.querySelectorAll('.map-button').forEach(button => {
+//     button.addEventListener('click', () => {
+//         // Remove 'active' class from all buttons
+//         document.querySelectorAll('.map-button').forEach(btn => btn.classList.remove('active'));
+        
+//         // Add 'active' class to the clicked button
+//         button.classList.add('active');
+        
+//         // Remaining logic for switching map layers...
+//         const buttonText = button.textContent.trim();
+//         if (buttonText === 'Street Map') {
+//             switchToLayer(streetMapLayer);
+//         } else if (buttonText === 'Satellite Map') {
+//             switchToLayer(satelliteLayer);
+//         } else if (buttonText === 'Vegetation Map') {
+//             switchToLayer(vegetationLayer);
+//         }
+//     });
+// });
 
 // Function to define the style for the GeoJSON layer
 function geoJsonStyle(feature) {
