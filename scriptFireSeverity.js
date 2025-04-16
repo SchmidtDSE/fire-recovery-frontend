@@ -56,10 +56,10 @@ document.querySelectorAll('.map-button').forEach(button => {
 // Function to load the COG layer using georaster
 function loadCOGLayer() {
     if (cogLayer && map.hasLayer(cogLayer)) {
-        return; // If already loaded, do nothing
+        return;
     }
 
-    const url = '../COGs/JOTRcog_optimized5_Rank.tif'; // Update this path as necessary
+    const url = '../COGs/JOTRcog_optimized5_Rank.tif';
 
     fetch(url)
         .then(response => response.arrayBuffer())
@@ -101,18 +101,18 @@ function loadCOGLayer() {
         });
 }
 
-// Function to define the style for the GeoJSON layer (unchanged)
+// define the style for burn boundary
 function geoJsonStyle(feature) {
     return {
-        color: '#900505',
-        weight: 2,
+        color: '#900505', // dark red
+        weight: 3,
         opacity: 1.0,
-        fillColor: 'red',
-        fillOpacity: 0.3
+        fillColor: 'transparent',
+        // fillOpacity: 0.3
     };
 }
 
-// Handle shapefile upload using shp.js (unchanged)
+// Handle shapefile upload using shp.js
 document.getElementById('uploadShapefile').addEventListener('change', function (event) {
     const file = event.target.files[0];
     const uploadStatus = document.getElementById('uploadStatus');
