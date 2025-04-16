@@ -1,5 +1,3 @@
-//test
-
 // Initialize the map
 const map = L.map('map').setView([33.8734, -115.9010], 10);
 
