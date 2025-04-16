@@ -4,11 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700&display=swap" rel="stylesheet">
-    <title>Fire Recovery: Resource Optimization</title>
-    <link rel="stylesheet" type="text/css" href="./style.css" />
+    <title>Fire Recovery: Vegetation</title>
+    <link rel="stylesheet" type="text/css" href="./css/style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin="anonymous"/>
 
 </head>
 <body>
+
+<!-- NAVIGATION BAR -->
     <nav class="navbar">
         <ul class="nav-list">
             <li class="nav-item home"><a href="index.html">Home</a></li>
@@ -25,9 +30,15 @@
 <header class="hero-image">
     <div class="black-bar"></div>
     <div class="hero-text-box">
-        <h1>Resource Optimization</h1>
+        <h1>Vegetation Modeling</h1>
     </div>
 </header>
+
+<!-- In container to follow contraints that match fire severity page -->
+<div class="map-container">
+    <div id="map"></div>
+</div>
+
 
 <!-- Pages noted in footer need to be created -->
 <footer class="site-footer">
@@ -39,9 +50,19 @@
         </ul>
     </nav>
 </footer>
-
-<!-- randomized header image javascript file -->
+    
+<!-- load leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+crossorigin=""></script>
+<!-- georaster api -->
+<script src="https://unpkg.com/georaster"></script>
+<!-- georaster layer for leaflet -->
+<script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
+<!-- global javascript file -->
 <script src="js/scriptHeaderImage.js"></script>
+<!-- veg model map vis -->
+<script type="module" src="js/scriptVegModel.js"></script>
 
    
 </body>

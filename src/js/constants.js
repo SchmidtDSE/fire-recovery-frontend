@@ -1,4 +1,4 @@
-const COGdir = '../COGs';
+const COGdir = './COGs';
 
 // fire severity
 const vegMapCOG = `${COGdir}/JOTRcog_optimized5_Rank.tif`;
