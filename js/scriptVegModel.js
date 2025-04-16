@@ -1,4 +1,6 @@
 // script code to load map with georaster layer from a locally saved file
+import {vegModelCOG} from './constants.js';
+
 
 // Function to get CSS variable value
 function getCSSVariableValue(variableName) {
@@ -27,7 +29,7 @@ function getCSSVariableValue(variableName) {
 
   
   // ****************** USE BELOW FOR LOADING FROM LOCAL ******************
-  fetch('../COGs/Copernicus_DSM_COG_10_N33_00_W117_00_DEM.tif')
+  fetch(vegModelCOG)
 //   fetch('../COGs/JOTRcog_optimized10.tif')
   .then(response => response.arrayBuffer())
   .then(arrayBuffer => {

@@ -1,3 +1,5 @@
+import {vegMapCOG} from './constants.js';
+
 // Initialize the map
 const map = L.map('map').setView([33.8734, -115.9010], 10);
 
@@ -59,9 +61,7 @@ function loadCOGLayer() {
         return;
     }
 
-    const url = '../COGs/JOTRcog_optimized5_Rank.tif';
-
-    fetch(url)
+    fetch(vegMapCOG)
         .then(response => response.arrayBuffer())
         .then(arrayBuffer => parseGeoraster(arrayBuffer))
         .then(georaster => {
