@@ -23,6 +23,16 @@ let cogLayer;
 // Create a LayerGroup for GeoJSON data
 const geoJsonLayerGroup = new L.FeatureGroup().addTo(map);
 
+// set limits to dates to not allow dates in future to be selected
+document.addEventListener('DOMContentLoaded', (event) => {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('prefire-start-date').setAttribute('max', today);
+    document.getElementById('prefire-end-date').setAttribute('max', today);
+    document.getElementById('postfire-start-date').setAttribute('max', today);
+    document.getElementById('postfire-end-date').setAttribute('max', today);
+});
+
+
 // Initialize the draw control
 const drawControl = new L.Control.Draw({
     edit: {
@@ -172,38 +182,6 @@ document.getElementById('uploadShapefile').addEventListener('change', function (
         });
     };
     reader.readAsArrayBuffer(file);
-});
-
-// Form submission to send a POST request with the fire dates as JSON
-document.getElementById('date-form').addEventListener('submit', async function(event) {
-    event.preventDefault();
-
-    const ignitionDate = document.getElementById('ignition-date').value;
-    const suppressionDate = document.getElementById('suppression-date').value;
-
-    const data = {
-        dateOfIgnition: ignitionDate,
-        dateOfSuppression: suppressionDate
-    };
-
-    try {
-        const response = await fetch('http://your-fastapi-url/endpoint', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log('Success:', result);
-    } catch (error) {
-        console.error('Error sending request:', error);
-    }
 });
 
 

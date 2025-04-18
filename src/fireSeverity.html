@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
 <body>
@@ -35,10 +35,6 @@
         </div>
     </header>
 
-
-<div id="spinner" class="spinner"></div>
-
-
     <div class="form-map-container">
         <!-- upload shapefile -->
         <div class="upload-and-date-container">
@@ -49,17 +45,39 @@
             <h3 class="date-section-heading">Set date range for fire:</h3>
 
             <form id="date-form" class="date-form">
-                <div class="date-field-container">
-                    <label class="date-label" for="ignition-date">Date of Ignition:</label>
-                    <input class="date-field" type="date" id="ignition-date" name="ignitionDate" required>
+                <div class="date-row">
+                    <div class="date-field-container">
+                        <label class="date-label" for="prefire-start-date">Prefire Start Date:</label>
+                        <input class="date-field" type="date" id="prefire-start-date" name="prefireStartDate" required>
+                    </div>
+
+                    <div class="date-field-container">
+                        <label class="date-label" for="prefire-end-date">Prefire End Date:</label>
+                        <input class="date-field" type="date" id="prefire-end-date" name="prefireEndDate" required>
+                    </div>
                 </div>
 
-                <div class="date-field-container">
-                    <label class="date-label" for="suppression-date">Date of Suppression:</label>
-                    <input class="date-field" type="date" id="suppression-date" name="suppressionDate" required>
+                <div class="date-row">
+                    <div class="date-field-container">
+                        <label class="date-label" for="postfire-start-date">Postfire Start Date:</label>
+                        <input class="date-field" type="date" id="postfire-start-date" name="postfireStartDate" required>
+                    </div>
+
+                    <div class="date-field-container">
+                        <label class="date-label" for="postfire-end-date">Postfire End Date:</label>
+                        <input class="date-field" type="date" id="postfire-end-date" name="postfireEndDate" required>
+                    </div>
                 </div>
 
-                <button type="submit" class="form-submit-button custom-file-upload">Submit</button>
+                <div class="processing-test-section">
+                    <h3 class="date-section-heading">Submit dates along with a shapefile or drawn polygon:</h3>
+                    <div class="processing-test-container">
+                        <button id="test-process-button" type="button" class="form-submit-button custom-file-upload">
+                            Get Burn Metrics
+                        </button>
+                        <span id="process-status" style="margin-left: 10px; font-size: 1.5em; vertical-align: middle;"></span>
+                    </div>
+                </div>
             </form>
         </div>
 
@@ -86,7 +104,6 @@
         </nav>
     </footer>
 
-
     <!-- load leaflet -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -101,10 +118,9 @@
     <script src="https://unpkg.com/georaster"></script>
     <!-- georaster layer for leaflet -->
     <script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
-    <script src="js/scriptHeaderImage.js"></script>
+    <script src="js/HeaderImage.js"></script>
     <!-- global javascript file -->
-    <script type="module" src="js/scriptFireSeverity.js"></script>
-    <!-- <script type="module" src="js/experiment.js"></script> -->
+    <script type="module" src="js/FireSeverity.js"></script>
 
 </body>
 

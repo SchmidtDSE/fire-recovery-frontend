@@ -82,8 +82,6 @@ h3 {
     left: 0;
 }
 
-
-
 .navbar {
     background-color: black;
     color: white;
@@ -298,4 +296,14 @@ h3 {
 #map {
     height: 600px;
     width: 100%;
+}
+
+/* New styles for date fields layout */
+.date-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.date-field-container {
+    width: 48%;
 }
