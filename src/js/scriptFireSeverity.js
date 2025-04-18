@@ -18,10 +18,60 @@ const satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}
 // Add default layer (Street Map) to the map
 streetMapLayer.addTo(map);
 
-// Create a LayerGroup for GeoJSON data
-const geoJsonLayerGroup = L.layerGroup().addTo(map);
-
 let cogLayer;
+
+// Create a LayerGroup for GeoJSON data
+// const geoJsonLayerGroup = L.layerGroup().addTo(map);
+const geoJsonLayerGroup = new L.FeatureGroup().addTo(map);
+
+// Initialize the draw control
+const drawControl = new L.Control.Draw({
+    edit: {
+        featureGroup: geoJsonLayerGroup
+    },
+    draw: {
+        polyline: false,
+        circle: false,
+        rectangle: false,
+        marker: false,
+        circlemarker: false,
+        polygon: true
+    }
+});
+
+// Add the draw control to the map
+map.addControl(drawControl);
+
+// Event listener for draw created event
+map.on(L.Draw.Event.CREATED, function (event) {
+    const layer = event.layer;
+    geoJsonLayerGroup.addLayer(layer);
+
+    // Convert drawn layer to GeoJSON
+    const drawnGeoJson = layer.toGeoJSON();
+    
+    // Send the GeoJSON to the backend
+    fetch('http://your-fastapi-url/geojson-endpoint', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(drawnGeoJson)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Polygon data successfully sent:', data);
+    })
+    .catch(error => {
+        console.error('Error during sending polygon data:', error);
+    });
+});
+
 
 // Function to switch tile layers while preserving shapefiles
 function switchToLayer(layer) {
@@ -75,22 +125,22 @@ function loadCOGLayer() {
             cogLayer = new GeoRasterLayer({
                 georaster: georaster,
                 opacity: 0.5,
-                pixelValuesToColorFn: function (value) {
-                    if (value < 10) {
-                        return '#ffeda0';
-                    } else if (value > 10 && value < 20) {
-                        return '#feb24c';
-                    } else if (value > 20 && value < 30) {
-                        return '#fc4e2a';
-                    } else if (value > 30 && value < 40) {
-                        return '#e31a1c';
-                    } else if (value > 50) {
-                        return '#b10026';
-                    } else {
-                        return "transparent";
-                    }
-                },
-                resolution: 64
+                // pixelValuesToColorFn: function (value) {
+                //     if (value < 10) {
+                //         return '#ffeda0';
+                //     } else if (value > 10 && value < 20) {
+                //         return '#feb24c';
+                //     } else if (value > 20 && value < 30) {
+                //         return '#fc4e2a';
+                //     } else if (value > 30 && value < 40) {
+                //         return '#e31a1c';
+                //     } else if (value > 50) {
+                //         return '#b10026';
+                //     } else {
+                //         return "transparent";
+                //     }
+                // },
+                resolution: 500
             });
 
             cogLayer.addTo(map);
