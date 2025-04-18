@@ -220,3 +220,104 @@ document.getElementById('date-form').addEventListener('submit', async function(e
         console.error('Error sending request:', error);
     }
 });
+
+// Function to send test processing request
+async function sendTestProcessingRequest() {
+  const testButton = document.getElementById('test-process-button');
+  const statusIcon = document.getElementById('process-status');
+  
+  // Show spinner
+  statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  statusIcon.style.color = '#007bff';
+  testButton.disabled = true;
+  
+  // Sample test data as specified in the documentation
+  const testData = {
+    "geometry": {
+      "type": "Polygon", 
+      "coordinates": [[[-120.0, 38.0], [-120.0, 39.0], [-119.0, 39.0], [-119.0, 38.0], [-120.0, 38.0]]]
+    }, 
+    "prefire_date_range": ["2023-01-01", "2023-06-30"], 
+    "posfire_date_range": ["2023-07-01", "2023-12-31"]
+  };
+
+  try {
+    const response = await fetch('http://localhost:8000/process-test/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(testData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Processing started, job ID:', data.job_id);
+    
+    // Start polling for results
+    pollForResults(data.job_id);
+  } catch (error) {
+    console.error('Error starting test process:', error);
+    statusIcon.innerHTML = '<i class="fas fa-times"></i>';
+    statusIcon.style.color = 'red';
+    testButton.disabled = false;
+  }
+}
+
+// Function to poll for results
+function pollForResults(jobId) {
+  console.log(`Polling for results of job: ${jobId}`);
+  const statusIcon = document.getElementById('process-status');
+  const testButton = document.getElementById('test-process-button');
+  
+  // Check status every 2 seconds
+  const pollInterval = setInterval(async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/result-test/${jobId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Current status:', result);
+      
+      // Check if processing is complete
+      if (result.status === 'completed') {
+        clearInterval(pollInterval);
+        statusIcon.innerHTML = '<i class="fas fa-check"></i>';
+        statusIcon.style.color = 'green';
+        testButton.disabled = false;
+        
+        // Handle the result data if needed
+        console.log('Processing completed successfully:', result.data);
+      } else if (result.status === 'failed') {
+        clearInterval(pollInterval);
+        statusIcon.innerHTML = '<i class="fas fa-times"></i>';
+        statusIcon.style.color = 'red';
+        testButton.disabled = false;
+        console.error('Processing failed:', result.error);
+      }
+      // If status is 'processing' or 'pending', continue polling
+      
+    } catch (error) {
+      console.error('Error checking result status:', error);
+      clearInterval(pollInterval);
+      statusIcon.innerHTML = '<i class="fas fa-times"></i>';
+      statusIcon.style.color = 'red';
+      testButton.disabled = false;
+    }
+  }, 2000);
+}
+
+// Add event listener when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  // Ensure the test button exists
+  const testButton = document.getElementById('test-process-button');
+  if (testButton) {
+    testButton.addEventListener('click', sendTestProcessingRequest);
+  }
+});
