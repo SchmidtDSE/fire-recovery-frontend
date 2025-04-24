@@ -115,7 +115,7 @@ document.querySelectorAll('.map-button').forEach(button => {
     });
 });
 
-// Function to load the COG layer using georaster
+// Function to load the vegetation COG layer using georaster
 function loadCOGLayer() {
     if (cogLayer && map.hasLayer(cogLayer)) {
         return;
@@ -185,6 +185,7 @@ document.getElementById('uploadShapefile').addEventListener('change', function (
 });
 
 
+
 // Function to send test processing request
 async function sendTestProcessingRequest() {
     const testButton = document.getElementById('test-process-button');
@@ -193,9 +194,8 @@ async function sendTestProcessingRequest() {
     // Show spinner
     statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     statusIcon.style.color = '#007bff';
-    testButton.disabled = true;
+    testButton.disabled = true; // Disable the button while processing
     
-    // Sample test data as specified in the documentation
     const testData = {
       "geometry": {
         "type": "Polygon", 
@@ -225,19 +225,18 @@ async function sendTestProcessingRequest() {
       pollForResults(data.job_id);
     } catch (error) {
       console.error('Error starting test process:', error);
-      statusIcon.innerHTML = '<i class="fas fa-times"></i>';
-      statusIcon.style.color = 'red';
-      testButton.disabled = false;
+      statusIcon.innerHTML = '<i class="fas fa-times"></i>'; // Change icon to indicate error
+      statusIcon.style.color = 'red'; // Change color to red to signify an error
+      testButton.disabled = false; // Re-enable the button
     }
   }
-  
-  // Function to poll for results
-  function pollForResults(jobId) {
+
+// Function to poll for results
+function pollForResults(jobId) {
     console.log(`Polling for results of job: ${jobId}`);
     const statusIcon = document.getElementById('process-status');
     const testButton = document.getElementById('test-process-button');
     
-    // Check status every 2 seconds
     const pollInterval = setInterval(async () => {
       try {
         const response = await fetch(`http://localhost:8000/result-test/${jobId}`);
@@ -249,40 +248,47 @@ async function sendTestProcessingRequest() {
         const result = await response.json();
         console.log('Current status:', result);
         
-        // Check if processing is complete
         if (result.status === 'completed') {
-          clearInterval(pollInterval);
-          statusIcon.innerHTML = '<i class="fas fa-check"></i>';
-          statusIcon.style.color = 'green';
-          testButton.disabled = false;
+            clearInterval(pollInterval);
+            statusIcon.innerHTML = '<i class="fas fa-check"></i>';
+            statusIcon.style.color = 'green';
+            testButton.disabled = false;
+        
+            // Show the metrics container
+            const metricsContainer = document.getElementById('metrics-container');
+            metricsContainer.style.display = 'block';
+        
+            // Update metrics with the result data
+            document.getElementById('fire-severity-metric').textContent = result.data.fire_severity;
+            document.getElementById('biomass-lost-metric').textContent = result.data.biomass_lost;
+        
           
-          // Handle the result data if needed
           console.log('Processing completed successfully:', result.data);
         } else if (result.status === 'failed') {
           clearInterval(pollInterval);
-          statusIcon.innerHTML = '<i class="fas fa-times"></i>';
-          statusIcon.style.color = 'red';
-          testButton.disabled = false;
+          statusIcon.innerHTML = '<i class="fas fa-times"></i>'; // Error icon
+          statusIcon.style.color = 'red'; // Red indicates failure
+          testButton.disabled = false; // Enable the button
           console.error('Processing failed:', result.error);
         }
-        // If status is 'processing' or 'pending', continue polling
+        // Continue polling if status is 'processing' or 'pending'
         
       } catch (error) {
         console.error('Error checking result status:', error);
         clearInterval(pollInterval);
-        statusIcon.innerHTML = '<i class="fas fa-times"></i>';
-        statusIcon.style.color = 'red';
-        testButton.disabled = false;
+        statusIcon.innerHTML = '<i class="fas fa-times"></i>'; // Error indication
+        statusIcon.style.color = 'red'; // Red signifies an error
+        testButton.disabled = false; // Re-enable the button
       }
     }, 2000);
-  }
+}
   
-  // Add event listener when DOM is loaded
-  document.addEventListener('DOMContentLoaded', function() {
-    // Ensure the test button exists
+// Add event listener when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
     const testButton = document.getElementById('test-process-button');
     if (testButton) {
       testButton.addEventListener('click', sendTestProcessingRequest);
     }
-  });
-  
+});
+
+

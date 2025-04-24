@@ -216,7 +216,7 @@ h3 {
 }
 
 /* Space between shapefile button and h3 heading */
-.date-section-heading {
+.section-heading {
     margin-top: 60px;
     font-weight: bold;
 }
@@ -306,4 +306,19 @@ h3 {
 
 .date-field-container {
     width: 48%;
+}
+
+
+#metrics-container {
+    /* display: none; */
+    margin-top: 20px;
+    margin-bottom: 40px;
+}
+
+.metric-line {
+    width: 50px;
+    height: 1px;
+    background-color: black;
+    margin-left: 10px;
+    display: inline-block;
 }

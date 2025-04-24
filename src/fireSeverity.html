@@ -42,7 +42,7 @@
             <input type="file" id="uploadShapefile" accept=".zip" style="display:none" />
             <span id="uploadStatus" class="status-message"></span>
 
-            <h3 class="date-section-heading">Set date range for fire:</h3>
+            <h3 class="section-heading">Set date range for fire:</h3>
 
             <form id="date-form" class="date-form">
                 <div class="date-row">
@@ -70,7 +70,7 @@
                 </div>
 
                 <div class="processing-test-section">
-                    <h3 class="date-section-heading">Submit dates along with a shapefile or drawn polygon:</h3>
+                    <h3 class="section-heading">Submit dates along with a shapefile or drawn polygon:</h3>
                     <div class="processing-test-container">
                         <button id="test-process-button" type="button" class="form-submit-button custom-file-upload">
                             Get Burn Metrics
@@ -79,6 +79,15 @@
                     </div>
                 </div>
             </form>
+
+            <!-- metrics container -->
+            <div id="metrics-container">
+                <h3 class="section-heading">Overall Fire Severity:<span class="metric-line"></span></h3>
+                <div id="fire-severity-metric"></div>
+
+                <h3 class="section-heading">Percent of Total Park Biomass Lost:<span class="metric-line"></span></h3>
+                <div id="biomass-lost-metric"></div>
+            </div>
         </div>
 
         <!-- map view buttons -->
