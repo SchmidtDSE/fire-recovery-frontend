@@ -57,6 +57,8 @@ map.on(L.Draw.Event.CREATED, function (event) {
     geoJsonLayerGroup.addLayer(layer);
 
     // Convert drawn layer to GeoJSON
+    // on draw event send, query layer group to get the index. basically react to button push instead of draw to send.
+    // query the layer to geoJSON, let leaflet handle state of drawn shape until ready
     const drawnGeoJson = layer.toGeoJSON();
     
     // Send the GeoJSON to the backend
@@ -196,6 +198,9 @@ async function sendTestProcessingRequest() {
     statusIcon.style.color = '#007bff';
     testButton.disabled = true; // Disable the button while processing
     
+    //grab AOI from leaflet to put in format to match format below *************************
+    // check the state to make sure all items have been provided (4 dates, drawn shape or shapefile)
+    // make sure geojson from draw is most recent (account for redraws)
     const testData = {
       "geometry": {
         "type": "Polygon", 
@@ -204,7 +209,7 @@ async function sendTestProcessingRequest() {
       "prefire_date_range": ["2023-01-01", "2023-06-30"], 
       "posfire_date_range": ["2023-07-01", "2023-12-31"]
     };
-  
+
     try {
       const response = await fetch('http://localhost:8000/process-test/', {
         method: 'POST',

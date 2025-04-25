@@ -124,6 +124,7 @@ h3 {
     justify-content: center; /* Center content horizontally */
     align-items: center; /* Center content vertically */
     color: white;
+    margin-top: 20px;
 }
 
 .footer-nav ul {
