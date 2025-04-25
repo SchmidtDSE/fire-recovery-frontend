@@ -278,7 +278,7 @@ async function pollForResults(jobId) {
                 statusIcon.innerHTML = '<i class="fas fa-check"></i>';
                 statusIcon.style.color = 'green';
                 testButton.disabled = false;
-
+                // handle loading COG
                 if (result.cog_url) {
                     console.log('Attempting to load COG from URL:', result.cog_url);
                     try {
@@ -335,11 +335,23 @@ async function pollForResults(jobId) {
                     const metricsContainer = document.getElementById('metrics-container');
                     metricsContainer.style.display = 'block';
                     
-                    document.getElementById('fire-severity-metric').textContent = 
-                        result.data.fire_severity || 'No data available';
-                    document.getElementById('biomass-lost-metric').textContent = 
-                        result.data.biomass_lost || 'No data available';
+                    // Update fire severity metric with both rank and value
+                    const severityElement = document.getElementById('fire-severity-metric');
+                    if (result.data.fire_severity_rank && result.data.fire_severity_value) {
+                        severityElement.textContent = `${result.data.fire_severity_rank} (${result.data.fire_severity_value.toFixed(2)})`;
+                    } else {
+                        severityElement.textContent = 'No data available';
+                    }
+                    
+                    // Update biomass lost metric with formatted percentage
+                    const biomassElement = document.getElementById('biomass-lost-metric');
+                    if (typeof result.data.biomass_lost === 'number') {
+                        biomassElement.textContent = `${result.data.biomass_lost.toFixed(1)}%`;
+                    } else {
+                        biomassElement.textContent = 'No data available';
+                    }
                 }
+                
                 
             } else if (result.status === 'failed') {
                 clearInterval(pollInterval);
