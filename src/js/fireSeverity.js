@@ -246,32 +246,6 @@ async function sendTestProcessingRequest() {
         const data = await response.json();
         console.log('Processing started, job ID:', data.job_id);
 
-        // Handle URL response with better error checking
-        if (data.url) {
-            try {
-                // Parse the COG directly using georaster
-                fetch(data.url)
-                    .then(response => response.arrayBuffer())
-                    .then(arrayBuffer => parseGeoraster(arrayBuffer))
-                    .then(georaster => {
-                        const resultLayer = new GeoRasterLayer({
-                            georaster: georaster,
-                            opacity: 0.7,
-                            resolution: 256
-                        });
-                        
-                        resultLayer.addTo(resultLayerGroup);
-                        map.fitBounds(resultLayer.getBounds());
-                    })
-                    .catch(error => {
-                        console.error('Error loading COG:', error);
-                        alert('Error loading result layer. Please try again.');
-                    });
-            } catch (error) {
-                console.error('Error creating result layer:', error);
-                alert('Error displaying results. Please try again.');
-            }
-        }
         
         pollForResults(data.job_id);
     } catch (error) {
@@ -284,54 +258,94 @@ async function sendTestProcessingRequest() {
 }
 
 // Function to poll for results
-function pollForResults(jobId) {
+async function pollForResults(jobId) {
     console.log(`Polling for results of job: ${jobId}`);
     const statusIcon = document.getElementById('process-status');
     const testButton = document.getElementById('test-process-button');
     
     const pollInterval = setInterval(async () => {
-      try {
-        const response = await fetch(`http://localhost:8000/result-test/${jobId}`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('Current status:', result);
-        
-        if (result.status === 'completed') {
+        try {
+            const response = await fetch(`http://localhost:8000/result-test/${jobId}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('Current status:', result);
+            
+            if (result.status === 'completed') {
+                clearInterval(pollInterval);
+                statusIcon.innerHTML = '<i class="fas fa-check"></i>';
+                statusIcon.style.color = 'green';
+                testButton.disabled = false;
+
+                // Handle the COG URL if it exists
+                if (result.cog_url) {
+                    try {
+                        // Test if the COG URL is accessible
+                        const cogResponse = await fetch(result.cog_url);
+                        if (!cogResponse.ok) {
+                            throw new Error('COG URL is not accessible');
+                        }
+
+                        const arrayBuffer = await cogResponse.arrayBuffer();
+                        const georaster = await parseGeoraster(arrayBuffer);
+                        
+                        // Clear any existing result layers
+                        resultLayerGroup.clearLayers();
+
+                        // Create and add the new layer
+                        const resultLayer = new GeoRasterLayer({
+                            georaster: georaster,
+                            opacity: 0.7,
+                            resolution: 256,
+                            pixelValuesToColorFn: value => {
+                                // Add your color scale based on burn severity values
+                                if (value === 0) return 'transparent';
+                                if (value < 0.2) return '#ffffb2';
+                                if (value < 0.4) return '#fecc5c';
+                                if (value < 0.6) return '#fd8d3c';
+                                if (value < 0.8) return '#f03b20';
+                                return '#bd0026';
+                            }
+                        });
+
+                        resultLayer.addTo(resultLayerGroup);
+                        map.fitBounds(resultLayer.getBounds());
+                    } catch (error) {
+                        console.error('Error loading burn severity COG:', error);
+                        alert('Error loading burn severity layer. Please try again.');
+                    }
+                }
+            
+                // Show the metrics container and update values
+                const metricsContainer = document.getElementById('metrics-container');
+                metricsContainer.style.display = 'block';
+                
+                // Update metrics with the result data
+                document.getElementById('fire-severity-metric').textContent = result.data.fire_severity;
+                document.getElementById('biomass-lost-metric').textContent = result.data.biomass_lost;
+                
+                console.log('Processing completed successfully:', result.data);
+            } else if (result.status === 'failed') {
+                clearInterval(pollInterval);
+                statusIcon.innerHTML = '<i class="fas fa-times"></i>';
+                statusIcon.style.color = 'red';
+                testButton.disabled = false;
+                console.error('Processing failed:', result.error);
+                alert('Processing failed: ' + result.error);
+            }
+            // Continue polling if status is 'processing' or 'pending'
+            
+        } catch (error) {
+            console.error('Error checking result status:', error);
             clearInterval(pollInterval);
-            statusIcon.innerHTML = '<i class="fas fa-check"></i>';
-            statusIcon.style.color = 'green';
+            statusIcon.innerHTML = '<i class="fas fa-times"></i>';
+            statusIcon.style.color = 'red';
             testButton.disabled = false;
-        
-            // Show the metrics container
-            const metricsContainer = document.getElementById('metrics-container');
-            metricsContainer.style.display = 'block';
-        
-            // Update metrics with the result data
-            document.getElementById('fire-severity-metric').textContent = result.data.fire_severity;
-            document.getElementById('biomass-lost-metric').textContent = result.data.biomass_lost;
-        
-          
-          console.log('Processing completed successfully:', result.data);
-        } else if (result.status === 'failed') {
-          clearInterval(pollInterval);
-          statusIcon.innerHTML = '<i class="fas fa-times"></i>'; // Error icon
-          statusIcon.style.color = 'red'; // Red indicates failure
-          testButton.disabled = false; // Enable the button
-          console.error('Processing failed:', result.error);
+            alert('Error checking process status: ' + error.message);
         }
-        // Continue polling if status is 'processing' or 'pending'
-        
-      } catch (error) {
-        console.error('Error checking result status:', error);
-        clearInterval(pollInterval);
-        statusIcon.innerHTML = '<i class="fas fa-times"></i>'; // Error indication
-        statusIcon.style.color = 'red'; // Red signifies an error
-        testButton.disabled = false; // Re-enable the button
-      }
     }, 2000);
 }
   
