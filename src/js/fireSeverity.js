@@ -22,6 +22,22 @@ let cogLayer;
 
 // Create a LayerGroup for GeoJSON data
 const geoJsonLayerGroup = new L.FeatureGroup().addTo(map);
+const resultLayerGroup = L.layerGroup().addTo(map);
+
+function getGeometryFromMap() {
+    let geometry = null;
+    geoJsonLayerGroup.eachLayer((layer) => {
+        if (layer instanceof L.Polygon) {
+            geometry = layer.toGeoJSON().geometry;
+        }
+    });
+    return geometry;
+}
+
+// clean up result layers
+function cleanupResultLayers() {
+    resultLayerGroup.clearLayers();
+}
 
 // set limits to dates to not allow dates in future to be selected
 document.addEventListener('DOMContentLoaded', (event) => {
@@ -30,6 +46,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     document.getElementById('prefire-end-date').setAttribute('max', today);
     document.getElementById('postfire-start-date').setAttribute('max', today);
     document.getElementById('postfire-end-date').setAttribute('max', today);
+    //add button event listener
+    const testButton = document.getElementById('test-process-button');
+    if (testButton) {
+        testButton.addEventListener('click', sendTestProcessingRequest);
+    }
 });
 
 
@@ -51,47 +72,19 @@ const drawControl = new L.Control.Draw({
 // Add the draw control to the map
 map.addControl(drawControl);
 
-// Event listener for draw created event
-map.on(L.Draw.Event.CREATED, function (event) {
-    const layer = event.layer;
-    geoJsonLayerGroup.addLayer(layer);
-
-    // Convert drawn layer to GeoJSON
-    // on draw event send, query layer group to get the index. basically react to button push instead of draw to send.
-    // query the layer to geoJSON, let leaflet handle state of drawn shape until ready
-    const drawnGeoJson = layer.toGeoJSON();
-    
-    // Send the GeoJSON to the backend
-    fetch('http://your-fastapi-url/geojson-endpoint', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(drawnGeoJson)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        return response.json();
-    })
-    .then(data => {
-        console.log('Polygon data successfully sent:', data);
-    })
-    .catch(error => {
-        console.error('Error during sending polygon data:', error);
-    });
-});
-
 
 // Function to switch tile layers while preserving shapefiles
 function switchToLayer(layer) {
+    cleanupResultLayers();
     map.eachLayer(l => {
         if (l !== layer && (l === streetMapLayer || l === satelliteLayer || l === cogLayer)) {
-            map.removeLayer(l); // Remove specific base layers
+            map.removeLayer(l);
         }
     });
+    // Keep the result layers visible
+    if (!map.hasLayer(resultLayerGroup)) {
+        resultLayerGroup.addTo(map);
+    }
     if (!map.hasLayer(layer)) {
         layer.addTo(map);
     }
@@ -187,54 +180,104 @@ document.getElementById('uploadShapefile').addEventListener('change', function (
 });
 
 
-
-// Function to send test processing request
+// Connect with backend for submitting shapfile, geometry, and dates with button click
 async function sendTestProcessingRequest() {
     const testButton = document.getElementById('test-process-button');
     const statusIcon = document.getElementById('process-status');
     
+    cleanupResultLayers();
+
     // Show spinner
     statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     statusIcon.style.color = '#007bff';
-    testButton.disabled = true; // Disable the button while processing
+    testButton.disabled = true;
     
-    //grab AOI from leaflet to put in format to match format below *************************
-    // check the state to make sure all items have been provided (4 dates, drawn shape or shapefile)
-    // make sure geojson from draw is most recent (account for redraws)
+    // Get dates
+    const prefireStart = document.getElementById('prefire-start-date').value;
+    const prefireEnd = document.getElementById('prefire-end-date').value;
+    const postfireStart = document.getElementById('postfire-start-date').value;
+    const postfireEnd = document.getElementById('postfire-end-date').value;
+    
+    // Get geometry from map
+    const drawnGeometry = getGeometryFromMap();
+
+    // Validate inputs
+    if (!drawnGeometry && geoJsonLayerGroup.getLayers().length === 0) {
+        alert('Please either draw a polygon on the map or upload a shapefile');
+        statusIcon.innerHTML = '<i class="fas fa-times"></i>';
+        statusIcon.style.color = 'red';
+        testButton.disabled = false;
+        return;
+    }
+
+    if (!prefireStart || !prefireEnd || !postfireStart || !postfireEnd) {
+        alert('Please fill in all date fields');
+        statusIcon.innerHTML = '<i class="fas fa-times"></i>';
+        statusIcon.style.color = 'red';
+        testButton.disabled = false;
+        return;
+    }
+
     const testData = {
-      "geometry": {
-        "type": "Polygon", 
-        "coordinates": [[[-120.0, 38.0], [-120.0, 39.0], [-119.0, 39.0], [-119.0, 38.0], [-120.0, 38.0]]]
-      }, 
-      "prefire_date_range": ["2023-01-01", "2023-06-30"], 
-      "posfire_date_range": ["2023-07-01", "2023-12-31"]
+        geometry: drawnGeometry || geoJsonLayerGroup.toGeoJSON().features[0].geometry,
+        prefire_date_range: [prefireStart, prefireEnd],
+        posfire_date_range: [postfireStart, postfireEnd]
     };
 
     try {
-      const response = await fetch('http://localhost:8000/process-test/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(testData)
-      });
-  
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-  
-      const data = await response.json();
-      console.log('Processing started, job ID:', data.job_id);
-      
-      // Start polling for results
-      pollForResults(data.job_id);
+        const response = await fetch('http://localhost:8000/process-test/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(testData)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Processing started, job ID:', data.job_id);
+
+        // Handle URL response with better error checking
+        if (data.url) {
+            try {
+                const resultLayer = L.tileLayer(data.url, {
+                    opacity: 0.7,
+                    errorTileUrl: 'path/to/error-tile.png',
+                    // Add error handling for tile loading
+                    onError: function(e) {
+                        console.error('Error loading tile layer:', e);
+                        alert('Error loading result layer. Please try again.');
+                        resultLayerGroup.removeLayer(this);
+                    }
+                });
+                
+                // Test the tile service before adding to map
+                const testTile = new Image();
+                testTile.onerror = () => {
+                    alert('Error: Unable to load result tiles. The service may be unavailable.');
+                };
+                testTile.onload = () => {
+                    resultLayer.addTo(resultLayerGroup);
+                };
+                testTile.src = data.url.replace('{z}/{x}/{y}', '0/0/0');
+            } catch (error) {
+                console.error('Error creating tile layer:', error);
+                alert('Error displaying results. Please try again.');
+            }
+        }
+        
+        pollForResults(data.job_id);
     } catch (error) {
-      console.error('Error starting test process:', error);
-      statusIcon.innerHTML = '<i class="fas fa-times"></i>'; // Change icon to indicate error
-      statusIcon.style.color = 'red'; // Change color to red to signify an error
-      testButton.disabled = false; // Re-enable the button
+        console.error('Error starting test process:', error);
+        statusIcon.innerHTML = '<i class="fas fa-times"></i>';
+        statusIcon.style.color = 'red';
+        testButton.disabled = false;
+        alert(`Error: ${error.message}`);
     }
-  }
+}
 
 // Function to poll for results
 function pollForResults(jobId) {
@@ -288,12 +331,5 @@ function pollForResults(jobId) {
     }, 2000);
 }
   
-// Add event listener when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    const testButton = document.getElementById('test-process-button');
-    if (testButton) {
-      testButton.addEventListener('click', sendTestProcessingRequest);
-    }
-});
 
 
