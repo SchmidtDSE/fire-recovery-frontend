@@ -257,7 +257,6 @@ async function sendTestProcessingRequest() {
     }
 }
 
-// Function to poll for results
 async function pollForResults(jobId) {
     console.log(`Polling for results of job: ${jobId}`);
     const statusIcon = document.getElementById('process-status');
@@ -274,35 +273,35 @@ async function pollForResults(jobId) {
             const result = await response.json();
             console.log('Current status:', result);
             
-            if (result.status === 'completed') {
+            if (result.status === 'completed' || result.status === 'complete') {  // Added 'complete' check
                 clearInterval(pollInterval);
                 statusIcon.innerHTML = '<i class="fas fa-check"></i>';
                 statusIcon.style.color = 'green';
                 testButton.disabled = false;
 
-                // Handle the COG URL if it exists
                 if (result.cog_url) {
+                    console.log('Attempting to load COG from URL:', result.cog_url);
                     try {
-                        // Test if the COG URL is accessible
                         const cogResponse = await fetch(result.cog_url);
                         if (!cogResponse.ok) {
-                            throw new Error('COG URL is not accessible');
+                            throw new Error(`COG fetch failed with status: ${cogResponse.status}`);
                         }
 
+                        console.log('COG fetch successful, parsing data...');
                         const arrayBuffer = await cogResponse.arrayBuffer();
-                        const georaster = await parseGeoraster(arrayBuffer);
+                        console.log('Array buffer received, size:', arrayBuffer.byteLength);
                         
-                        // Clear any existing result layers
+                        const georaster = await parseGeoraster(arrayBuffer);
+                        console.log('Georaster parsed:', georaster);
+                        
                         resultLayerGroup.clearLayers();
-
-                        // Create and add the new layer
+                        
                         const resultLayer = new GeoRasterLayer({
                             georaster: georaster,
                             opacity: 0.7,
                             resolution: 256,
                             pixelValuesToColorFn: value => {
-                                // Add your color scale based on burn severity values
-                                if (value === 0) return 'transparent';
+                                if (value === null || value === undefined || value === 0) return 'transparent';
                                 if (value < 0.2) return '#ffffb2';
                                 if (value < 0.4) return '#fecc5c';
                                 if (value < 0.6) return '#fd8d3c';
@@ -311,23 +310,37 @@ async function pollForResults(jobId) {
                             }
                         });
 
+                        console.log('Adding result layer to map...');
                         resultLayer.addTo(resultLayerGroup);
-                        map.fitBounds(resultLayer.getBounds());
+                        
+                        // Check if the layer has valid bounds before fitting
+                        const bounds = resultLayer.getBounds();
+                        if (bounds && bounds.isValid()) {
+                            console.log('Fitting map to bounds:', bounds);
+                            map.fitBounds(bounds);
+                        } else {
+                            console.warn('Layer bounds not valid');
+                        }
+                        
                     } catch (error) {
-                        console.error('Error loading burn severity COG:', error);
-                        alert('Error loading burn severity layer. Please try again.');
+                        console.error('Detailed error loading burn severity COG:', error);
+                        alert(`Error loading burn severity layer: ${error.message}`);
                     }
+                } else {
+                    console.warn('No COG URL provided in the response');
                 }
             
-                // Show the metrics container and update values
-                const metricsContainer = document.getElementById('metrics-container');
-                metricsContainer.style.display = 'block';
+                // Update metrics only if data exists
+                if (result.data) {
+                    const metricsContainer = document.getElementById('metrics-container');
+                    metricsContainer.style.display = 'block';
+                    
+                    document.getElementById('fire-severity-metric').textContent = 
+                        result.data.fire_severity || 'No data available';
+                    document.getElementById('biomass-lost-metric').textContent = 
+                        result.data.biomass_lost || 'No data available';
+                }
                 
-                // Update metrics with the result data
-                document.getElementById('fire-severity-metric').textContent = result.data.fire_severity;
-                document.getElementById('biomass-lost-metric').textContent = result.data.biomass_lost;
-                
-                console.log('Processing completed successfully:', result.data);
             } else if (result.status === 'failed') {
                 clearInterval(pollInterval);
                 statusIcon.innerHTML = '<i class="fas fa-times"></i>';
@@ -336,7 +349,6 @@ async function pollForResults(jobId) {
                 console.error('Processing failed:', result.error);
                 alert('Processing failed: ' + result.error);
             }
-            // Continue polling if status is 'processing' or 'pending'
             
         } catch (error) {
             console.error('Error checking result status:', error);
@@ -348,6 +360,5 @@ async function pollForResults(jobId) {
         }
     }, 2000);
 }
-  
 
 
