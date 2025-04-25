@@ -3,6 +3,15 @@ import {vegMapCOG} from './constants.js';
 // Initialize the map
 const map = L.map('map').setView([33.8734, -115.9010], 10);
 
+map.on(L.Draw.Event.CREATED, function (event) {
+    // Clear any existing drawn layers
+    geoJsonLayerGroup.clearLayers();
+    
+    // Add the new layer
+    const layer = event.layer;
+    geoJsonLayerGroup.addLayer(layer);
+});
+
 // Define tile layers
 const streetMapLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 20,
@@ -36,6 +45,7 @@ function getGeometryFromMap() {
 
 // clean up result layers
 function cleanupResultLayers() {
+    // Only clear layers in the resultLayerGroup
     resultLayerGroup.clearLayers();
 }
 
@@ -75,16 +85,12 @@ map.addControl(drawControl);
 
 // Function to switch tile layers while preserving shapefiles
 function switchToLayer(layer) {
-    cleanupResultLayers();
+    cleanupResultLayers(); // Only cleans up result layers
     map.eachLayer(l => {
-        if (l !== layer && (l === streetMapLayer || l === satelliteLayer || l === cogLayer)) {
+        if (l !== layer && l !== geoJsonLayerGroup && (l === streetMapLayer || l === satelliteLayer || l === cogLayer)) {
             map.removeLayer(l);
         }
     });
-    // Keep the result layers visible
-    if (!map.hasLayer(resultLayerGroup)) {
-        resultLayerGroup.addTo(map);
-    }
     if (!map.hasLayer(layer)) {
         layer.addTo(map);
     }
@@ -243,28 +249,26 @@ async function sendTestProcessingRequest() {
         // Handle URL response with better error checking
         if (data.url) {
             try {
-                const resultLayer = L.tileLayer(data.url, {
-                    opacity: 0.7,
-                    errorTileUrl: 'path/to/error-tile.png',
-                    // Add error handling for tile loading
-                    onError: function(e) {
-                        console.error('Error loading tile layer:', e);
+                // Parse the COG directly using georaster
+                fetch(data.url)
+                    .then(response => response.arrayBuffer())
+                    .then(arrayBuffer => parseGeoraster(arrayBuffer))
+                    .then(georaster => {
+                        const resultLayer = new GeoRasterLayer({
+                            georaster: georaster,
+                            opacity: 0.7,
+                            resolution: 256
+                        });
+                        
+                        resultLayer.addTo(resultLayerGroup);
+                        map.fitBounds(resultLayer.getBounds());
+                    })
+                    .catch(error => {
+                        console.error('Error loading COG:', error);
                         alert('Error loading result layer. Please try again.');
-                        resultLayerGroup.removeLayer(this);
-                    }
-                });
-                
-                // Test the tile service before adding to map
-                const testTile = new Image();
-                testTile.onerror = () => {
-                    alert('Error: Unable to load result tiles. The service may be unavailable.');
-                };
-                testTile.onload = () => {
-                    resultLayer.addTo(resultLayerGroup);
-                };
-                testTile.src = data.url.replace('{z}/{x}/{y}', '0/0/0');
+                    });
             } catch (error) {
-                console.error('Error creating tile layer:', error);
+                console.error('Error creating result layer:', error);
                 alert('Error displaying results. Please try again.');
             }
         }
