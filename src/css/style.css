@@ -180,13 +180,17 @@ h3 {
 /* Container to hold both form and map */
 .form-map-container {
     display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-left: 40px;
+    /* margin-right: 24px; */
+    /* padding-top: 24px; */
 }
 
 /* Upload button, date section, and their container */
 .upload-and-date-container {
-    width: 50%;
-    padding: 20px;
-    box-sizing: border-box;
+    flex: 0 0 45%;
+    max-width: 45%;
 }
 
 /* Styling for the upload button */
@@ -194,15 +198,14 @@ h3 {
     display: inline-block;
     padding: 10px 20px;
     margin: 20px 0;
-    font-size: 1em;
+    font-size: 14pt;
     color: #000;
     background-color: #FFFDFF;
     border: 1px solid #000;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
     font-family: 'Public Sans', sans-serif;
-    font-size: 14pt;
 }
 
 .custom-file-upload:hover {
@@ -263,9 +266,71 @@ h3 {
 
 /* Map view and its buttons */
 .map-container {
-    width: 50%;
-    box-sizing: border-box;
-    position: relative;
+    flex: 0 0 50%;
+    position: sticky;
+    top: 20px;
+    height: calc(100vh - 100px);
+}
+
+#metrics-container {
+    display: none;  /* Hide by default */
+    margin-top: 20px;
+    margin-bottom: 40px;
+    padding: 20px;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+}
+
+#metrics-container h3.section-heading {
+    margin-top: 20px;
+    color: #000;
+    font-weight: bold;
+}
+
+#fire-severity-metric,
+#biomass-lost-metric,
+#date-summary {
+    margin: 10px 0;
+    padding: 10px;
+    font-size: 16px;
+    /* color: #333; */
+}
+
+.date-summary-container {
+    margin-top: 20px;
+    /* border-top: 1px solid #ddd; */
+    padding-top: 20px;
+}
+
+.upload-and-date-container.processed-state #date-form {
+    display: none;
+}
+
+/* Only show these elements when container has processed-state class */
+.upload-and-date-container.processed-state #metrics-container {
+    display: block;
+}
+
+.upload-and-date-container.processed-state .section-heading:not(.metrics-heading) {
+    display: none;  /* Hide non-metrics section headings in processed state */
+}
+
+.upload-and-date-container.processed-state #uploadStatus {
+    display: none;  /* Hide file upload confirmation in processed state */
+}
+
+/* Hide table container by default */
+#table-container {
+    display: none;
+}
+
+/* Only show table when both conditions are met:
+   1. Container is in processed state
+   2. Body has veg-map-active class */
+.veg-map-active .upload-and-date-container.processed-state #table-container {
+    display: block;
+    margin-top: 60px;
+    margin-bottom: 60px;
 }
 
 .button-container {
@@ -307,19 +372,4 @@ h3 {
 
 .date-field-container {
     width: 48%;
-}
-
-
-#metrics-container {
-    /* display: none; */
-    margin-top: 20px;
-    margin-bottom: 40px;
-}
-
-.metric-line {
-    width: 50px;
-    height: 1px;
-    background-color: black;
-    margin-left: 10px;
-    display: inline-block;
 }

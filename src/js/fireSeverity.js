@@ -85,15 +85,23 @@ map.addControl(drawControl);
 
 // Function to switch tile layers while preserving shapefiles
 function switchToLayer(layer) {
-    cleanupResultLayers(); // Only cleans up result layers
+    // Remove existing base layers but keep result layers
     map.eachLayer(l => {
-        if (l !== layer && l !== geoJsonLayerGroup && (l === streetMapLayer || l === satelliteLayer || l === cogLayer)) {
+        if (l !== resultLayerGroup && l !== geoJsonLayerGroup && 
+            (l === streetMapLayer || l === satelliteLayer || l === cogLayer)) {
             map.removeLayer(l);
         }
     });
-    if (!map.hasLayer(layer)) {
-        layer.addTo(map);
-    }
+
+    // Add the new base layer
+    layer.addTo(map);
+
+    // Ensure result layers stay on top
+    resultLayerGroup.eachLayer(l => {
+        if (l instanceof L.Layer) {
+            l.bringToFront();
+        }
+    });
 }
 
 document.querySelectorAll('.map-button').forEach(button => {
@@ -104,14 +112,21 @@ document.querySelectorAll('.map-button').forEach(button => {
         // Add 'active' class to the clicked button
         button.classList.add('active');
         
-        // Switch map layers based on the button text
+        // Get button text
         const buttonText = button.textContent.trim();
-        if (buttonText === 'Street Map') {
-            switchToLayer(streetMapLayer);
-        } else if (buttonText === 'Satellite Map') {
-            switchToLayer(satelliteLayer);
-        } else if (buttonText === 'Vegetation Map') {
+        
+        // Toggle veg-map-active class on body
+        if (buttonText === 'Vegetation Map') {
+            document.body.classList.add('veg-map-active');
+        } else {
+            document.body.classList.remove('veg-map-active');
+        }
+        
+        // Switch map layers
+        if (buttonText === 'Vegetation Map') {
             loadCOGLayer();
+        } else {
+            switchToLayer(buttonText === 'Street Map' ? streetMapLayer : satelliteLayer);
         }
     });
 });
@@ -261,7 +276,7 @@ async function pollForResults(jobId) {
     console.log(`Polling for results of job: ${jobId}`);
     const statusIcon = document.getElementById('process-status');
     const testButton = document.getElementById('test-process-button');
-    
+
     const pollInterval = setInterval(async () => {
         try {
             const response = await fetch(`http://localhost:8000/result-test/${jobId}`);
@@ -273,14 +288,62 @@ async function pollForResults(jobId) {
             const result = await response.json();
             console.log('Current status:', result);
             
-            if (result.status === 'completed' || result.status === 'complete') {  // Added 'complete' check
+            if (result.status === 'completed' || result.status === 'complete') {
                 clearInterval(pollInterval);
+                
+                // Update status icon to show success
                 statusIcon.innerHTML = '<i class="fas fa-check"></i>';
                 statusIcon.style.color = 'green';
-                testButton.disabled = false;
+                
+                // Hide the date form
+                document.getElementById('date-form').style.display = 'none';
+                
+                // Update container state
+                const container = document.querySelector('.upload-and-date-container');
+                container.classList.add('processed-state');
+                
+                // Change upload button to Start Over
+                const uploadButton = document.querySelector('label[for="uploadShapefile"]');
+                uploadButton.textContent = 'Start Over';
+                uploadButton.onclick = (e) => {
+                    e.preventDefault();
+                    resetInterface();
+                };
+                
+                // Show and update metrics container
+                const metricsContainer = document.getElementById('metrics-container');
+                metricsContainer.style.display = 'block';
+                
+                // Add date summary
+                const prefireStart = document.getElementById('prefire-start-date').value;
+                const prefireEnd = document.getElementById('prefire-end-date').value;
+                const postfireStart = document.getElementById('postfire-start-date').value;
+                const postfireEnd = document.getElementById('postfire-end-date').value;
+                
+                document.getElementById('prefire-dates').textContent = 
+                    `Prefire Dates: ${formatDate(prefireStart)} - ${formatDate(prefireEnd)}`;
+                document.getElementById('postfire-dates').textContent = 
+                    `Postfire Dates: ${formatDate(postfireStart)} - ${formatDate(postfireEnd)}`;
+                
+                // Update metrics if data exists
+                if (result.data) {
+                    const severityElement = document.getElementById('fire-severity-metric');
+                    if (result.data.fire_severity_rank && result.data.fire_severity_value) {
+                        severityElement.textContent = `${result.data.fire_severity_rank} (${result.data.fire_severity_value.toFixed(2)})`;
+                    }
+                    
+                    const biomassElement = document.getElementById('biomass-lost-metric');
+                    if (typeof result.data.biomass_lost === 'number') {
+                        biomassElement.textContent = `${result.data.biomass_lost.toFixed(1)}%`;
+                    }
+                } else {
+                    // Show placeholder if no data yet
+                    document.getElementById('fire-severity-metric').textContent = 'Processing...';
+                    document.getElementById('biomass-lost-metric').textContent = 'Processing...';
+                }
+
                 // handle loading COG
                 if (result.cog_url) {
-                    console.log('Attempting to load COG from URL:', result.cog_url);
                     try {
                         const cogResponse = await fetch(result.cog_url);
                         if (!cogResponse.ok) {
@@ -293,8 +356,6 @@ async function pollForResults(jobId) {
                         
                         const georaster = await parseGeoraster(arrayBuffer);
                         console.log('Georaster parsed:', georaster);
-                        
-                        resultLayerGroup.clearLayers();
                         
                         const resultLayer = new GeoRasterLayer({
                             georaster: georaster,
@@ -310,9 +371,16 @@ async function pollForResults(jobId) {
                             }
                         });
 
-                        console.log('Adding result layer to map...');
+                        resultLayerGroup.clearLayers();
                         resultLayer.addTo(resultLayerGroup);
                         
+                        // Force the result layer to the top
+                        map.eachLayer(l => {
+                            if (l === resultLayerGroup) {
+                                l.eachLayer(resultL => resultL.bringToFront());
+                            }
+                        });
+
                         // Check if the layer has valid bounds before fitting
                         const bounds = resultLayer.getBounds();
                         if (bounds && bounds.isValid()) {
@@ -329,30 +397,6 @@ async function pollForResults(jobId) {
                 } else {
                     console.warn('No COG URL provided in the response');
                 }
-            
-                // Update metrics only if data exists
-                if (result.data) {
-                    const metricsContainer = document.getElementById('metrics-container');
-                    metricsContainer.style.display = 'block';
-                    
-                    // Update fire severity metric with both rank and value
-                    const severityElement = document.getElementById('fire-severity-metric');
-                    if (result.data.fire_severity_rank && result.data.fire_severity_value) {
-                        severityElement.textContent = `${result.data.fire_severity_rank} (${result.data.fire_severity_value.toFixed(2)})`;
-                    } else {
-                        severityElement.textContent = 'No data available';
-                    }
-                    
-                    // Update biomass lost metric with formatted percentage
-                    const biomassElement = document.getElementById('biomass-lost-metric');
-                    if (typeof result.data.biomass_lost === 'number') {
-                        biomassElement.textContent = `${result.data.biomass_lost.toFixed(1)}%`;
-                    } else {
-                        biomassElement.textContent = 'No data available';
-                    }
-                }
-                
-                
             } else if (result.status === 'failed') {
                 clearInterval(pollInterval);
                 statusIcon.innerHTML = '<i class="fas fa-times"></i>';
@@ -367,10 +411,65 @@ async function pollForResults(jobId) {
             clearInterval(pollInterval);
             statusIcon.innerHTML = '<i class="fas fa-times"></i>';
             statusIcon.style.color = 'red';
-            testButton.disabled = false;
+            testButton.disabled = false; // Using the already defined variable
             alert('Error checking process status: ' + error.message);
         }
     }, 2000);
 }
 
 
+function resetInterface() {
+    // Remove processed state
+    const container = document.querySelector('.upload-and-date-container');
+    container.classList.remove('processed-state');
+    
+    // Reset and show date form
+    const dateForm = document.getElementById('date-form');
+    dateForm.reset();
+    dateForm.style.display = 'block';
+    
+    // Reset file input
+    const fileInput = document.getElementById('uploadShapefile');
+    fileInput.value = '';
+    fileInput.style.display = 'none';
+    document.getElementById('uploadStatus').textContent = '';
+    
+    // Reset upload button
+    const uploadButton = document.querySelector('label[for="uploadShapefile"]');
+    uploadButton.textContent = 'Upload Shapefile';
+    uploadButton.style.display = 'inline-block';
+    
+    // Reset process button
+    const testButton = document.getElementById('test-process-button');
+    testButton.textContent = 'Get Burn Metrics';
+    testButton.onclick = sendTestProcessingRequest;
+    testButton.disabled = false;
+    
+    // Reset status icon
+    const statusIcon = document.getElementById('process-status');
+    statusIcon.innerHTML = '';
+    
+    // Hide metrics
+    document.getElementById('metrics-container').style.display = 'none';
+    
+    // Clear map layers
+    cleanupResultLayers();
+    geoJsonLayerGroup.clearLayers();
+    
+    // Clear date summary
+    document.getElementById('prefire-dates').textContent = '';
+    document.getElementById('postfire-dates').textContent = '';
+    
+    // Hide veg table
+    document.body.classList.remove('veg-map-active');
+}
+
+// Add this helper function for date formatting
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: '2-digit'
+    });
+}
