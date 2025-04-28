@@ -423,34 +423,62 @@ function resetInterface() {
     const container = document.querySelector('.upload-and-date-container');
     container.classList.remove('processed-state');
     
-    // Reset and show date form
-    const dateForm = document.getElementById('date-form');
-    dateForm.reset();
-    dateForm.style.display = 'block';
+    // Reset form inputs
+    document.getElementById('date-form').reset();
+    document.getElementById('date-form').style.display = 'block';
     
-    // Reset file input
+    // Reset file input and its label
     const fileInput = document.getElementById('uploadShapefile');
-    fileInput.value = '';
-    fileInput.style.display = 'none';
-    document.getElementById('uploadStatus').textContent = '';
-    
-    // Reset upload button
     const uploadButton = document.querySelector('label[for="uploadShapefile"]');
+    
+    // Remove old event listener by cloning and replacing the input
+    const newFileInput = fileInput.cloneNode(true);
+    fileInput.parentNode.replaceChild(newFileInput, fileInput);
+    
+    // Add new event listener to the new input
+    newFileInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        const uploadStatus = document.getElementById('uploadStatus');
+
+        if (!file || !file.name.endsWith('.zip')) {
+            uploadStatus.textContent = 'File upload failed. Please upload a valid shapefile.';
+            uploadStatus.style.color = 'red';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            shp(e.target.result).then(function(data) {
+                geoJsonLayerGroup.clearLayers();
+                L.geoJSON(data, { style: geoJsonStyle }).addTo(geoJsonLayerGroup);
+                uploadStatus.textContent = `${file.name} was uploaded successfully.`;
+                uploadStatus.style.color = 'black';
+            }).catch(function(error) {
+                console.error("Error while parsing shapefile:", error);
+                uploadStatus.textContent = "Upload failed. Please try again.";
+                uploadStatus.style.color = 'red';
+            });
+        };
+        reader.readAsArrayBuffer(file);
+    });
+    
+    // Reset upload button appearance
     uploadButton.textContent = 'Upload Shapefile';
     uploadButton.style.display = 'inline-block';
+    uploadButton.onclick = null;
     
-    // Reset process button
-    const testButton = document.getElementById('test-process-button');
-    testButton.textContent = 'Get Burn Metrics';
-    testButton.onclick = sendTestProcessingRequest;
-    testButton.disabled = false;
-    
-    // Reset status icon
+    // Clear status messages
+    document.getElementById('uploadStatus').textContent = '';
     const statusIcon = document.getElementById('process-status');
     statusIcon.innerHTML = '';
     
     // Hide metrics
     document.getElementById('metrics-container').style.display = 'none';
+    
+    // Reset process button
+    const testButton = document.getElementById('test-process-button');
+    testButton.textContent = 'Get Burn Metrics';
+    testButton.disabled = false;
     
     // Clear map layers
     cleanupResultLayers();
