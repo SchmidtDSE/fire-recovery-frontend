@@ -291,7 +291,7 @@ h3 {
 #fire-severity-metric,
 #biomass-lost-metric,
 #date-summary {
-    margin-top: 30px
+    margin-top: 30px;
     margin: 10px 0;
     padding: 10px;
     font-size: 16px;

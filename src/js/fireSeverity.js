@@ -363,11 +363,16 @@ async function pollForResults(jobId) {
                             resolution: 256,
                             pixelValuesToColorFn: value => {
                                 if (value === null || value === undefined || value === 0) return 'transparent';
-                                if (value < 0.2) return '#ffffb2';
-                                if (value < 0.4) return '#fecc5c';
-                                if (value < 0.6) return '#fd8d3c';
-                                if (value < 0.8) return '#f03b20';
-                                return '#bd0026';
+                                if (value < 0.1) return '#F0F921'; // bright yellow
+                                if (value < 0.2) return '#FDC328';
+                                if (value < 0.3) return '#F89441';
+                                if (value < 0.4) return '#E56B5D';
+                                if (value < 0.5) return '#CB4679';
+                                if (value < 0.6) return '#A82296';
+                                if (value < 0.7) return '#7D03A8';
+                                if (value < 0.8) return '#4B03A1';
+                                if (value < 0.9) return '#0D0887'; // darkest purple
+                                return '#0D0887';
                             }
                         });
 
