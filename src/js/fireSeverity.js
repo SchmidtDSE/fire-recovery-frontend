@@ -246,7 +246,7 @@ async function sendTestProcessingRequest() {
     };
 
     try {
-        const response = await fetch('http://localhost:8000/process-test/', {
+        const response = await fetch('http://localhost:8000/process/analyze_fire_severity', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
