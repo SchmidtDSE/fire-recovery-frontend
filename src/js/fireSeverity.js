@@ -241,16 +241,16 @@ async function sendTestProcessingRequest() {
 
     // Format the dates as strings (which the backend expects)
     const testData = {
+        fire_event_name: "fire_" + new Date().getTime(), // Generate unique fire event name
         geometry: {
-            // The geometry object should be wrapped in an additional property
             geometry: drawnGeometry || geoJsonLayerGroup.toGeoJSON().features[0].geometry
         },
         prefire_date_range: [
-            prefireStart.toString(),  // Convert to string
+            prefireStart.toString(),
             prefireEnd.toString()
         ],
         postfire_date_range: [
-            postfireStart.toString(), // Convert to string
+            postfireStart.toString(),
             postfireEnd.toString()
         ]
     };
@@ -266,17 +266,22 @@ async function sendTestProcessingRequest() {
             body: JSON.stringify(testData)
         });
 
-        // Add better error handling
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
+            const errorData = await response.json();
+            if (errorData.detail) {
+                // Handle validation error
+                const errorMessage = errorData.detail
+                    .map(err => `${err.msg} (${err.loc.join('.')})`).join('\n');
+                throw new Error(errorMessage);
+            } else {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
         }
 
         const data = await response.json();
-        console.log('Request data:', testData); // Log what we're sending
-        console.log('Response data:', data);    // Log what we receive
+        console.log('Response data:', data);
 
-        pollForResults(data.job_id);
+        pollForResults(data.job_id, data.fire_event_name);
     } catch (error) {
         console.error('Error starting test process:', error);
         statusIcon.innerHTML = '<i class="fas fa-times"></i>';
@@ -286,17 +291,40 @@ async function sendTestProcessingRequest() {
     }
 }
 
-async function pollForResults(jobId) {
-    console.log(`Polling for results of job: ${jobId}`);
+async function pollForResults(job_id, fireEventName) {
+    console.log(`Polling for results of job: ${job_id}`);
     const statusIcon = document.getElementById('process-status');
     const testButton = document.getElementById('test-process-button');
 
+    // Store fire event name in a variable that persists between polling attempts
+    const fireEventName = testData.fire_event_name;
+
     const pollInterval = setInterval(async () => {
         try {
-            const response = await fetch(`http://localhost:8000/result-test/${jobId}`);
-            
+            // Update to new endpoint structure
+            const response = await fetch(
+                `http://localhost:8000/result/analyze_fire_severity/${fireEventName}/${job_id}`, 
+                {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors'
+                }
+                
+            );
+            console.log("working!?", response);
+
             if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    // Handle validation error
+                    const errorMessage = errorData.detail
+                        .map(err => `${err.msg} (${err.loc.join('.')})`).join('\n');
+                    throw new Error(errorMessage);
+                } else {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
             }
             
             const result = await response.json();
@@ -430,7 +458,7 @@ async function pollForResults(jobId) {
             clearInterval(pollInterval);
             statusIcon.innerHTML = '<i class="fas fa-times"></i>';
             statusIcon.style.color = 'red';
-            testButton.disabled = false; // Using the already defined variable
+            testButton.disabled = false;
             alert('Error checking process status: ' + error.message);
         }
     }, 2000);
