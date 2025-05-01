@@ -239,29 +239,43 @@ async function sendTestProcessingRequest() {
         return;
     }
 
+    // Format the dates as strings (which the backend expects)
     const testData = {
-        geometry: drawnGeometry || geoJsonLayerGroup.toGeoJSON().features[0].geometry,
-        prefire_date_range: [prefireStart, prefireEnd],
-        posfire_date_range: [postfireStart, postfireEnd]
+        geometry: {
+            // The geometry object should be wrapped in an additional property
+            geometry: drawnGeometry || geoJsonLayerGroup.toGeoJSON().features[0].geometry
+        },
+        prefire_date_range: [
+            prefireStart.toString(),  // Convert to string
+            prefireEnd.toString()
+        ],
+        postfire_date_range: [
+            postfireStart.toString(), // Convert to string
+            postfireEnd.toString()
+        ]
     };
 
     try {
         const response = await fetch('http://localhost:8000/process/analyze_fire_severity', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
+            mode: 'cors',
             body: JSON.stringify(testData)
         });
 
+        // Add better error handling
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
         }
 
         const data = await response.json();
-        console.log('Processing started, job ID:', data.job_id);
+        console.log('Request data:', testData); // Log what we're sending
+        console.log('Response data:', data);    // Log what we receive
 
-        
         pollForResults(data.job_id);
     } catch (error) {
         console.error('Error starting test process:', error);
