@@ -241,7 +241,7 @@ async function sendTestProcessingRequest() {
 
     // Format the dates as strings (which the backend expects)
     const testData = {
-        fire_event_name: "fire_" + new Date().getTime(), // Generate unique fire event name
+        fire_event_name: "MN_Geo", // Generate unique fire event name
         geometry: {
             geometry: drawnGeometry || geoJsonLayerGroup.toGeoJSON().features[0].geometry
         },
@@ -278,12 +278,12 @@ async function sendTestProcessingRequest() {
             }
         }
 
-        const data = await response.json();
-        console.log('Response data:', data);
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
 
-        pollForResults(data.job_id, data.fire_event_name);
+        pollForResults(responseData.job_id, testData.fire_event_name);
     } catch (error) {
-        console.error('Error starting test process:', error);
+        console.error('Error starting process:', error);
         statusIcon.innerHTML = '<i class="fas fa-times"></i>';
         statusIcon.style.color = 'red';
         testButton.disabled = false;
@@ -296,8 +296,6 @@ async function pollForResults(job_id, fireEventName) {
     const statusIcon = document.getElementById('process-status');
     const testButton = document.getElementById('test-process-button');
 
-    // Store fire event name in a variable that persists between polling attempts
-    const fireEventName = testData.fire_event_name;
 
     const pollInterval = setInterval(async () => {
         try {
