@@ -375,3 +375,38 @@ h3 {
 .date-field-container {
     width: 48%;
 }
+
+/* Refine phase */
+.refinement-instructions {
+    margin: 20px 0;
+    font-size: 14pt;
+    line-height: 1.4;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.action-button {
+    flex: 1;
+    padding: 10px 20px;
+    font-size: 14pt;
+    color: #000;
+    background-color: #FFFDFF;
+    border: 1px solid #000;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Public Sans', sans-serif;
+}
+
+.action-button:hover {
+    background-color: #BBB7AD;
+}
+
+.action-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}

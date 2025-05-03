@@ -10,6 +10,8 @@ map.on(L.Draw.Event.CREATED, function (event) {
     // Add the new layer
     const layer = event.layer;
     geoJsonLayerGroup.addLayer(layer);
+    hasDrawnRefinement = true;
+    document.getElementById('refine-button').disabled = false;
 });
 
 // Define tile layers
@@ -27,6 +29,8 @@ const satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}
 // Add default layer (Street Map) to the map
 streetMapLayer.addTo(map);
 
+let currentFireEventName = null;
+let hasDrawnRefinement = false;
 let cogLayer;
 
 // Create a LayerGroup for GeoJSON data
@@ -240,7 +244,7 @@ async function sendTestProcessingRequest() {
     }
 
     // Format the dates as strings (which the backend expects)
-    const testData = {
+    const fireSevData = {
         fire_event_name: "MN_Geo", // Generate unique fire event name
         geometry: {
             geometry: drawnGeometry || geoJsonLayerGroup.toGeoJSON().features[0].geometry
@@ -263,7 +267,7 @@ async function sendTestProcessingRequest() {
                 'Accept': 'application/json'
             },
             mode: 'cors',
-            body: JSON.stringify(testData)
+            body: JSON.stringify(fireSevData)
         });
 
         if (!response.ok) {
@@ -281,7 +285,7 @@ async function sendTestProcessingRequest() {
         const responseData = await response.json();
         console.log('Response data:', responseData);
 
-        pollForResults(responseData.job_id, testData.fire_event_name);
+        pollForResults(responseData.job_id, fireSevData.fire_event_name);
     } catch (error) {
         console.error('Error starting process:', error);
         statusIcon.innerHTML = '<i class="fas fa-times"></i>';
@@ -335,24 +339,23 @@ async function pollForResults(job_id, fireEventName) {
                 statusIcon.innerHTML = '<i class="fas fa-check"></i>';
                 statusIcon.style.color = 'green';
                 
-                // Hide the date form
+                currentFireEventName = fireEventName;
+                
+                // Hide the date form and upload button
                 document.getElementById('date-form').style.display = 'none';
+                document.querySelector('label[for="uploadShapefile"]').style.display = 'none';
                 
-                // Update container state
-                const container = document.querySelector('.upload-and-date-container');
-                container.classList.add('processed-state');
+                // Show refinement options
+                document.getElementById('refinement-container').style.display = 'block';
+                document.getElementById('refine-button').disabled = !hasDrawnRefinement;
                 
-                // Change upload button to Start Over
-                const uploadButton = document.querySelector('label[for="uploadShapefile"]');
-                uploadButton.textContent = 'Start Over';
-                uploadButton.onclick = (e) => {
-                    e.preventDefault();
-                    resetInterface();
-                };
-                
-                // Show and update metrics container
+                // Show metrics container but only show date summary
                 const metricsContainer = document.getElementById('metrics-container');
                 metricsContainer.style.display = 'block';
+                
+                // Hide severity and biomass metrics initially
+                document.getElementById('fire-severity-metric').style.display = 'none';
+                document.getElementById('biomass-lost-metric').style.display = 'none';
                 
                 // Add date summary
                 const prefireStart = document.getElementById('prefire-start-date').value;
@@ -365,21 +368,16 @@ async function pollForResults(job_id, fireEventName) {
                 document.getElementById('postfire-dates').textContent = 
                     `Postfire Dates: ${formatDate(postfireStart)} - ${formatDate(postfireEnd)}`;
                 
-                // Update metrics if data exists
+                // Store metrics data for later use
                 if (result.data) {
-                    const severityElement = document.getElementById('fire-severity-metric');
                     if (result.data.fire_severity_rank && result.data.fire_severity_value) {
-                        severityElement.textContent = `${result.data.fire_severity_rank} (${result.data.fire_severity_value.toFixed(2)})`;
+                        document.getElementById('fire-severity-metric').textContent = 
+                            `${result.data.fire_severity_rank} (${result.data.fire_severity_value.toFixed(2)})`;
                     }
-                    
-                    const biomassElement = document.getElementById('biomass-lost-metric');
                     if (typeof result.data.biomass_lost === 'number') {
-                        biomassElement.textContent = `${result.data.biomass_lost.toFixed(1)}%`;
+                        document.getElementById('biomass-lost-metric').textContent = 
+                            `${result.data.biomass_lost.toFixed(1)}%`;
                     }
-                } else {
-                    // Show placeholder if no data yet
-                    document.getElementById('fire-severity-metric').textContent = 'Processing...';
-                    document.getElementById('biomass-lost-metric').textContent = 'Processing...';
                 }
 
                 // handle loading COG
@@ -399,7 +397,7 @@ async function pollForResults(job_id, fireEventName) {
                         
                         const resultLayer = new GeoRasterLayer({
                             georaster: georaster,
-                            opacity: 0.7,
+                            opacity: 1,
                             resolution: 256,
                             pixelValuesToColorFn: value => {
                                 if (value === null || value === undefined || value === 0) return 'transparent';
@@ -461,6 +459,176 @@ async function pollForResults(job_id, fireEventName) {
         }
     }, 2000);
 }
+
+async function pollForRefinementResults(jobId, fireEventName) {
+    console.log(`Polling for refinement results of job: ${jobId}`);
+    const statusIcon = document.getElementById('process-status');
+    const refineButton = document.getElementById('refine-button');
+
+    const pollInterval = setInterval(async () => {
+        try {
+            const response = await fetch(
+                `http://localhost:8000/result/refine/${fireEventName}/${jobId}`, 
+                {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors'
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    throw new Error(errorData.detail
+                        .map(err => `${err.msg} (${err.loc.join('.')})`).join('\n'));
+                }
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('Refinement status:', result);
+            
+            if (result.status === 'completed' || result.status === 'complete') {
+                clearInterval(pollInterval);
+                
+                // Update status icon to show success
+                statusIcon.innerHTML = '<i class="fas fa-check"></i>';
+                statusIcon.style.color = 'green';
+                
+                // Clear previous COG layer
+                resultLayerGroup.clearLayers();
+                
+                // Load new refined COG
+                if (result.refined_geojson_url) {
+                    try {
+                        const cogResponse = await fetch(result.refined_geojson_url);
+                        if (!cogResponse.ok) {
+                            throw new Error(`Refined COG fetch failed with status: ${cogResponse.status}`);
+                        }
+
+                        const arrayBuffer = await cogResponse.arrayBuffer();
+                        const georaster = await parseGeoraster(arrayBuffer);
+                        
+                        const refinedLayer = new GeoRasterLayer({
+                            georaster: georaster,
+                            opacity: 1,
+                            resolution: 256,
+                            pixelValuesToColorFn: value => {
+                                if (value === null || value === undefined || value === 0) return 'transparent';
+                                if (value < 0.1) return '#F0F921';
+                                if (value < 0.2) return '#FDC328';
+                                if (value < 0.3) return '#F89441';
+                                if (value < 0.4) return '#E56B5D';
+                                if (value < 0.5) return '#CB4679';
+                                if (value < 0.6) return '#A82296';
+                                if (value < 0.7) return '#7D03A8';
+                                if (value < 0.8) return '#4B03A1';
+                                if (value < 0.9) return '#0D0887';
+                                return '#0D0887';
+                            }
+                        });
+
+                        refinedLayer.addTo(resultLayerGroup);
+                        
+                        // Fit map to new bounds
+                        const bounds = refinedLayer.getBounds();
+                        if (bounds && bounds.isValid()) {
+                            map.fitBounds(bounds);
+                        }
+                        // Show metrics after successful refinement
+                        document.getElementById('fire-severity-metric').style.display = 'block';
+                        document.getElementById('biomass-lost-metric').style.display = 'block';
+                        
+                        // Disable further refinement
+                        document.getElementById('refine-button').disabled = true;
+                        document.getElementById('accept-button').disabled = true;
+                    } catch (error) {
+                        console.error('Error loading refined COG:', error);
+                        alert(`Error loading refined boundary: ${error.message}`);
+                    }
+                }
+
+                // Reset refinement drawing state
+                hasDrawnRefinement = false;
+                refineButton.disabled = true;
+                
+            } else if (result.status === 'failed') {
+                clearInterval(pollInterval);
+                statusIcon.innerHTML = '<i class="fas fa-times"></i>';
+                statusIcon.style.color = 'red';
+                refineButton.disabled = false;
+                alert('Refinement processing failed: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error checking refinement status:', error);
+            clearInterval(pollInterval);
+            statusIcon.innerHTML = '<i class="fas fa-times"></i>';
+            statusIcon.style.color = 'red';
+            refineButton.disabled = false;
+            alert('Error checking refinement status: ' + error.message);
+        }
+    }, 2000);
+}
+
+
+async function submitRefinement(refinedGeometry) {
+    const refinementData = {
+        fire_event_name: currentFireEventName,
+        refine_geojson: {
+            geometry: refinedGeometry
+        }
+    };
+
+    try {
+        const response = await fetch('http://localhost:8000/process/refine', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            mode: 'cors',
+            body: JSON.stringify(refinementData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            if (errorData.detail) {
+                throw new Error(errorData.detail
+                    .map(err => `${err.msg} (${err.loc.join('.')})`).join('\n'));
+            }
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        pollForRefinementResults(data.job_id, data.fire_event_name);
+    } catch (error) {
+        console.error('Error submitting refinement:', error);
+        alert('Error submitting refinement: ' + error.message);
+    }
+}
+
+document.getElementById('refine-button').addEventListener('click', () => {
+    if (!hasDrawnRefinement) {
+        alert('Please draw a refined boundary on the map');
+        return;
+    }
+    const refinedGeometry = getGeometryFromMap();
+    if (refinedGeometry) {
+        submitRefinement(refinedGeometry);
+    }
+});
+
+document.getElementById('accept-button').addEventListener('click', () => {
+    // Show metrics
+    document.getElementById('fire-severity-metric').style.display = 'block';
+    document.getElementById('biomass-lost-metric').style.display = 'block';
+    
+    // Disable refinement options
+    document.getElementById('refine-button').disabled = true;
+    document.getElementById('accept-button').disabled = true;
+});
 
 
 function resetInterface() {
@@ -535,6 +703,13 @@ function resetInterface() {
     
     // Hide veg table
     document.body.classList.remove('veg-map-active');
+
+    // Reset refinement state
+    hasDrawnRefinement = false;
+    currentFireEventName = null;
+    document.getElementById('refinement-container').style.display = 'none';
+    document.getElementById('refine-button').disabled = true;
+    document.getElementById('accept-button').disabled = false;
 }
 
 // Add this helper function for date formatting
