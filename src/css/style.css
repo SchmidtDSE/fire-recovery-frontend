@@ -370,10 +370,31 @@ h3 {
 .date-row {
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px; /* Gap between start and end date fields */
 }
 
-.date-field-container {
-    width: 48%;
+/* Add this new style for spacing between Pre and Post sections */
+.date-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Matches the gap between date fields */
+}
+
+/* When container is less than 600px, stack vertically */
+@media (max-width: 600px) {
+    .date-field-container {
+        width: 100%;
+    }
+    
+    .date-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .date-form {
+        gap: 15px; /* Match the gap used in date-row for consistency */
+    }
 }
 
 /* Refine phase */

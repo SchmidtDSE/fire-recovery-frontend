@@ -341,6 +341,19 @@ async function pollForResults(job_id, fireEventName) {
                 
                 currentFireEventName = fireEventName;
                 
+                // Hide upload status (file name)
+                document.getElementById('uploadStatus').style.display = 'none';
+                
+                // Hide the date range header
+                const dateRangeHeaders = document.querySelectorAll('h3');
+                dateRangeHeaders.forEach(header => {
+                    if (header.textContent === 'Set date range for fire:' || 
+                        header.textContent === 'Average Fire Severity:' ||
+                        header.textContent === 'Hectares of Cover Class Lost:') {
+                        header.style.display = 'none';
+                    }
+                });
+
                 // Hide the date form and upload button
                 document.getElementById('date-form').style.display = 'none';
                 document.querySelector('label[for="uploadShapefile"]').style.display = 'none';
@@ -480,11 +493,21 @@ async function pollForRefinementResults(jobId, fireEventName) {
 
             if (!response.ok) {
                 const errorData = await response.json();
+                let errorMessage = `HTTP error! Status: ${response.status}`;
+                
+                // Handle different error response formats
                 if (errorData.detail) {
-                    throw new Error(errorData.detail
-                        .map(err => `${err.msg} (${err.loc.join('.')})`).join('\n'));
+                    if (Array.isArray(errorData.detail)) {
+                        errorMessage = errorData.detail
+                            .map(err => `${err.msg} (${err.loc.join('.')})`).join('\n');
+                    } else {
+                        errorMessage = errorData.detail.toString();
+                    }
+                } else if (errorData.message) {
+                    errorMessage = errorData.message;
                 }
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                
+                throw new Error(errorMessage);
             }
             
             const result = await response.json();
@@ -594,11 +617,20 @@ async function submitRefinement(refinedGeometry) {
 
         if (!response.ok) {
             const errorData = await response.json();
+            let errorMessage = `HTTP error! Status: ${response.status}`;
+            
             if (errorData.detail) {
-                throw new Error(errorData.detail
-                    .map(err => `${err.msg} (${err.loc.join('.')})`).join('\n'));
+                if (Array.isArray(errorData.detail)) {
+                    errorMessage = errorData.detail
+                        .map(err => `${err.msg} (${err.loc.join('.')})`).join('\n');
+                } else {
+                    errorMessage = errorData.detail.toString();
+                }
+            } else if (errorData.message) {
+                errorMessage = errorData.message;
             }
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            
+            throw new Error(errorMessage);
         }
 
         const data = await response.json();
@@ -710,6 +742,19 @@ function resetInterface() {
     document.getElementById('refinement-container').style.display = 'none';
     document.getElementById('refine-button').disabled = true;
     document.getElementById('accept-button').disabled = false;
+
+    // Restore visibility of upload status
+    document.getElementById('uploadStatus').style.display = 'block';
+    
+    // Restore visibility of headers
+    const dateRangeHeaders = document.querySelectorAll('h3');
+    dateRangeHeaders.forEach(header => {
+        if (header.textContent === 'Set date range for fire:' || 
+            header.textContent === 'Average Fire Severity:' ||
+            header.textContent === 'Hectares of Cover Class Lost:') {
+            header.style.display = 'block';
+        }
+    });
 }
 
 // Add this helper function for date formatting
