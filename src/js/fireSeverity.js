@@ -1,4 +1,4 @@
-import {vegMapCOG} from './constants.js';
+import {vegMapCOG, fireVegMatrixURL} from './constants.js';
 
 // Initialize the map
 const map = L.map('map').setView([33.8734, -115.9010], 10);
@@ -410,7 +410,7 @@ async function pollForResults(job_id, fireEventName) {
                         
                         const resultLayer = new GeoRasterLayer({
                             georaster: georaster,
-                            opacity: 1,
+                            opacity: .8,
                             resolution: 256,
                             pixelValuesToColorFn: value => {
                                 if (value === null || value === undefined || value === 0) return 'transparent';
@@ -453,6 +453,8 @@ async function pollForResults(job_id, fireEventName) {
                 } else {
                     console.warn('No COG URL provided in the response');
                 }
+
+                updateMetricsAndTable(result.data);
             } else if (result.status === 'failed') {
                 clearInterval(pollInterval);
                 statusIcon.innerHTML = '<i class="fas fa-times"></i>';
@@ -765,4 +767,71 @@ function formatDate(dateString) {
         day: '2-digit',
         year: '2-digit'
     });
+}
+
+// Add this function to fetch and process CSV data
+async function fetchFireVegMatrix() {
+    try {
+        const response = await fetch(fireVegMatrixURL);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const csvText = await response.text();
+        const rows = csvText.split('\n').map(row => row.split(','));
+        const headers = rows[0];
+        const data = rows.slice(1).filter(row => row.length > 1).map(row => {
+            const rowData = {};
+            headers.forEach((header, index) => {
+                rowData[header.trim()] = row[index]?.trim();
+            });
+            return rowData;
+        });
+
+        return data;
+    } catch (error) {
+        console.error('Error fetching CSV:', error);
+        return null;
+    }
+}
+
+// Update your table population code (add this where you handle the successful response)
+async function updateMetricsAndTable(fireData) {
+    const csvData = await fetchFireVegMatrix();
+    if (!csvData) return;
+
+    // Update metrics container
+    const metricsContainer = document.getElementById('metrics-container');
+    if (metricsContainer) {
+        // Update fire severity metric
+        const severityMetric = document.getElementById('fire-severity-metric');
+        if (severityMetric && fireData.fire_severity_value) {
+            severityMetric.textContent = `${fireData.fire_severity_rank} (${fireData.fire_severity_value.toFixed(2)})`;
+        }
+
+        // Update biomass lost metric
+        const biomassMetric = document.getElementById('biomass-lost-metric');
+        if (biomassMetric && fireData.biomass_lost) {
+            biomassMetric.textContent = `${fireData.biomass_lost.toFixed(1)}%`;
+        }
+    }
+
+    // Update table with CSV data
+    const table = $('#example').DataTable();
+    table.clear();
+
+    csvData.forEach(row => {
+        table.row.add([
+            `<div style="width: 15px; height: 15px; background-color: ${row.color || '#000000'}"></div>`,
+            row.veg_community || '',
+            row.color || '',
+            row.hectares || '',
+            row.pct_full_park || '',
+            row.pct_burn_area || '',
+            row.burn_metric_mean || '',
+            row.burn_metric_std || ''
+        ]);
+    });
+
+    table.draw();
 }
