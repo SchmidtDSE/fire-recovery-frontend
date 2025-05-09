@@ -53,6 +53,7 @@ function cleanupResultLayers() {
     resultLayerGroup.clearLayers();
 }
 
+// setup test flag functionality for quick development
 // set limits to dates to not allow dates in future to be selected
 document.addEventListener('DOMContentLoaded', (event) => {
     const today = new Date().toISOString().split('T')[0];
@@ -60,6 +61,57 @@ document.addEventListener('DOMContentLoaded', (event) => {
     document.getElementById('prefire-end-date').setAttribute('max', today);
     document.getElementById('postfire-start-date').setAttribute('max', today);
     document.getElementById('postfire-end-date').setAttribute('max', today);
+    
+    // Check for test prefill parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('prefill_for_test') && urlParams.get('prefill_for_test') === 'true') {
+        // Prefill date fields with test values
+        document.getElementById('prefire-start-date').value = '2022-06-01';
+        document.getElementById('prefire-end-date').value = '2022-06-15';
+        document.getElementById('postfire-start-date').value = '2022-07-15';
+        document.getElementById('postfire-end-date').value = '2022-07-30';
+        
+        // Add test GeoJSON polygon to the map
+        const testPolygon = {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [
+                    -116.09827589690582,
+                    33.92992500511309
+                    ],
+                    [
+                    -116.09827589690582,
+                    33.88079387580245
+                    ],
+                    [
+                    -116.01931781556678,
+                    33.88079387580245
+                    ],
+                    [
+                    -116.01931781556678,
+                    33.92992500511309
+                    ],
+                    [
+                    -116.09827589690582,
+                    33.92992500511309
+                    ]
+                ]
+            ]
+        };
+        
+        // Clear existing layers first
+        geoJsonLayerGroup.clearLayers();
+        
+        // Add the test polygon to the map with the defined style
+        L.geoJSON({ type: "Feature", geometry: testPolygon }, { 
+            style: geoJsonStyle 
+        }).addTo(geoJsonLayerGroup);
+        
+        // Fit the map to the polygon bounds
+        map.fitBounds(geoJsonLayerGroup.getBounds());
+    }
+    
     //add button event listener
     const testButton = document.getElementById('test-process-button');
     if (testButton) {
