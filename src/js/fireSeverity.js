@@ -132,6 +132,15 @@ document.querySelectorAll('.map-button').forEach(button => {
         } else {
             switchToLayer(buttonText === 'Street Map' ? streetMapLayer : satelliteLayer);
         }
+
+        // Show/hide table based on view
+        if (buttonText === 'Vegetation Map') {
+            if (document.getElementById('fire-severity-metric').style.display === 'block') {
+                document.getElementById('table-container').style.display = 'block';
+            }
+        } else {
+            document.getElementById('table-container').style.display = 'none';
+        }
     });
 });
 
@@ -569,6 +578,10 @@ async function pollForRefinementResults(jobId, fireEventName) {
                         // Disable further refinement
                         document.getElementById('refine-button').disabled = true;
                         document.getElementById('accept-button').disabled = true;
+
+                        // After successful refinement and layer loading
+                        showMetricsAndTable();
+                        
                     } catch (error) {
                         console.error('Error loading refined COG:', error);
                         alert(`Error loading refined boundary: ${error.message}`);
@@ -655,15 +668,14 @@ document.getElementById('refine-button').addEventListener('click', () => {
 });
 
 document.getElementById('accept-button').addEventListener('click', () => {
-    // Show metrics
-    document.getElementById('fire-severity-metric').style.display = 'block';
-    document.getElementById('biomass-lost-metric').style.display = 'block';
+    showMetricsAndTable();
     
     // Disable refinement options
     document.getElementById('refine-button').disabled = true;
     document.getElementById('accept-button').disabled = true;
 });
 
+document.getElementById('start-over-button').addEventListener('click', resetInterface);
 
 function resetInterface() {
     // Remove processed state
@@ -719,16 +731,23 @@ function resetInterface() {
     const statusIcon = document.getElementById('process-status');
     statusIcon.innerHTML = '';
     
-    // Hide metrics
-    document.getElementById('metrics-container').style.display = 'none';
+    // Hide metrics and table
+    document.getElementById('fire-severity-metric').style.display = 'none';
+    document.getElementById('biomass-lost-metric').style.display = 'none';
+    document.getElementById('table-container').style.display = 'none';
     
-    // Reset process button
-    const testButton = document.getElementById('test-process-button');
-    testButton.textContent = 'Get Burn Metrics';
-    testButton.disabled = false;
+    // Enable all buttons
+    document.getElementById('refine-button').disabled = false;
+    document.getElementById('accept-button').disabled = false;
+    
+    // Reset to initial state
+    document.querySelector('.upload-and-date-container').classList.remove('processed-state');
+    document.getElementById('date-form').style.display = 'block';
+    document.querySelector('label[for="uploadShapefile"]').style.display = 'block';
+    document.getElementById('refinement-container').style.display = 'none';
     
     // Clear map layers
-    cleanupResultLayers();
+    resultLayerGroup.clearLayers();
     geoJsonLayerGroup.clearLayers();
     
     // Clear date summary
@@ -834,4 +853,19 @@ async function updateMetricsAndTable(fireData) {
     });
 
     table.draw();
+}
+
+// Add this function to handle showing metrics and table
+function showMetricsAndTable() {
+    // Show metrics
+    document.getElementById('fire-severity-metric').style.display = 'block';
+    document.getElementById('biomass-lost-metric').style.display = 'block';
+    
+    // Show table only when in vegetation map view
+    const vegMapButton = Array.from(document.querySelectorAll('.map-button'))
+        .find(button => button.textContent.trim() === 'Vegetation Map');
+    
+    if (vegMapButton && vegMapButton.classList.contains('active')) {
+        document.getElementById('table-container').style.display = 'block';
+    }
 }
