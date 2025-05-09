@@ -526,9 +526,9 @@ async function pollForRefinementResults(jobId, fireEventName) {
                 resultLayerGroup.clearLayers();
                 
                 // Load new refined COG
-                if (result.refined_geojson_url) {
+                if (result.cog_url) {
                     try {
-                        const cogResponse = await fetch(result.refined_geojson_url);
+                        const cogResponse = await fetch(result.cog_url);
                         if (!cogResponse.ok) {
                             throw new Error(`Refined COG fetch failed with status: ${cogResponse.status}`);
                         }
