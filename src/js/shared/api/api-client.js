@@ -10,6 +10,7 @@ import { processErrorResponse, createPollingMechanism } from './response-parser.
  * Fire severity analysis API calls
  */
 export const analyzeFire = async (data) => {
+  debugger;
   const response = await fetch(FIRE_ENDPOINTS.ANALYZE, {
     method: 'POST',
     headers: {

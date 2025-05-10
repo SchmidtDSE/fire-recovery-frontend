@@ -89,7 +89,7 @@ export class FireView extends IFireView {
    */
   setupEventListeners() {
     // Process button
-    const processButton = document.getElementById('test-process-button');
+    const processButton = document.getElementById('process-button');
     if (processButton) {
       processButton.addEventListener('click', () => this.presenter.handleFireAnalysisSubmission());
     }
@@ -253,7 +253,7 @@ export class FireView extends IFireView {
    */
   showLoadingState() {
     const statusIcon = document.getElementById('process-status');
-    const processButton = document.getElementById('test-process-button');
+    const processButton = document.getElementById('process-button');
     
     statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     statusIcon.style.color = '#007bff';
@@ -276,7 +276,7 @@ export class FireView extends IFireView {
    */
   showErrorState(message) {
     const statusIcon = document.getElementById('process-status');
-    const processButton = document.getElementById('test-process-button');
+    const processButton = document.getElementById('process-button');
     
     statusIcon.innerHTML = '<i class="fas fa-times"></i>';
     statusIcon.style.color = 'red';
@@ -503,33 +503,48 @@ export class FireView extends IFireView {
    */
   showRefinementUI() {
     // Hide upload status (file name)
-    document.getElementById('uploadStatus').style.display = 'none';
+    const uploadStatus = document.getElementById('upload-status');
+    if (uploadStatus) uploadStatus.style.display = 'none';
     
     // Hide the date range header
     const dateRangeHeaders = document.querySelectorAll('h3');
     dateRangeHeaders.forEach(header => {
-        if (header.textContent === 'Set date range for fire:' || 
-            header.textContent === 'Average Fire Severity:' ||
-            header.textContent === 'Hectares of Cover Class Lost:') {
+      if (header.textContent === 'Set date range for fire:' || 
+          header.textContent === 'Average Fire Severity:' ||
+          header.textContent === 'Hectares of Cover Class Lost:') {
         header.style.display = 'none';
-        }
+      }
     });
 
-    // Hide the date form and upload button
-    document.getElementById('date-form').style.display = 'none';
-    document.querySelector('label[for="upload-shapefile"]').style.display = 'none';
+    // Hide the date section and upload button
+    const dateSection = document.querySelector('.date-section');
+    if (dateSection) dateSection.style.display = 'none';
+    
+    const uploadLabel = document.querySelector('label[for="upload-shapefile"]');
+    if (uploadLabel) uploadLabel.style.display = 'none';
     
     // Show refinement options
-    document.getElementById('refinement-container').style.display = 'block';
-    document.getElementById('refine-button').disabled = !this.hasDrawnRefinement;
+    const refinementContainer = document.getElementById('refinement-container');
+    if (refinementContainer) {
+      refinementContainer.style.display = 'block';
+      
+      const refineButton = document.getElementById('refine-button');
+      if (refineButton) refineButton.disabled = !this.hasDrawnRefinement;
+    }
     
-    // Show metrics container but only show date summary
-    const metricsContainer = document.getElementById('metrics-container');
-    metricsContainer.style.display = 'block';
+    // Show metrics tab instead of metrics-container
+    const metricsTab = document.getElementById('metrics-tab');
+    if (metricsTab) metricsTab.style.display = 'block';
+    
+    // Make the results panel visible since it contains the metrics tab
+    const resultsPanel = document.querySelector('.results-panel');
+    if (resultsPanel) resultsPanel.classList.remove('hidden');
     
     // Hide severity and biomass metrics initially
-    document.getElementById('fire-severity-metric').style.display = 'none';
-    document.getElementById('biomass-lost-metric').style.display = 'none';
+    const severityMetric = document.getElementById('fire-severity-metric');
+    const biomassMetric = document.getElementById('biomass-lost-metric');
+    if (severityMetric) severityMetric.style.display = 'none';
+    if (biomassMetric) biomassMetric.style.display = 'none';
   }
 
   /**
@@ -631,7 +646,7 @@ export class FireView extends IFireView {
     uploadButton.style.display = 'inline-block';
     
     // Clear status messages
-    document.getElementById('uploadStatus').textContent = '';
+    document.getElementById('upload-status').textContent = '';
     
     // Hide metrics and table
     document.getElementById('fire-severity-metric').style.display = 'none';
@@ -659,7 +674,7 @@ export class FireView extends IFireView {
     document.getElementById('refine-button').disabled = true;
 
     // Restore visibility of upload status
-    document.getElementById('uploadStatus').style.display = 'block';
+    document.getElementById('upload-status').style.display = 'block';
     
     // Restore visibility of headers
     const dateRangeHeaders = document.querySelectorAll('h3');

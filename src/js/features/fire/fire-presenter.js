@@ -80,19 +80,6 @@ export class FirePresenter extends IFirePresenter {
     this.updateMapVisualization();
   }
   
-  /**
-   * Update map visualization based on selected metric
-   */
-  updateMapVisualization() {
-    const state = this.model.getState();
-    const metric = state.fireSeverityMetric;
-    const finalAssets = state.finalAssets;
-    
-    if (finalAssets && finalAssets.cogUrl) {
-      // In a real implementation, we'd swap the URL based on the metric
-      console.log(`Changing visualization to use ${metric}`);
-    }
-  }
   
   /**
    * Handle fire analysis submission
