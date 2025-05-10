@@ -1,0 +1,125 @@
+/**
+ * CSS Variables/Custom Properties
+ * Centralized variables for consistent styling
+ */
+
+:root {
+  /* Brand colors */
+  --brand-primary: rgb(55, 8, 85);
+  --brand-secondary: rgb(39, 80, 123);
+  --brand-tertiary: rgb(31, 120, 122);
+  --brand-quaternary: rgb(52, 178, 98);
+  --brand-quinary: rgb(171, 219, 32);
+  
+  /* Fire severity visualization colors */
+  --severity-low: #F0F921;
+  --severity-low-mid: #FDC328;
+  --severity-mid: #F89441;
+  --severity-mid-high: #E56B5D;
+  --severity-high: #CB4679;
+  --severity-very-high: #A82296;
+  --severity-extreme: #7D03A8;
+  --severity-critical: #4B03A1;
+  --severity-catastrophic: #0D0887;
+  
+  /* UI colors */
+  --ui-primary: var(--brand-primary);
+  --ui-secondary: var(--brand-secondary);
+  
+  /* Grayscale */
+  --white: #ffffff;
+  --gray-100: #f8f9fa;
+  --gray-200: #e9ecef;
+  --gray-300: #dee2e6;
+  --gray-400: #ced4da;
+  --gray-500: #adb5bd;
+  --gray-600: #6c757d;
+  --gray-700: #495057;
+  --gray-800: #343a40;
+  --gray-900: #212529;
+  --black: #000000;
+  
+  /* Status colors */
+  --success: #28a745;
+  --info: #17a2b8;
+  --warning: #ffc107;
+  --danger: #dc3545;
+  
+  /* Light/dark mode variables */
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-700);
+  --text-muted: var(--gray-600);
+  --text-light: var(--white);
+  --bg-primary: var(--white);
+  --bg-secondary: var(--gray-100);
+  --bg-tertiary: var(--gray-200);
+  --border-color: var(--gray-300);
+  
+  /* Spacing */
+  --space-unit: 1rem;
+  --space-xxs: calc(0.25 * var(--space-unit));
+  --space-xs: calc(0.5 * var(--space-unit));
+  --space-sm: calc(0.75 * var(--space-unit));
+  --space-md: calc(1 * var(--space-unit));
+  --space-lg: calc(1.5 * var(--space-unit));
+  --space-xl: calc(2 * var(--space-unit));
+  --space-xxl: calc(2.5 * var(--space-unit));
+  
+  /* Typography */
+  --font-family-sans: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-family-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-family-mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  --font-size-base: 1rem;
+  --font-size-xs: calc(var(--font-size-base) * 0.75);
+  --font-size-sm: calc(var(--font-size-base) * 0.875);
+  --font-size-md: var(--font-size-base);
+  --font-size-lg: calc(var(--font-size-base) * 1.25);
+  --font-size-xl: calc(var(--font-size-base) * 1.5);
+  --font-size-xxl: calc(var(--font-size-base) * 2);
+  
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* Borders */
+  --border-radius-sm: 0.125rem;
+  --border-radius: 0.25rem;
+  --border-radius-lg: 0.5rem;
+  --border-radius-pill: 9999px;
+  --border-width-default: 1px;
+  --border-width-thick: 2px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Transitions */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 350ms;
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Z-index scale */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+  
+  /* Container max widths */
+  --container-max-sm: 540px;
+  --container-max-md: 720px;
+  --container-max-lg: 960px;
+  --container-max-xl: 1140px;
+  
+  /* Map-specific variables */
+  --map-height: 600px;
+  --map-border: var(--border-width-default) solid var(--border-color);
+  --map-control-background: rgba(255, 255, 255, 0.8);
+}

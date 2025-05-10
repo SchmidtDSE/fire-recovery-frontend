@@ -1,5 +1,5 @@
 import stateManager from './state-manager.js';
-import { FireFactory } from '../fire/FireFactory.js';
+import { FireFactory } from '../features/fire/fire-factory.js';
 import { VegetationFactory } from '../features/vegetation/veg-factory.js';
 
 /**
@@ -21,18 +21,8 @@ class App {
     const fireComponents = FireFactory.create();
     this.components.fire = fireComponents;
     
-    // Initialize vegetation impact components
-    const vegComponents = VegetationFactory.create({
-      // We'll implement a concrete view adapter later
-      // For now, use a minimal implementation
-      initializeView() {},
-      setupEventListeners() {},
-      updateVegMapTable() {},
-      showLoadingState() {},
-      showSuccessState() {},
-      showErrorState() {},
-      setPresenter(presenter) { this.presenter = presenter; }
-    });
+    // Initialize vegetation impact components with actual VegetationView
+    const vegComponents = VegetationFactory.create();
     this.components.vegetation = vegComponents;
     
     // Register components with state manager

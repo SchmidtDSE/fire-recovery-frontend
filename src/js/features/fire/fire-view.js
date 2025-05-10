@@ -1,8 +1,7 @@
-import { IFireView } from './FireContract.js';
-import { vegMapCOG } from '../constants.js';
-import { formatDate, getTodayISO } from '../utils/dateUtils.js';
-import { switchToLayer, geoJsonStyle, getGeometryFromLayerGroup } from '../utils/mapUtils.js';
-import { displayCOGLayer, loadVegetationCOGLayer } from '../utils/cogUtils.js';
+import { IFireView } from './fire-contract.js';
+import { formatDate, getTodayISO } from '../../utils/dateUtils.js';
+import { switchToLayer, geoJsonStyle, getGeometryFromLayerGroup } from '../../utils/mapUtils.js';
+import { displayCOGLayer, loadVegetationCOGLayer } from '../../utils/cogUtils.js';
 
 /**
  * Implementation of the Fire View
@@ -483,7 +482,7 @@ export class FireView extends IFireView {
     const parkUnit = state.parkUnit;
     
     // If we don't have a park unit selected, use the default vegMapCOG
-    const vegMapUrl = parkUnit?.veg_cog_url || vegMapCOG;
+    const vegMapUrl = parkUnit.veg_cog_url;
     
     loadVegetationCOGLayer(vegMapUrl, this.map, this.streetMapLayer)
         .then(layer => {

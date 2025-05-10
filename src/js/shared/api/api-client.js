@@ -1,10 +1,16 @@
-import { API_BASE_URL } from '../../core/config.js';
+import { 
+  FIRE_ENDPOINTS, 
+  REFINEMENT_ENDPOINTS, 
+  VEGETATION_ENDPOINTS, 
+  UPLOAD_ENDPOINTS 
+} from './endpoints.js';
+import { processErrorResponse, createPollingMechanism } from './response-parser.js';
 
 /**
  * Fire severity analysis API calls
  */
 export const analyzeFire = async (data) => {
-  const response = await fetch(`${API_BASE_URL}/process/analyze_fire_severity`, {
+  const response = await fetch(FIRE_ENDPOINTS.ANALYZE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -24,7 +30,7 @@ export const analyzeFire = async (data) => {
 
 export const getFireAnalysisStatus = async (fireEventName, jobId) => {
   const response = await fetch(
-    `${API_BASE_URL}/result/analyze_fire_severity/${fireEventName}/${jobId}`,
+    FIRE_ENDPOINTS.GET_ANALYSIS_RESULT(fireEventName, jobId),
     {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
@@ -44,7 +50,7 @@ export const getFireAnalysisStatus = async (fireEventName, jobId) => {
  * Boundary refinement API calls
  */
 export const submitRefinement = async (data) => {
-  const response = await fetch(`${API_BASE_URL}/process/refine`, {
+  const response = await fetch(REFINEMENT_ENDPOINTS.SUBMIT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -64,7 +70,7 @@ export const submitRefinement = async (data) => {
 
 export const getRefinementStatus = async (fireEventName, jobId) => {
   const response = await fetch(
-    `${API_BASE_URL}/result/refine/${fireEventName}/${jobId}`,
+    REFINEMENT_ENDPOINTS.GET_RESULT(fireEventName, jobId),
     {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
@@ -84,7 +90,7 @@ export const getRefinementStatus = async (fireEventName, jobId) => {
  * Vegetation impact API calls
  */
 export const resolveAgainstVegMap = async (data) => {
-  const response = await fetch(`${API_BASE_URL}/process/resolve_against_veg_map`, {
+  const response = await fetch(VEGETATION_ENDPOINTS.RESOLVE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -104,7 +110,7 @@ export const resolveAgainstVegMap = async (data) => {
 
 export const getVegMapResult = async (fireEventName, jobId) => {
   const response = await fetch(
-    `${API_BASE_URL}/result/resolve_against_veg_map/${fireEventName}/${jobId}`,
+    VEGETATION_ENDPOINTS.GET_RESULT(fireEventName, jobId),
     {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
@@ -129,7 +135,7 @@ export const uploadShapefile = async (fireEventName, shapefileData) => {
   formData.append('fire_event_name', fireEventName);
   formData.append('shapefile', shapefileData);
 
-  const response = await fetch(`${API_BASE_URL}/upload/shapefile`, {
+  const response = await fetch(UPLOAD_ENDPOINTS.SHAPEFILE, {
     method: 'POST',
     mode: 'cors',
     body: formData
@@ -149,7 +155,7 @@ export const uploadGeojson = async (fireEventName, geojsonData) => {
     geojson: geojsonData
   };
 
-  const response = await fetch(`${API_BASE_URL}/upload/geojson`, {
+  const response = await fetch(UPLOAD_ENDPOINTS.GEOJSON, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -169,52 +175,11 @@ export const uploadGeojson = async (fireEventName, geojsonData) => {
 
 /**
  * Polling utility to check for completion of long-running processes
+ * @param {Function} checkFunction - Function to call to check status
+ * @param {number} interval - Interval between checks in milliseconds
+ * @param {number} maxAttempts - Maximum number of polling attempts
+ * @returns {Promise} Promise that resolves with the result or rejects with an error
  */
 export const pollUntilComplete = (checkFunction, interval = 2000, maxAttempts = 30) => {
-  return new Promise((resolve, reject) => {
-    let attempts = 0;
-    
-    const poll = async () => {
-      try {
-        const result = await checkFunction();
-        
-        if (result.status === 'complete' || result.status === 'completed') {
-          resolve(result);
-        } else if (result.status === 'pending' || result.status === 'processing') {
-          attempts++;
-          if (attempts >= maxAttempts) {
-            reject(new Error('Maximum polling attempts reached'));
-          } else {
-            setTimeout(poll, interval);
-          }
-        } else {
-          reject(new Error(`Unexpected status: ${result.status}`));
-        }
-      } catch (error) {
-        reject(error);
-      }
-    };
-    
-    poll();
-  });
-};
-
-/**
- * Helper function to process error responses
- */
-const processErrorResponse = (errorData, status) => {
-  let errorMessage = `HTTP error! Status: ${status}`;
-  
-  if (errorData.detail) {
-    if (Array.isArray(errorData.detail)) {
-      errorMessage = errorData.detail
-        .map(err => `${err.msg} (${err.loc.join('.')})`).join('\n');
-    } else {
-      errorMessage = errorData.detail.toString();
-    }
-  } else if (errorData.message) {
-    errorMessage = errorData.message;
-  }
-  
-  return errorMessage;
+  return createPollingMechanism(checkFunction, interval, maxAttempts);
 };

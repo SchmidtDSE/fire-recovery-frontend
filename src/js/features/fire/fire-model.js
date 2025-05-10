@@ -1,5 +1,5 @@
-import * as api from '../shared/api/api-client.js';
-import { IFireModel } from './FireContract.js';
+import * as api from '../../shared/api/api-client.js';
+import { IFireModel } from './fire-contract.js';
 
 /**
  * Implementation of the Fire Model

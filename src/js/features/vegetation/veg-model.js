@@ -7,7 +7,7 @@ import { IVegetationModel } from './veg-contract.js';
 export class VegetationModel extends IVegetationModel {
   constructor() {
     super();
-    // Initial state
+    // Initial state - similar to state.js but specific to vegetation
     this.state = {
       fireEventName: null,
       parkUnit: null,
@@ -100,9 +100,10 @@ export class VegetationModel extends IVegetationModel {
     this.setProcessingStatus('processing');
     
     try {
+      // Using the api-client for backend communication
       const response = await api.resolveAgainstVegMap(data);
       
-      // Poll for results
+      // Use polling function from api-client.js
       const result = await api.pollUntilComplete(() => 
         api.getVegMapResult(response.fire_event_name, response.job_id)
       );
