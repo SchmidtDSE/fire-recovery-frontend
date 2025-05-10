@@ -1,5 +1,8 @@
+import { dispatch } from 'https://cdn.jsdelivr.net/npm/d3-dispatch@3.0.1/+esm';
+
 /**
  * Application state manager to coordinate between different features
+ * Uses d3-dispatch for event handling
  */
 class StateManager {
   constructor() {
@@ -10,8 +13,8 @@ class StateManager {
       resources: null
     };
     
-    // Listeners for state changes
-    this.listeners = [];
+    // Create dispatcher for state events
+    this.dispatch = dispatch('state_shared', 'component_registered', 'component_removed');
   }
   
   /**
@@ -22,6 +25,7 @@ class StateManager {
   registerComponent(name, component) {
     if (this.components.hasOwnProperty(name)) {
       this.components[name] = component;
+      this.dispatch.call('component_registered', this, { name, component });
     }
     return this;
   }
@@ -36,11 +40,12 @@ class StateManager {
   }
   
   /**
-   * Subscribe to state changes
+   * Subscribe to state events
+   * @param {string} eventName - Event name to subscribe to ('state_shared', 'component_registered', 'component_removed')
    * @param {Function} callback - Callback function
    */
-  subscribe(callback) {
-    this.listeners.push(callback);
+  on(eventName, callback) {
+    this.dispatch.on(eventName, callback);
     return this;
   }
   
@@ -64,14 +69,11 @@ class StateManager {
       targetComponent.updateFromFireState(state);
     }
     
-    // Notify listeners
-    this.listeners.forEach(listener => {
-      listener({
-        type: 'state_shared',
-        source,
-        target,
-        state
-      });
+    // Dispatch state_shared event
+    this.dispatch.call('state_shared', this, {
+      source,
+      target,
+      state
     });
   }
 }

@@ -1,5 +1,6 @@
 import { IVegetationView } from './veg-contract.js';
 import { PARK_UNITS } from '../../core/config.js';
+import { MapManager } from '../../shared/map/map-manager.js';
 
 /**
  * Implementation of the Vegetation View
@@ -39,17 +40,17 @@ export class VegetationView extends IVegetationView {
    * Initialize the map
    */
   initializeMap() {
-    // Initialize Leaflet map
-    this.map = L.map(this.mapContainer).setView([33.8734, -115.9010], 10);
+    // Get map manager instance
+    const mapManager = MapManager.getInstance();
     
-    // Add tile layers
-    this.baseLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(this.map);
+    // Get the shared map instance (will create if it doesn't exist)
+    this.map = mapManager.getMap();
     
-    // Create layer for vegetation data
-    this.resultLayerGroup = L.layerGroup().addTo(this.map);
+    // Get base layers from map manager
+    this.baseLayer = mapManager.streetMapLayer;
+    
+    // Create vegetation-specific layer group
+    this.resultLayerGroup = mapManager.createLayerGroup();
   }
   
   /**

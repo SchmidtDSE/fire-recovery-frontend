@@ -10,6 +10,21 @@ const COG_DIR = './COGs';
 const DEFAULT_MAP_CENTER = [33.8734, -115.9010];
 const DEFAULT_ZOOM_LEVEL = 10;
 
+// Map tile servers
+const MAP_TILES = {
+  STREET: {
+    URL: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    ATTRIBUTION: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    MAX_ZOOM: 19
+  },
+  SATELLITE: {
+    URL: 'https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    SUBDOMAINS: ['mt0', 'mt1', 'mt2', 'mt3'],
+    ATTRIBUTION: 'Imagery ©2023 Google',
+    MAX_ZOOM: 20
+  }
+};
+
 // Fire severity
 const FIRE_SEVERITY_METRICS = {
   RBR: 'Relativized Burn Ratio (RBR)',
@@ -77,6 +92,7 @@ export {
   COG_DIR,
   DEFAULT_MAP_CENTER,
   DEFAULT_ZOOM_LEVEL,
+  MAP_TILES,
   FIRE_SEVERITY_METRICS,
   ASSETS,
   PARK_UNITS,

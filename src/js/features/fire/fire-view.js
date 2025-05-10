@@ -2,6 +2,7 @@ import { IFireView } from './fire-contract.js';
 import { formatDate, getTodayISO } from '../../shared/utils/date-utils.js';
 import { displayCOGLayer, loadVegetationCOGLayer } from '../../shared/map/cog-renderer.js';
 import { getDefaultGeoJsonStyle } from '../../shared/map/draw-tools.js';
+import { MapManager } from '../../shared/map/map-manager.js';
 
 /**
  * Implementation of the Fire View
@@ -42,29 +43,21 @@ export class FireView extends IFireView {
    * Initialize the map
    */
   initializeMap() {
-    // Initialize map
-    this.map = L.map('map').setView([33.8734, -115.9010], 10);
+    // Get map manager instance
+    const mapManager = MapManager.getInstance();
     
-    // Define tile layers
-    this.streetMapLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 20,
-      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    });
+    // Get the shared map instance (will create if it doesn't exist)
+    this.map = mapManager.getMap();
     
-    this.satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      maxZoom: 20,
-      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-      attribution: 'Imagery ©2023 Google'
-    });
+    // Get base layers from map manager
+    this.streetMapLayer = mapManager.streetMapLayer;
+    this.satelliteLayer = mapManager.satelliteLayer;
     
-    // Add default layer
-    this.streetMapLayer.addTo(this.map);
+    // Create feature-specific layer groups
+    this.geoJsonLayerGroup = mapManager.createFeatureGroup();
+    this.resultLayerGroup = mapManager.createLayerGroup();
     
-    // Create layer groups
-    this.geoJsonLayerGroup = new L.FeatureGroup().addTo(this.map);
-    this.resultLayerGroup = L.layerGroup().addTo(this.map);
-    
-    // Initialize draw control
+    // Initialize draw control specific to FireView
     this.drawControl = new L.Control.Draw({
       edit: {
         featureGroup: this.geoJsonLayerGroup
@@ -90,7 +83,7 @@ export class FireView extends IFireView {
       document.getElementById('refine-button').disabled = false;
     });
   }
-  
+
   /**
    * Set up event listeners
    */

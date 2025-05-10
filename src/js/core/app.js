@@ -17,11 +17,14 @@ class App {
   initialize() {
     if (this.initialized) return;
     
-    // Initialize fire severity components
+    // Initialize fire severity components first
     const fireComponents = FireFactory.create();
     this.components.fire = fireComponents;
     
-    // Initialize vegetation impact components with actual VegetationView
+    // Initialize fire presenter first to ensure map is created
+    fireComponents.presenter.initialize();
+    
+    // Now initialize vegetation components
     const vegComponents = VegetationFactory.create();
     this.components.vegetation = vegComponents;
     
@@ -29,8 +32,7 @@ class App {
     stateManager.registerComponent('fire', fireComponents.presenter);
     stateManager.registerComponent('vegetation', vegComponents.presenter);
     
-    // Initialize presenters
-    fireComponents.presenter.initialize();
+    // Initialize vegetation presenter
     vegComponents.presenter.initialize();
     
     // Set up inter-component communication
