@@ -5,14 +5,16 @@
 
 /* Main map container */
 .map-container {
-  flex: 0 0 50%;
   position: sticky;
-  top: 20px;
-  height: calc(100vh - 100px);
+  top: var(--space-md);
+  height: var(--map-height);
+  border: var(--map-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
 }
 
 #map {
-  height: 600px;
+  height: 100%;
   width: 100%;
 }
 
