@@ -1,7 +1,6 @@
 // Update the imports at the top of the file
 import { IFirePresenter } from './FireContract.js';
 import * as api from '../utils/apiFacade.js';
-import { vegMapCOG } from '../constants.js';
 
 /**
  * Implementation of the Fire Presenter
@@ -186,37 +185,6 @@ export class FirePresenter extends IFirePresenter {
       // The view will automatically update based on model state changes
     } catch (error) {
       this.view.showErrorState(`Error submitting refinement: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Handle vegetation map resolution
-   */
-  async handleVegMapResolution() {
-    const state = this.model.getState();
-    const fireEventName = state.fireEventName;
-    const parkUnit = state.parkUnit;
-    const finalAssets = state.finalAssets;
-    
-    if (!fireEventName || !finalAssets?.cogUrl) {
-      alert('Fire event name or final COG URL not available');
-      return;
-    }
-    
-    // Get correct vegetation map URL based on park unit or use default
-    const vegMapUrl = parkUnit?.veg_cog_url || vegMapCOG;
-    
-    const resolveData = {
-      fire_event_name: fireEventName,
-      veg_cog_url: vegMapUrl,
-      fire_cog_url: finalAssets.cogUrl
-    };
-    
-    try {
-      const result = await this.model.resolveAgainstVegMap(resolveData);
-      await this.view.updateVegMapTable(result.fire_veg_matrix);
-    } catch (error) {
-      this.view.showErrorState(`Error resolving against vegetation map: ${error.message}`);
     }
   }
   

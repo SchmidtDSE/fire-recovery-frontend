@@ -1,6 +1,5 @@
-import * as api from '../utils/apiFacade.js';
+import * as api from '../shared/api/api-client.js';
 import { IFireModel } from './FireContract.js';
-import { vegMapCOG } from '../constants.js';
 
 /**
  * Implementation of the Fire Model
@@ -207,31 +206,6 @@ export class FireModel extends IFireModel {
           geojsonUrl: result.refined_geojson_url
         });
         
-      return result;
-    } catch (error) {
-      this.setProcessingStatus('error');
-      throw error;
-    }
-  }
-  
-  /**
-   * Resolve against vegetation map
-   * @param {Object} data - Resolution data
-   */
-  async resolveAgainstVegMap(data) {
-    this.setProcessingStatus('processing')
-      .setCurrentStep('resolve');
-    
-    try {
-      const response = await api.resolveAgainstVegMap(data);
-      
-      // Poll for results
-      const result = await api.pollUntilComplete(() => 
-        api.getVegMapResult(response.fire_event_name, response.job_id)
-      );
-      
-      this.setProcessingStatus('success');
-      
       return result;
     } catch (error) {
       this.setProcessingStatus('error');
