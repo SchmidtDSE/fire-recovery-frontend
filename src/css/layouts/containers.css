@@ -12,6 +12,128 @@
   margin-left: auto;
 }
 
+/* Home page navigation boxes */
+.home-nav-container {
+  display: flex;
+  justify-content: center;
+  gap: var(--info-box-gap, 60px);
+  padding-top: 60px;
+  padding-bottom: 100px;
+}
+
+.info-box {
+  background-color: black;
+  width: var(--info-box-width, 280px);
+  height: var(--info-box-height, 450px);
+  position: relative;
+  border-radius: 20px;
+}
+
+.textbox {
+  color: white;
+  position: absolute;
+  top: 0;
+  text-align: left;
+  padding: 30px;
+}
+
+.info-box h2 {
+  font-size: 24px;
+  color: white;
+  line-height: 1.2;
+  margin: 10px 0;
+  text-align: left;
+  padding-top: 20px;
+  padding-bottom: 30px;
+}
+
+/* Fire severity page container layout */
+.form-map-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-left: 40px;
+}
+
+.upload-and-date-container {
+  flex: 0 0 45%;
+  max-width: 45%;
+}
+
+/* Metrics container */
+#metrics-container {
+  display: none;
+  margin-top: 20px;
+  margin-bottom: 40px;
+  padding: 20px;
+  border-radius: 5px;
+}
+
+#metrics-container h3.section-heading {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: #000;
+  font-weight: bold;
+}
+
+#fire-severity-metric,
+#biomass-lost-metric,
+#date-summary {
+  margin-top: 30px;
+  margin: 10px 0;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.date-summary-container {
+  margin-top: 20px;
+  padding-top: 20px;
+}
+
+/* State-based display */
+.upload-and-date-container.processed-state #date-form {
+  display: none;
+}
+
+.upload-and-date-container.processed-state #metrics-container {
+  display: block;
+}
+
+.upload-and-date-container.processed-state .section-heading:not(.metrics-heading) {
+  display: none;
+}
+
+.upload-and-date-container.processed-state #uploadStatus {
+  display: none;
+}
+
+#table-container {
+  display: none;
+}
+
+.veg-map-active .upload-and-date-container.processed-state #table-container {
+  display: block;
+  margin-top: 60px;
+  margin-bottom: 60px;
+}
+
+.button-container {
+  display: flex;
+  width: 100%;
+}
+
+.refinement-instructions {
+  margin: 20px 0;
+  font-size: 14pt;
+  line-height: 1.4;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
 /* Container max widths for different screen sizes */
 @media (min-width: 576px) {
   .container {

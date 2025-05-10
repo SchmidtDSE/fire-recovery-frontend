@@ -185,18 +185,27 @@
   border-bottom-right-radius: 0;
 }
 
-/* Action buttons specific to the application */
+/* Action buttons */
 .action-button {
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: var(--space-xs) var(--space-md);
-  box-shadow: var(--shadow);
+  flex: 1;
+  padding: 10px 20px;
+  font-size: 14pt;
+  color: #000;
+  background-color: var(--input-bg-color, #FFFDFF);
+  border: 1px solid #000;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Public Sans', sans-serif;
 }
 
 .action-button:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  background-color: var(--input-hover-color, #BBB7AD);
+}
+
+.action-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 .action-button:active {

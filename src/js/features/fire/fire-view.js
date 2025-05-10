@@ -1,7 +1,7 @@
 import { IFireView } from './fire-contract.js';
-import { formatDate, getTodayISO } from '../../utils/dateUtils.js';
-import { switchToLayer, geoJsonStyle, getGeometryFromLayerGroup } from '../../utils/mapUtils.js';
-import { displayCOGLayer, loadVegetationCOGLayer } from '../../utils/cogUtils.js';
+import { formatDate, getTodayISO } from '../../shared/utils/date-utils.js';
+import { displayCOGLayer, loadVegetationCOGLayer } from '../../shared/map/cog-renderer.js';
+import { getDefaultGeoJsonStyle } from '../../shared/map/draw-tools.js';
 
 /**
  * Implementation of the Fire View
@@ -116,7 +116,7 @@ export class FireView extends IFireView {
       document.getElementById('accept-button').disabled = true;
     });
     
-    document.getElementById('start-over-button').addEventListener('click', () => {
+    document.getElementById('reset-button').addEventListener('click', () => {
       this.presenter.handleReset();
     });
     
@@ -223,7 +223,7 @@ export class FireView extends IFireView {
    * Setup shapefile upload
    */
   setupShapefileUpload() {
-    document.getElementById('uploadShapefile').addEventListener('change', (event) => {
+    document.getElementById('upload-shapefile').addEventListener('change', (event) => {
       const file = event.target.files[0];
       const uploadStatus = document.getElementById('uploadStatus');
     
@@ -237,7 +237,7 @@ export class FireView extends IFireView {
       reader.onload = (e) => {
         shp(e.target.result).then((data) => {
           this.geoJsonLayerGroup.clearLayers();
-          L.geoJSON(data, { style: this.geoJsonStyle }).addTo(this.geoJsonLayerGroup);
+          L.geoJSON(data, { style: getDefaultGeoJsonStyle() }).addTo(this.geoJsonLayerGroup);
     
           uploadStatus.textContent = `${file.name} was uploaded successfully.`;
           uploadStatus.style.color = 'black';
@@ -452,11 +452,11 @@ export class FireView extends IFireView {
         "type": "Polygon",
         "coordinates": [
             [
-            [-116.09827589690582, 33.92992500511309],
-            [-116.09827589690582, 33.88079387580245],
-            [-116.01931781556678, 33.88079387580245],
-            [-116.01931781556678, 33.92992500511309],
-            [-116.09827589690582, 33.92992500511309]
+              [-116.09827589690582, 33.92992500511309],
+              [-116.09827589690582, 33.88079387580245],
+              [-116.01931781556678, 33.88079387580245],
+              [-116.01931781556678, 33.92992500511309],
+              [-116.09827589690582, 33.92992500511309]
             ]
         ]
         };
@@ -466,7 +466,7 @@ export class FireView extends IFireView {
         
         // Add the test polygon to the map with the defined style
         L.geoJSON({ type: "Feature", geometry: testPolygon }, { 
-        style: geoJsonStyle 
+        style: getDefaultGeoJsonStyle()
         }).addTo(this.geoJsonLayerGroup);
         
         // Fit the map to the polygon bounds
@@ -524,7 +524,7 @@ export class FireView extends IFireView {
 
     // Hide the date form and upload button
     document.getElementById('date-form').style.display = 'none';
-    document.querySelector('label[for="uploadShapefile"]').style.display = 'none';
+    document.querySelector('label[for="upload-shapefile"]').style.display = 'none';
     
     // Show refinement options
     document.getElementById('refinement-container').style.display = 'block';
@@ -623,8 +623,8 @@ export class FireView extends IFireView {
     document.getElementById('date-form').style.display = 'block';
     
     // Reset file input and its label
-    const fileInput = document.getElementById('uploadShapefile');
-    const uploadButton = document.querySelector('label[for="uploadShapefile"]');
+    const fileInput = document.getElementById('upload-shapefile');
+    const uploadButton = document.querySelector('label[for="upload-shapefile"]');
     
     // Remove old event listener by cloning and replacing the input
     const newFileInput = fileInput.cloneNode(true);
@@ -646,7 +646,7 @@ export class FireView extends IFireView {
     document.getElementById('table-container').style.display = 'none';
     
     // Reset to initial state
-    document.querySelector('label[for="uploadShapefile"]').style.display = 'block';
+    document.querySelector('label[for="upload-shapefile"]').style.display = 'block';
     document.getElementById('refinement-container').style.display = 'none';
     
     // Clear map layers

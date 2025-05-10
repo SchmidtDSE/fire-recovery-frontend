@@ -1,6 +1,6 @@
-import { FireModel } from '../../fire/FireModel.js';
+import { FireModel } from './fire-model.js';
 import { FireView } from './fire-view.js';
-import { FirePresenter } from '../../fire/FirePresenter.js';
+import { FirePresenter } from './fire-presenter.js';
 
 /**
  * Factory for creating Fire MVP components

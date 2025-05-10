@@ -197,3 +197,101 @@ textarea.form-control {
   padding-left: 5px;
   flex: 1;
 }
+
+/* Custom file upload button */
+.custom-file-upload {
+  display: inline-block;
+  padding: 10px 20px;
+  margin: 20px 0;
+  font-size: 14pt;
+  color: #000;
+  background-color: var(--input-bg-color, #FFFDFF);
+  border: 1px solid #000;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Public Sans', sans-serif;
+}
+
+.custom-file-upload:hover {
+  background-color: var(--input-hover-color, #BBB7AD);
+}
+
+/* Status message */
+.status-message {
+  margin-left: 10px;
+  font-size: 10pt;
+  vertical-align: middle;
+}
+
+/* Section heading */
+.section-heading {
+  margin-top: 60px;
+  font-weight: bold;
+}
+
+/* Date form */
+.date-form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Date fields */
+.date-field-container {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.date-field {
+  padding: 10px;
+  font-size: 1em;
+  color: #000;
+  background-color: var(--input-bg-color, #FFFDFF);
+  border: 1px solid #000;
+  border-radius: 5px;
+  width: var(--form-field-width, 280px);
+  box-sizing: border-box;
+  font-family: 'Public Sans', sans-serif;
+}
+
+/* Date labels */
+.date-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14pt;
+  font-family: 'Public Sans', sans-serif;
+  width: var(--form-field-width, 280px);
+}
+
+/* Submit button */
+.form-submit-button {
+  display: inline-block;
+}
+
+/* Date row layout */
+.date-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .date-field-container {
+    width: 100%;
+  }
+  
+  .date-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .date-form {
+    gap: 15px;
+  }
+}

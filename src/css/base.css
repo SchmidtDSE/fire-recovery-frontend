@@ -161,3 +161,41 @@ blockquote {
   font-style: italic;
   color: var(--text-secondary);
 }
+
+
+/* Original Styling overrides from Original Frontend */
+body {
+  margin: 0;
+  font-family: 'Public Sans', sans-serif;
+  background-color: #EBE8E4;
+}
+
+h1 {
+  font-size: 5vw;
+  color: white;
+  margin: 0;
+  line-height: 1.2;
+  text-align: left;
+}
+
+h2 {
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  margin: 0;
+  line-height: 1.2;
+  text-align: left;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 200;
+  color: black;
+  margin: 0;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.textbox h3 {
+  color: white; /* Override for h3 inside .textbox */
+}

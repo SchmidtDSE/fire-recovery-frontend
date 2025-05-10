@@ -122,4 +122,24 @@
   --map-height: 600px;
   --map-border: var(--border-width-default) solid var(--border-color);
   --map-control-background: rgba(255, 255, 255, 0.8);
+
+  /* Hero image specific */
+  --hero-height: 400px;
+  --hero-overlay-bg: rgba(0, 0, 0, 0.7);
+  --hero-text-width: 60vw;
+  --hero-text-height: 50%;
+  
+  /* Navigation */
+  --navbar-height: 60px;
+  --black-bar-height: 20px;
+  
+  /* Home page boxes */
+  --info-box-width: 280px;
+  --info-box-height: 450px;
+  --info-box-gap: 60px;
+  
+  /* Form elements */
+  --form-field-width: 280px;
+  --input-bg-color: #FFFDFF;
+  --input-hover-color: #BBB7AD;
 }

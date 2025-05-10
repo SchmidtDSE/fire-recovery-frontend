@@ -1,6 +1,5 @@
 import { IVegetationView } from './veg-contract.js';
 import { PARK_UNITS } from '../../core/config.js';
-import { displayCOGLayer } from '../../utils/cogUtils.js';
 
 /**
  * Implementation of the Vegetation View
