@@ -1,0 +1,688 @@
+import { IFireView } from './FireContract.js';
+import { vegMapCOG } from '../constants.js';
+import { formatDate, getTodayISO } from '../utils/dateUtils.js';
+import { switchToLayer, geoJsonStyle, getGeometryFromLayerGroup } from '../utils/mapUtils.js';
+import { displayCOGLayer, loadVegetationCOGLayer } from '../utils/cogUtils.js';
+
+/**
+ * Implementation of the Fire View
+ */
+export class FireView extends IFireView {
+  /**
+   * @param {IFirePresenter} presenter - The presenter
+   */
+  constructor(presenter) {
+    super();
+    this.presenter = presenter;
+    
+    // Map components
+    this.map = null;
+    this.streetMapLayer = null;
+    this.satelliteLayer = null;
+    this.cogLayer = null;
+    this.geoJsonLayerGroup = null;
+    this.resultLayerGroup = null;
+    this.drawControl = null;
+    
+    // UI state
+    this.hasDrawnRefinement = false;
+  }
+  
+  /**
+   * Initialize the view
+   */
+  initializeView() {
+    this.initializeMap();
+    this.setupDateLimits();
+    this.setupParkUnitDropdown();
+    this.setupFireSeverityMetricDropdown();
+    this.setupTestPrefill();
+  }
+  
+  /**
+   * Initialize the map
+   */
+  initializeMap() {
+    // Initialize map
+    this.map = L.map('map').setView([33.8734, -115.9010], 10);
+    
+    // Define tile layers
+    this.streetMapLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 20,
+      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    });
+    
+    this.satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: 'Imagery ©2023 Google'
+    });
+    
+    // Add default layer
+    this.streetMapLayer.addTo(this.map);
+    
+    // Create layer groups
+    this.geoJsonLayerGroup = new L.FeatureGroup().addTo(this.map);
+    this.resultLayerGroup = L.layerGroup().addTo(this.map);
+    
+    // Initialize draw control
+    this.drawControl = new L.Control.Draw({
+      edit: {
+        featureGroup: this.geoJsonLayerGroup
+      },
+      draw: {
+        polyline: false,
+        circle: false,
+        rectangle: false,
+        marker: false,
+        circlemarker: false,
+        polygon: true
+      }
+    });
+    
+    this.map.addControl(this.drawControl);
+    
+    // Setup draw event
+    this.map.on(L.Draw.Event.CREATED, (event) => {
+      this.geoJsonLayerGroup.clearLayers();
+      const layer = event.layer;
+      this.geoJsonLayerGroup.addLayer(layer);
+      this.hasDrawnRefinement = true;
+      document.getElementById('refine-button').disabled = false;
+    });
+  }
+  
+  /**
+   * Set up event listeners
+   */
+  setupEventListeners() {
+    // Process button
+    const processButton = document.getElementById('test-process-button');
+    if (processButton) {
+      processButton.addEventListener('click', () => this.presenter.handleFireAnalysisSubmission());
+    }
+    
+    // Refinement buttons
+    document.getElementById('refine-button').addEventListener('click', () => {
+      if (!this.hasDrawnRefinement) {
+        alert('Please draw a refined boundary on the map');
+        return;
+      }
+      this.presenter.handleRefinementSubmission();
+    });
+    
+    document.getElementById('accept-button').addEventListener('click', () => {
+      this.showMetricsAndTable();
+      document.getElementById('refine-button').disabled = true;
+      document.getElementById('accept-button').disabled = true;
+    });
+    
+    document.getElementById('start-over-button').addEventListener('click', () => {
+      this.presenter.handleReset();
+    });
+    
+    // Map layer buttons
+    this.setupMapButtons();
+    
+    // Shapefile upload
+    this.setupShapefileUpload();
+    
+    // Fire event name input
+    document.getElementById('fire-event-name').addEventListener('input', (e) => {
+      this.presenter.handleFireEventNameChange(e.target.value);
+    });
+    
+    // Fire severity metric dropdown
+    document.getElementById('fire-severity-metric-select').addEventListener('change', (e) => {
+      this.presenter.handleMetricChange(e.target.value);
+    });
+    
+    // Park unit dropdown
+    document.getElementById('park-unit').addEventListener('change', (e) => {
+      const select = e.target;
+      const selectedOption = select.options[select.selectedIndex];
+      const parkData = {
+        id: select.value,
+        name: selectedOption.textContent,
+        veg_cog_url: selectedOption.dataset.vegCogUrl,
+        veg_geopkg_url: selectedOption.dataset.vegGeopkgUrl
+      };
+      this.presenter.handleParkUnitChange(parkData);
+    });
+  }
+  
+  /**
+   * Get form values
+   * @returns {Object} Form values
+   */
+  getFormValues() {
+    return {
+      prefireStart: document.getElementById('prefire-start-date').value,
+      prefireEnd: document.getElementById('prefire-end-date').value,
+      postfireStart: document.getElementById('postfire-start-date').value,
+      postfireEnd: document.getElementById('postfire-end-date').value,
+      fireEventName: document.getElementById('fire-event-name').value
+    };
+  }
+  
+  /**
+   * Get geometry from map
+   * @returns {Object} GeoJSON geometry
+   */
+  getGeometryFromMap() {
+    let geometry = null;
+    this.geoJsonLayerGroup.eachLayer((layer) => {
+      if (layer instanceof L.Polygon) {
+        geometry = layer.toGeoJSON().geometry;
+      }
+    });
+    return geometry;
+  }
+  
+  /**
+   * Setup map buttons
+   */
+  setupMapButtons() {
+    document.querySelectorAll('.map-button').forEach(button => {
+      button.addEventListener('click', () => {
+        // Remove 'active' class from all buttons
+        document.querySelectorAll('.map-button').forEach(btn => btn.classList.remove('active'));
+        
+        // Add 'active' class to the clicked button
+        button.classList.add('active');
+        
+        // Get button text
+        const buttonText = button.textContent.trim();
+        
+        // Toggle veg-map-active class on body
+        if (buttonText === 'Vegetation Map') {
+          document.body.classList.add('veg-map-active');
+        } else {
+          document.body.classList.remove('veg-map-active');
+        }
+        
+        // Switch map layers
+        if (buttonText === 'Vegetation Map') {
+          this.loadCOGLayer();
+        } else {
+          this.switchToLayer(buttonText === 'Street Map' ? this.streetMapLayer : this.satelliteLayer);
+        }
+
+        // Show/hide table based on view
+        if (buttonText === 'Vegetation Map') {
+          if (document.getElementById('fire-severity-metric').style.display === 'block') {
+            document.getElementById('table-container').style.display = 'block';
+          }
+        } else {
+          document.getElementById('table-container').style.display = 'none';
+        }
+      });
+    });
+  }
+  
+  /**
+   * Setup shapefile upload
+   */
+  setupShapefileUpload() {
+    document.getElementById('uploadShapefile').addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      const uploadStatus = document.getElementById('uploadStatus');
+    
+      if (!file || !file.name.endsWith('.zip')) {
+        uploadStatus.textContent = 'File upload failed. Please upload a valid shapefile.';
+        uploadStatus.style.color = 'red';
+        return;
+      }
+    
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        shp(e.target.result).then((data) => {
+          this.geoJsonLayerGroup.clearLayers();
+          L.geoJSON(data, { style: this.geoJsonStyle }).addTo(this.geoJsonLayerGroup);
+    
+          uploadStatus.textContent = `${file.name} was uploaded successfully.`;
+          uploadStatus.style.color = 'black';
+          
+          this.presenter.handleShapefileUploaded(file);
+        }).catch((error) => {
+          console.error("Error while parsing shapefile:", error);
+          uploadStatus.textContent = "Upload failed. Please try again.";
+          uploadStatus.style.color = 'red';
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  // More view methods like setupDateLimits(), setupParkUnitDropdown(), etc.
+  
+  /**
+   * Show loading state
+   */
+  showLoadingState() {
+    const statusIcon = document.getElementById('process-status');
+    const processButton = document.getElementById('test-process-button');
+    
+    statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    statusIcon.style.color = '#007bff';
+    processButton.disabled = true;
+  }
+  
+  /**
+   * Show success state
+   */
+  showSuccessState() {
+    const statusIcon = document.getElementById('process-status');
+    
+    statusIcon.innerHTML = '<i class="fas fa-check"></i>';
+    statusIcon.style.color = 'green';
+  }
+  
+  /**
+   * Show error state
+   * @param {string} message - Error message
+   */
+  showErrorState(message) {
+    const statusIcon = document.getElementById('process-status');
+    const processButton = document.getElementById('test-process-button');
+    
+    statusIcon.innerHTML = '<i class="fas fa-times"></i>';
+    statusIcon.style.color = 'red';
+    processButton.disabled = false;
+    
+    alert(message);
+  }
+  
+  /**
+   * Display COG layer on map
+   * @param {string} cogUrl - COG URL
+   */
+  async displayCOGLayer(cogUrl) {
+    if (!cogUrl) {
+      console.warn('No COG URL provided');
+      return;
+    }
+    
+    try {
+      const cogResponse = await fetch(cogUrl);
+      if (!cogResponse.ok) {
+        throw new Error(`COG fetch failed with status: ${cogResponse.status}`);
+      }
+
+      const arrayBuffer = await cogResponse.arrayBuffer();
+      const georaster = await parseGeoraster(arrayBuffer);
+      
+      const resultLayer = new GeoRasterLayer({
+        georaster: georaster,
+        opacity: .8,
+        resolution: 256,
+        pixelValuesToColorFn: value => {
+          if (value === null || value === undefined || value === 0) return 'transparent';
+          if (value < 0.1) return '#F0F921'; // bright yellow
+          if (value < 0.2) return '#FDC328';
+          if (value < 0.3) return '#F89441';
+          if (value < 0.4) return '#E56B5D';
+          if (value < 0.5) return '#CB4679';
+          if (value < 0.6) return '#A82296';
+          if (value < 0.7) return '#7D03A8';
+          if (value < 0.8) return '#4B03A1';
+          if (value < 0.9) return '#0D0887'; // darkest purple
+          return '#0D0887';
+        }
+      });
+
+      this.resultLayerGroup.clearLayers();
+      resultLayer.addTo(this.resultLayerGroup);
+      
+      // Force the result layer to the top
+      this.map.eachLayer(l => {
+        if (l === this.resultLayerGroup) {
+          l.eachLayer(resultL => resultL.bringToFront());
+        }
+      });
+
+      // Check if the layer has valid bounds before fitting
+      const bounds = resultLayer.getBounds();
+      if (bounds && bounds.isValid()) {
+        this.map.fitBounds(bounds);
+      }
+      
+    } catch (error) {
+      console.error('Error loading COG:', error);
+      this.showErrorState(`Error loading layer: ${error.message}`);
+    }
+  }
+
+  /**
+   * Setup date limits
+   */
+  setupDateLimits() {
+    const today = getTodayISO();
+    document.getElementById('prefire-start-date').setAttribute('max', today);
+    document.getElementById('prefire-end-date').setAttribute('max', today);
+    document.getElementById('postfire-start-date').setAttribute('max', today);
+    document.getElementById('postfire-end-date').setAttribute('max', today);
+  }
+
+  /**
+   * Set up park unit dropdown
+   */
+  setupParkUnitDropdown() {
+    const parkUnitSelect = document.getElementById('park-unit');
+    
+    // Example park units - these should come from an API or configuration
+    const parkUnits = [
+        { 
+        id: 'JOTR', 
+        name: 'Joshua Tree National Park',
+        veg_cog_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/JOTR/JOTRvegMap.tif',
+        veg_geopkg_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/JOTR/JOTRvegMap.gpkg'
+        },
+        { 
+        id: 'YOSE', 
+        name: 'Yosemite National Park',
+        veg_cog_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/YOSE/YOSEvegMap.tif',
+        veg_geopkg_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/YOSE/YOSEvegMap.gpkg'
+        },
+    ];
+    
+    // Clear existing options
+    while (parkUnitSelect.firstChild) {
+        parkUnitSelect.removeChild(parkUnitSelect.firstChild);
+    }
+    
+    // Add default option
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = '-- Select a park unit --';
+    parkUnitSelect.appendChild(defaultOption);
+    
+    // Add park unit options
+    parkUnits.forEach(unit => {
+        const option = document.createElement('option');
+        option.value = unit.id;
+        option.textContent = unit.name;
+        option.dataset.vegCogUrl = unit.veg_cog_url;
+        option.dataset.vegGeopkgUrl = unit.veg_geopkg_url;
+        parkUnitSelect.appendChild(option);
+    });
+  }
+
+  /**
+   * Set up fire severity metric dropdown
+   */
+  setupFireSeverityMetricDropdown() {
+    const metricSelect = document.getElementById('fire-severity-metric-select');
+    
+    // Clear existing options
+    while (metricSelect.firstChild) {
+        metricSelect.removeChild(metricSelect.firstChild);
+    }
+    
+    // Define available metrics
+    const metrics = [
+        { id: 'RBR', name: 'Relativized Burn Ratio (RBR)' },
+        { id: 'dNBR', name: 'Differenced Normalized Burn Ratio (dNBR)' },
+        { id: 'RdNBR', name: 'Relativized dNBR (RdNBR)' },
+    ];
+    
+    // Add metric options
+    metrics.forEach(metric => {
+        const option = document.createElement('option');
+        option.value = metric.id;
+        option.textContent = metric.name;
+        metricSelect.appendChild(option);
+    });
+  }
+
+  /**
+   * Setup test prefill for development purposes
+   */
+  setupTestPrefill() {
+    // Check for test prefill parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('prefill_for_test') && urlParams.get('prefill_for_test') === 'true') {
+        // Prefill date fields with test values
+        document.getElementById('prefire-start-date').value = '2022-06-01';
+        document.getElementById('prefire-end-date').value = '2022-06-15';
+        document.getElementById('postfire-start-date').value = '2022-07-15';
+        document.getElementById('postfire-end-date').value = '2022-07-30';
+        
+        // Add test GeoJSON polygon to the map
+        const testPolygon = {
+        "type": "Polygon",
+        "coordinates": [
+            [
+            [-116.09827589690582, 33.92992500511309],
+            [-116.09827589690582, 33.88079387580245],
+            [-116.01931781556678, 33.88079387580245],
+            [-116.01931781556678, 33.92992500511309],
+            [-116.09827589690582, 33.92992500511309]
+            ]
+        ]
+        };
+        
+        // Clear existing layers first
+        this.geoJsonLayerGroup.clearLayers();
+        
+        // Add the test polygon to the map with the defined style
+        L.geoJSON({ type: "Feature", geometry: testPolygon }, { 
+        style: geoJsonStyle 
+        }).addTo(this.geoJsonLayerGroup);
+        
+        // Fit the map to the polygon bounds
+        this.map.fitBounds(this.geoJsonLayerGroup.getBounds());
+    }
+  }
+
+  /**
+   * Load COG layer
+   */
+  loadCOGLayer() {
+    const state = this.presenter.model.getState();
+    const parkUnit = state.parkUnit;
+    
+    // If we don't have a park unit selected, use the default vegMapCOG
+    const vegMapUrl = parkUnit?.veg_cog_url || vegMapCOG;
+    
+    loadVegetationCOGLayer(vegMapUrl, this.map, this.streetMapLayer)
+        .then(layer => {
+        this.cogLayer = layer;
+        })
+        .catch(error => {
+        console.error("Error in loadCOGLayer:", error);
+        this.showErrorState(`Failed to load vegetation map: ${error.message}`);
+        });
+  }
+
+  /**
+   * Show date summary
+   * @param {Object} formValues - Form values containing dates
+   */
+  showDateSummary(formValues) {
+    document.getElementById('prefire-dates').textContent = 
+        `Prefire Dates: ${formatDate(formValues.prefireStart)} - ${formatDate(formValues.prefireEnd)}`;
+    document.getElementById('postfire-dates').textContent = 
+        `Postfire Dates: ${formatDate(formValues.postfireStart)} - ${formatDate(formValues.postfireEnd)}`;
+  }
+
+  /**
+   * Show refinement UI
+   */
+  showRefinementUI() {
+    // Hide upload status (file name)
+    document.getElementById('uploadStatus').style.display = 'none';
+    
+    // Hide the date range header
+    const dateRangeHeaders = document.querySelectorAll('h3');
+    dateRangeHeaders.forEach(header => {
+        if (header.textContent === 'Set date range for fire:' || 
+            header.textContent === 'Average Fire Severity:' ||
+            header.textContent === 'Hectares of Cover Class Lost:') {
+        header.style.display = 'none';
+        }
+    });
+
+    // Hide the date form and upload button
+    document.getElementById('date-form').style.display = 'none';
+    document.querySelector('label[for="uploadShapefile"]').style.display = 'none';
+    
+    // Show refinement options
+    document.getElementById('refinement-container').style.display = 'block';
+    document.getElementById('refine-button').disabled = !this.hasDrawnRefinement;
+    
+    // Show metrics container but only show date summary
+    const metricsContainer = document.getElementById('metrics-container');
+    metricsContainer.style.display = 'block';
+    
+    // Hide severity and biomass metrics initially
+    document.getElementById('fire-severity-metric').style.display = 'none';
+    document.getElementById('biomass-lost-metric').style.display = 'none';
+  }
+
+  /**
+   * Show metrics and vegetation table
+   */
+  showMetricsAndTable() {
+    // Show metrics
+    document.getElementById('fire-severity-metric').style.display = 'block';
+    document.getElementById('biomass-lost-metric').style.display = 'block';
+    
+    // Show table only when in vegetation map view
+    const vegMapButton = Array.from(document.querySelectorAll('.map-button'))
+        .find(button => button.textContent.trim() === 'Vegetation Map');
+    
+    if (vegMapButton && vegMapButton.classList.contains('active')) {
+        document.getElementById('table-container').style.display = 'block';
+    }
+    
+    // Add a button for vegetation resolution if it doesn't exist
+    const resolveButton = document.getElementById('resolve-button');
+    if (!resolveButton) {
+        const buttonGroup = document.querySelector('.button-group');
+        
+        const newResolveButton = document.createElement('button');
+        newResolveButton.id = 'resolve-button';
+        newResolveButton.className = 'action-button';
+        newResolveButton.textContent = 'Analyze Vegetation Impact';
+        newResolveButton.addEventListener('click', () => this.presenter.handleVegMapResolution());
+        
+        buttonGroup.appendChild(newResolveButton);
+    }
+  }
+
+  /**
+   * Update vegetation map table with data from CSV
+   * @param {string} csvUrl - URL to CSV file with vegetation data
+   */
+  async updateVegMapTable(csvUrl) {
+    try {
+        const response = await fetch(csvUrl);
+        if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const csvText = await response.text();
+        const rows = csvText.split('\n').map(row => row.split(','));
+        const headers = rows[0];
+        const data = rows.slice(1).filter(row => row.length > 1).map(row => {
+        const rowData = {};
+        headers.forEach((header, index) => {
+            rowData[header.trim()] = row[index]?.trim();
+        });
+        return rowData;
+        });
+
+        // Update table with CSV data
+        const table = $('#example').DataTable();
+        table.clear();
+
+        data.forEach(row => {
+        table.row.add([
+            `<div style="width: 15px; height: 15px; background-color: ${row.color || '#000000'}"></div>`,
+            row.veg_community || '',
+            row.hectares || '',
+            row.pct_full_park || '',
+            row.pct_burn_area || '',
+            row.burn_metric_mean || '',
+            row.burn_metric_std || ''
+        ]);
+        });
+
+        table.draw();
+    } catch (error) {
+        console.error('Error fetching or processing CSV:', error);
+    }
+  }
+
+  /**
+   * Reset the interface to initial state
+   */
+  resetInterface() {
+    // Reset form inputs
+    document.getElementById('date-form').reset();
+    document.getElementById('date-form').style.display = 'block';
+    
+    // Reset file input and its label
+    const fileInput = document.getElementById('uploadShapefile');
+    const uploadButton = document.querySelector('label[for="uploadShapefile"]');
+    
+    // Remove old event listener by cloning and replacing the input
+    const newFileInput = fileInput.cloneNode(true);
+    fileInput.parentNode.replaceChild(newFileInput, fileInput);
+    
+    // Add new event listener to the new input
+    this.setupShapefileUpload();
+    
+    // Reset upload button appearance
+    uploadButton.textContent = 'Upload Shapefile';
+    uploadButton.style.display = 'inline-block';
+    
+    // Clear status messages
+    document.getElementById('uploadStatus').textContent = '';
+    
+    // Hide metrics and table
+    document.getElementById('fire-severity-metric').style.display = 'none';
+    document.getElementById('biomass-lost-metric').style.display = 'none';
+    document.getElementById('table-container').style.display = 'none';
+    
+    // Reset to initial state
+    document.querySelector('label[for="uploadShapefile"]').style.display = 'block';
+    document.getElementById('refinement-container').style.display = 'none';
+    
+    // Clear map layers
+    this.resultLayerGroup.clearLayers();
+    this.geoJsonLayerGroup.clearLayers();
+    
+    // Clear date summary
+    document.getElementById('prefire-dates').textContent = '';
+    document.getElementById('postfire-dates').textContent = '';
+    
+    // Hide veg table
+    document.body.classList.remove('veg-map-active');
+
+    // Reset refinement state
+    this.hasDrawnRefinement = false;
+    document.getElementById('refinement-container').style.display = 'none';
+    document.getElementById('refine-button').disabled = true;
+
+    // Restore visibility of upload status
+    document.getElementById('uploadStatus').style.display = 'block';
+    
+    // Restore visibility of headers
+    const dateRangeHeaders = document.querySelectorAll('h3');
+    dateRangeHeaders.forEach(header => {
+        if (header.textContent === 'Set date range for fire:' || 
+            header.textContent === 'Average Fire Severity:' ||
+            header.textContent === 'Hectares of Cover Class Lost:') {
+        header.style.display = 'block';
+        }
+    });
+    
+    // Remove the resolve button if it exists
+    const resolveButton = document.getElementById('resolve-button');
+    if (resolveButton) {
+        resolveButton.remove();
+    }
+  }
+}
