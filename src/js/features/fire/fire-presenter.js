@@ -111,9 +111,7 @@ export class FirePresenter extends IFirePresenter {
     // Format data for API request
     const fireSevData = {
       fire_event_name: fireEventName,
-      geometry: {
-        geometry: geometry || this.view.geoJsonLayerGroup.toGeoJSON().features[0].geometry
-      },
+      geometry: geometry || this.view.geoJsonLayerGroup.toGeoJSON().features[0].geometry,
       prefire_date_range: [
         formValues.prefireStart,
         formValues.prefireEnd

@@ -25,7 +25,7 @@ export class VegetationView extends IVegetationView {
   initializeView() {
     // Get DOM elements
     this.mapContainer = document.getElementById('map');
-    this.tableContainer = document.getElementById('table-container');
+    this.tableContainer = document.getElementById('vegetation-table-container');
     
     if (this.mapContainer) {
       this.initializeMap();

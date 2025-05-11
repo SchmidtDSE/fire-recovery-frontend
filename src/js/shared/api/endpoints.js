@@ -3,8 +3,10 @@
  * Centralizes all API endpoints used in the application
  */
 
+// TODO: Make endpoints consistent in case
+
 // Base URL configuration
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'http://localhost:8000/fire-recovery';
 
 // Fire severity endpoints
 export const FIRE_ENDPOINTS = {
