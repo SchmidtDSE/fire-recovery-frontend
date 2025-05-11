@@ -249,7 +249,22 @@ export class FirePresenter extends IFirePresenter {
    * Handle reset action
    */
   handleReset() {
-    this.model.resetState();
-    this.view.resetInterface();
+    const state = this.model.getState();
+    
+    // If we have finalized assets, reset to refinement step
+    if (state.finalAssets && (state.finalAssets.cogUrl || state.finalAssets.geojsonUrl)) {
+      this.model.resetToRefinementStep();
+      this.view.resetToRefinementStep();
+      
+      // Display the intermediate COG
+      if (state.intermediateAssets && state.intermediateAssets.cogUrl) {
+        this.view.displayCOGLayer(state.intermediateAssets.cogUrl);
+      }
+    } else {
+      // Otherwise do a full reset
+      this.model.resetState();
+      this.view.resetInterface();
+    }
   }
+
 }

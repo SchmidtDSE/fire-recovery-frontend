@@ -692,4 +692,37 @@ export class FireView extends IFireView {
         resolveButton.remove();
     }
   }
+
+  /**
+   * Reset to refinement step
+   * Prepares the interface for a new refinement attempt
+   */
+  resetToRefinementStep() {
+    // Clear any existing polygon
+    this.resultLayerGroup.clearLayers();
+    this.geoJsonLayerGroup.clearLayers();
+    
+    // Reset refinement state
+    this.hasDrawnRefinement = false;
+    
+    // Show refinement UI
+    this.showRefinementUI();
+    
+    // Enable refine button when a new polygon is drawn
+    document.getElementById('refine-button').disabled = true;
+    document.getElementById('accept-button').disabled = false;
+    
+    // Hide metrics that would be shown after refinement
+    document.getElementById('fire-severity-metric').style.display = 'none';
+    document.getElementById('biomass-lost-metric').style.display = 'none';
+    
+    // Make sure the vegetation table is hidden
+    document.getElementById('vegetation-table-container').style.display = 'none';
+    
+    // Remove vegetation resolution button if it exists
+    const resolveButton = document.getElementById('resolve-button');
+    if (resolveButton) {
+      resolveButton.remove();
+    }
+  }
 }

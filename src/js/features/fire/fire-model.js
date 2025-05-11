@@ -55,12 +55,14 @@ export class FireModel extends IFireModel {
    * @param {any} data - Event data
    */
   notify(event, data) {
+
     if (this.listeners[event]) {
       this.listeners[event].forEach(callback => callback(data));
     }
     
     // Always notify of state changed
     if (event !== 'stateChanged') {
+      console.log("State Change - Event: ", event, "Data: ", data, this.state);
       this.notify('stateChanged', this.state);
     }
   }
@@ -155,6 +157,20 @@ export class FireModel extends IFireModel {
     return this;
   }
   
+  /**
+   * Reset to refinement step
+   * Keeps intermediate assets but clears final assets
+   */
+  resetToRefinementStep() {
+    // Keep intermediate assets, fire event name, and park unit
+    this.state.finalAssets = { cogUrl: null, geojsonUrl: null };
+    this.state.processingStatus = 'success';
+    this.state.currentStep = 'refine';
+    this.notify('resetToRefinement');
+    this.notify('currentStepChanged', 'refine');
+    return this;
+  }
+
   /**
    * Analyze fire severity
    * @param {Object} data - Request data

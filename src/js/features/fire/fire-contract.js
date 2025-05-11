@@ -114,6 +114,12 @@ export class IFireView {
    * Reset the interface
    */
   resetInterface() {}
+
+  /**
+   * Reset to refinement step
+   * Keeps intermediate assets but clears final assets
+   */
+  resetToRefinementStep() {}
 }
 
 /**
@@ -156,4 +162,10 @@ export class IFirePresenter {
    * Handle reset action
    */
   handleReset() {}
+
+  /**
+   * Reset to refinement step
+   * Prepares the interface for a new refinement attempt
+   */
+  resetToRefinementStep() {}
 }
