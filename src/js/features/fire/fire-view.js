@@ -3,6 +3,7 @@ import { formatDate, getTodayISO } from '../../shared/utils/date-utils.js';
 import { displayCOGLayer, loadVegetationCOGLayer } from '../../shared/map/cog-renderer.js';
 import { getDefaultGeoJsonStyle } from '../../shared/map/draw-tools.js';
 import { MapManager } from '../../shared/map/map-manager.js';
+import { parkUnits } from '../../core/config.js';
 
 /**
  * Implementation of the Fire View
@@ -103,12 +104,6 @@ export class FireView extends IFireView {
       this.presenter.handleRefinementSubmission();
     });
     
-    document.getElementById('accept-button').addEventListener('click', () => {
-      this.showMetricsAndTable();
-      document.getElementById('refine-button').disabled = true;
-      document.getElementById('accept-button').disabled = true;
-    });
-    
     document.getElementById('reset-button').addEventListener('click', () => {
       this.presenter.handleReset();
     });
@@ -140,6 +135,13 @@ export class FireView extends IFireView {
         veg_geopkg_url: selectedOption.dataset.vegGeopkgUrl
       };
       this.presenter.handleParkUnitChange(parkData);
+    });
+
+    // Accept button for veg map resolution
+    document.getElementById('accept-button').addEventListener('click', () => {
+      this.presenter.handleAcceptRefinement();
+      document.getElementById('refine-button').disabled = true;
+      document.getElementById('accept-button').disabled = true;
     });
   }
   
@@ -362,22 +364,6 @@ export class FireView extends IFireView {
   setupParkUnitDropdown() {
     const parkUnitSelect = document.getElementById('park-unit');
     
-    // Example park units - these should come from an API or configuration
-    const parkUnits = [
-        { 
-        id: 'JOTR', 
-        name: 'Joshua Tree National Park',
-        veg_cog_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/JOTR/JOTRvegMap.tif',
-        veg_geopkg_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/JOTR/JOTRvegMap.gpkg'
-        },
-        { 
-        id: 'YOSE', 
-        name: 'Yosemite National Park',
-        veg_cog_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/YOSE/YOSEvegMap.tif',
-        veg_geopkg_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/YOSE/YOSEvegMap.gpkg'
-        },
-    ];
-    
     // Clear existing options
     while (parkUnitSelect.firstChild) {
         parkUnitSelect.removeChild(parkUnitSelect.firstChild);
@@ -435,10 +421,10 @@ export class FireView extends IFireView {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('prefill_for_test') && urlParams.get('prefill_for_test') === 'true') {
         // Prefill date fields with test values
-        document.getElementById('prefire-start-date').value = '2023-05-09';
+        document.getElementById('prefire-start-date').value = '2023-06-01';
         document.getElementById('prefire-end-date').value = '2023-06-09';
         document.getElementById('postfire-start-date').value = '2023-06-17';
-        document.getElementById('postfire-end-date').value = '2023-06-30';
+        document.getElementById('postfire-end-date').value = '2023-06-22';
         
         // Add test GeoJSON polygon to the map
         const testPolygon = {

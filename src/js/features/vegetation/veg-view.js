@@ -120,7 +120,251 @@ export class VegetationView extends IVegetationView {
       });
     }
   }
+
+async showVegetationImpact(csvUrl) {
+  // Hide any error messages
+  const statusElem = document.getElementById('vegetation-status');
+  if (statusElem) statusElem.innerHTML = '';
   
+  // Show loading state
+  const loadingElem = document.getElementById('vegetation-loading');
+  if (loadingElem) loadingElem.style.display = 'flex';
+  
+  try {
+    // Fetch and parse the CSV using Papa Parse
+    Papa.parse(csvUrl, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.errors.length) {
+          console.error('CSV parsing errors:', results.errors);
+          this.showMessage('Error parsing vegetation data', 'error');
+          return;
+        }
+        
+        // Hide the loading indicator
+        if (loadingElem) loadingElem.style.display = 'none';
+        
+        // Store the data for potential download
+        this._vegData = results.data;
+        
+        // Use DataTables to display the vegetation data
+        this.populateDataTable(results.data);
+        
+        // Show vegetation tab if not already active
+        this.showVegetationTab();
+      },
+      error: (error) => {
+        // Hide loading indicator
+        if (loadingElem) loadingElem.style.display = 'none';
+        
+        console.error('CSV fetch error:', error);
+        this.showMessage('Error fetching vegetation data', 'error');
+      }
+    });
+    
+    // Setup download button handler
+    const downloadBtn = document.getElementById('download-veg-csv');
+    if (downloadBtn) {
+      downloadBtn.onclick = () => this.downloadCsv();
+    }
+    
+  } catch (error) {
+    // Hide loading indicator
+    if (loadingElem) loadingElem.style.display = 'none';
+    
+    console.error('Vegetation display error:', error);
+    this.showMessage(`Error: ${error.message}`, 'error');
+  }
+}
+
+  populateDataTable(data) {
+    // Check if jQuery and DataTables are available
+    if (window.$ && $.fn.DataTable) {
+      // Destroy existing DataTable instance if it exists
+      if ($.fn.DataTable.isDataTable('#vegetation-table')) {
+        $('#vegetation-table').DataTable().destroy();
+      }
+      
+      // Clear the table
+      const tableBody = document.querySelector('#vegetation-table tbody');
+      if (tableBody) tableBody.innerHTML = '';
+      
+      // Create new DataTable
+      const table = $('#vegetation-table').DataTable({
+        data: data,
+        columns: [
+          {
+            // Color cell
+            data: 'color',
+            render: function(data) {
+              return `<div style="width:15px; height:15px; background-color:${data || '#cccccc'}; margin:0 auto;"></div>`;
+            }
+          },
+          { data: 'vegetation_type' },
+          { data: 'hectares' },
+          { data: 'percent_park' },
+          { data: 'percent_fire' },
+          { data: 'severity_mean' },
+          { data: 'severity_sd' }
+        ],
+        paging: true,
+        searching: true,
+        ordering: true,
+        info: true
+      });
+    } else {
+      // Fallback to basic HTML if DataTables isn't available
+      this.createSimpleTable(data);
+    }
+  }
+
+  showVegetationTab() {
+    // Show the vegetation tab and make it active
+    const tabs = document.querySelectorAll('.tab-button');
+    const contents = document.querySelectorAll('.tab-content');
+    
+    // Deactivate all tabs
+    tabs.forEach(tab => tab.classList.remove('active'));
+    contents.forEach(content => content.classList.add('hidden'));
+    
+    // Activate vegetation tab
+    const vegTab = document.querySelector('.tab-button[data-tab="vegetation"]');
+    if (vegTab) vegTab.classList.add('active');
+    
+    const vegContent = document.getElementById('vegetation-tab');
+    if (vegContent) vegContent.classList.remove('hidden');
+  }
+
+  showMessage(message, type = 'info') {
+    const statusElem = document.getElementById('vegetation-status');
+    if (statusElem) {
+      statusElem.textContent = message;
+      statusElem.className = `status-message ${type}`;
+    }
+  }
+
+  showLoadingState(message = 'Analyzing vegetation impact...') {
+    const loadingElem = document.getElementById('vegetation-loading');
+    if (loadingElem) {
+      const messageElem = loadingElem.querySelector('p');
+      if (messageElem) messageElem.textContent = message;
+      loadingElem.style.display = 'flex';
+    }
+    
+    this.showMessage(message, 'info');
+  }
+
+  displayVegetationTable(data) {
+    // Create table container if it doesn't exist
+    if (!document.getElementById('veg-results-container')) {
+      const container = document.createElement('div');
+      container.id = 'veg-results-container';
+      container.className = 'results-container';
+      
+      const title = document.createElement('h3');
+      title.textContent = 'Vegetation Impact Analysis';
+      container.appendChild(title);
+      
+      const tableContainer = document.createElement('div');
+      tableContainer.className = 'table-container';
+      
+      // Create the table
+      const table = document.createElement('table');
+      table.id = 'veg-impact-table';
+      table.className = 'data-table';
+      tableContainer.appendChild(table);
+      container.appendChild(tableContainer);
+      
+      // Add download button
+      const downloadBtn = document.createElement('button');
+      downloadBtn.textContent = 'Download CSV';
+      downloadBtn.className = 'action-button';
+      downloadBtn.addEventListener('click', () => this.downloadCsv());
+      container.appendChild(downloadBtn);
+      
+      document.getElementById('vegetation-section').appendChild(container);
+    }
+    
+    // Store the data for potential download
+    this._vegData = data;
+    
+    // Get reference to table
+    const table = document.getElementById('veg-impact-table');
+    table.innerHTML = '';
+    
+    // Create table header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    
+    // Add headers
+    const headers = ['Color', 'Vegetation Type', 'Hectares', '% of Park', '% of Fire', 'Mean Severity', 'SD'];
+    headers.forEach(headerText => {
+      const th = document.createElement('th');
+      th.textContent = headerText;
+      headerRow.appendChild(th);
+    });
+    
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    
+    // Create table body
+    const tbody = document.createElement('tbody');
+    
+    // Add data rows
+    data.forEach(item => {
+      const row = document.createElement('tr');
+      
+      // Color cell - create a colored div
+      const colorCell = document.createElement('td');
+      const colorBox = document.createElement('div');
+      colorBox.style.backgroundColor = item.color || '#cccccc';
+      colorBox.style.width = '15px';
+      colorBox.style.height = '15px';
+      colorBox.style.margin = '0 auto';
+      colorCell.appendChild(colorBox);
+      row.appendChild(colorCell);
+      
+      // Other cells
+      [
+        item.vegetation_type,
+        item.hectares,
+        item.percent_park,
+        item.percent_fire,
+        item.severity_mean,
+        item.severity_sd
+      ].forEach(text => {
+        const td = document.createElement('td');
+        td.textContent = text || '-';
+        row.appendChild(td);
+      });
+      
+      tbody.appendChild(row);
+    });
+    
+    table.appendChild(tbody);
+  }
+
+  downloadCsv() {
+    if (!this._vegData) return;
+    
+    // Convert data to CSV using Papa Parse
+    const csv = Papa.unparse(this._vegData);
+    
+    // Create download link
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'vegetation_impact.csv');
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   /**
    * Update vegetation map table with data
    * @param {string} csvUrl - URL to vegetation impact CSV data
@@ -208,8 +452,6 @@ export class VegetationView extends IVegetationView {
       // Clear any existing layers
       this.resultLayerGroup.clearLayers();
       
-      debugger;
-
       const response = await fetch(vegMapUrl);
       const arrayBuffer = await response.arrayBuffer();
       const georaster = await parseGeoraster(arrayBuffer);
@@ -276,8 +518,14 @@ export class VegetationView extends IVegetationView {
   showSuccessState() {
     const resolveButton = document.getElementById('resolve-button');
     if (resolveButton) {
-      resolveButton.disabled = true;
+      // First show completion message
       resolveButton.innerHTML = '<i class="fas fa-check"></i> Analysis Complete';
+      
+      // After a short delay, reset the button to allow re-running the analysis
+      setTimeout(() => {
+        resolveButton.disabled = false;
+        resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
+      }, 2000);
     }
   }
   

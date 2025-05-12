@@ -168,6 +168,15 @@
                 </div>
                 
                 <div class="tab-content hidden" id="vegetation-tab">
+                    <!-- Status message area for vegetation analysis -->
+                    <div id="vegetation-status" class="status-message"></div>
+                    
+                    <!-- Loading indicator for vegetation analysis -->
+                    <div class="loading-container" id="vegetation-loading" style="display:none;">
+                        <div class="spinner"></div>
+                        <p>Analyzing vegetation impact...</p>
+                    </div>
+                    
                     <div class="table-container" id="vegetation-table-container">
                         <table id="vegetation-table" class="data-table">
                             <thead>
@@ -185,6 +194,13 @@
                                 <!-- Table rows populated by JavaScript -->
                             </tbody>
                         </table>
+                        
+                        <!-- Download button for vegetation data -->
+                        <div class="table-actions">
+                            <button id="download-veg-csv" class="action-button">
+                                <i class="fas fa-download"></i> Download CSV
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -225,6 +241,7 @@
     <script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <!-- Application Scripts -->
     <script type="module" src="js/core/app.js"></script>
     <script src="js/core/hero-image.js"></script>

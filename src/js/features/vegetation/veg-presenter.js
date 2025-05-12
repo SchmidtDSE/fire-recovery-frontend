@@ -1,5 +1,6 @@
 import { IVegetationPresenter } from './veg-contract.js';
 import { vegMapCOG } from '../../core/config.js';
+import stateManager from '../../core/state-manager.js';
 
 /**
  * Implementation of the Vegetation Presenter
@@ -55,34 +56,55 @@ export class VegetationPresenter extends IVegetationPresenter {
     this.model.updateFromFireState(fireState);
   }
   
-  /**
-   * Handle vegetation map resolution
-   */
   async handleVegMapResolution() {
-    const state = this.model.getState();
-    const fireEventName = state.fireEventName;
-    const parkUnit = state.parkUnit;
-    const cogUrl = state.cogUrl;
     
-    if (!fireEventName || !cogUrl) {
-      this.view.showErrorState('Fire event name or fire analysis data not available');
+    debugger;
+
+    // Get the current application state
+    const fireState = stateManager.getSharedState('fire');
+    const vegState = this.model.getState();
+    
+    // Check for required data
+    const fireEventName = fireState.fireEventName || vegState.fireEventName;
+    const refinedCogUrl = fireState.assets.refinedCogUrl; // This should be the final severity COG
+    const parkUnit = vegState.parkUnit || fireState.parkUnit;
+    
+    if (!fireEventName || !refinedCogUrl) {
+      this.view.showMessage('Error: Missing fire event name or severity data. Complete fire analysis first.', 'error');
       return;
     }
     
-    // Get correct vegetation map URL based on park unit or use default
-    const vegMapUrl = parkUnit?.veg_cog_url || vegMapCOG;
+    // Get vegetation geopackage URL from park unit
+    const vegGpkgUrl = parkUnit?.veg_geopkg_url;
     
+    if (!vegGpkgUrl) {
+      this.view.showMessage('Error: No vegetation data available for this park unit', 'error');
+      return;
+    }
+    
+    // Prepare data for API request
     const resolveData = {
       fire_event_name: fireEventName,
-      veg_cog_url: vegMapUrl,
-      fire_cog_url: cogUrl
+      veg_gpkg_url: vegGpkgUrl,
+      fire_cog_url: refinedCogUrl
     };
     
     try {
-      await this.model.resolveAgainstVegMap(resolveData);
-      // View will automatically update based on model events
+      // Show loading state
+      this.view.showLoadingState('Analyzing vegetation impact...');
+      
+      // Start processing
+      const result = await this.model.resolveAgainstVegMap(resolveData);
+      
+      // Show the vegetation impact results
+      if (result.status === 'complete') {
+        this.view.showVegetationImpact(result.fire_veg_matrix);
+      } else {
+        this.view.showMessage('Error processing vegetation data', 'error');
+      }
     } catch (error) {
-      this.view.showErrorState(`Error resolving against vegetation map: ${error.message}`);
+      console.error('Vegetation analysis error:', error);
+      this.view.showMessage(`Error: ${error.message}`, 'error');
     }
   }
 }

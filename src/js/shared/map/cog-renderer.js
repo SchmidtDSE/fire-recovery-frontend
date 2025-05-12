@@ -37,7 +37,6 @@ export async function displayCOGLayer(
       throw new Error(`COG fetch failed with status: ${cogResponse.status}`);
     }
 
-    debugger;
     const arrayBuffer = await cogResponse.arrayBuffer();
     const georaster = await parseGeoraster(arrayBuffer);
     
@@ -117,7 +116,7 @@ export async function loadVegetationCOGLayer(vegMapUrl, map, baseLayer, opacity 
  */
 export function getFireSeverityColorFunction() {
   return value => {
-    if (value === null || value === undefined || value === 0) return 'transparent';
+    if (value === null || value === undefined || value === -9999.0) return 'transparent';
     if (value < 0.1) return '#F0F921'; // bright yellow
     if (value < 0.2) return '#FDC328';
     if (value < 0.3) return '#F89441';

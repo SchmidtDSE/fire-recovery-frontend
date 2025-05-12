@@ -50,7 +50,7 @@ const PARK_UNITS = [
     id: 'JOTR', 
     name: 'Joshua Tree National Park',
     veg_cog_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/JOTR/JOTRvegMap.tif',
-    veg_geopkg_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/JOTR/JOTRvegMap.gpkg'
+    veg_geopkg_url: 'https://storage.googleapis.com/national_park_service/joshua_tree/jotr_gpkg/jotrgeodata.gpkg'
   },
   { 
     id: 'YOSE', 
@@ -106,3 +106,4 @@ export const COGdir = COG_DIR;
 export const vegMapCOG = ASSETS.VEG_MAP_COG;
 export const vegModelCOG = ASSETS.VEG_MODEL_COG;
 export const fireVegMatrixURL = ASSETS.FIRE_VEG_MATRIX_URL;
+export const parkUnits = PARK_UNITS;

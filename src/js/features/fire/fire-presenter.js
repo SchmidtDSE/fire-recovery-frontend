@@ -173,6 +173,56 @@ export class FirePresenter extends IFirePresenter {
   }
 
   /**
+   * Handle refinement acceptance
+   */
+  handleAcceptRefinement() {
+    // Update model state if needed
+    const state = this.model.getState();
+    
+    // Show metrics and table in the view
+    this.view.showMetricsAndTable();
+    
+    // Make sure the "Analyze Vegetation Impact" button is added
+    this.addVegetationButton();
+  }
+
+  /**
+   * Add Vegetation Analysis Button
+   */
+  addVegetationButton() {
+    // Target specifically the button group inside the refinement container
+    const buttonGroup = document.querySelector('#refinement-container .button-group');
+    if (!buttonGroup) return;
+    
+    // Check if button already exists
+    let resolveButton = document.getElementById('resolve-button');
+    if (resolveButton) {
+      // Reset it if it exists
+      resolveButton.disabled = false;
+      resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
+      return;
+    }
+    
+    // Create new button if it doesn't exist
+    resolveButton = document.createElement('button');
+    resolveButton.id = 'resolve-button';
+    resolveButton.className = 'action-button';
+    resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
+    
+    // Add event listener
+    resolveButton.addEventListener('click', () => {
+      const vegPresenter = window.app.components.vegetation.presenter;
+      if (vegPresenter) {
+        vegPresenter.handleVegMapResolution();
+      }
+    });
+    
+    // Add to DOM
+    buttonGroup.appendChild(resolveButton);
+  }
+
+
+  /**
    * Update map visualization based on selected metric
    */
   updateMapVisualization() {

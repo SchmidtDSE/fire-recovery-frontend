@@ -1,5 +1,6 @@
 import * as api from '../../shared/api/api-client.js';
 import { IFireModel } from './fire-contract.js';
+import stateManager from '../../core/state-manager.js';
 
 /**
  * Implementation of the Fire Model
@@ -14,6 +15,7 @@ export class FireModel extends IFireModel {
       fireSeverityMetric: 'RBR',
       processingStatus: 'idle',
       currentStep: 'upload',
+      jobId: null,
       intermediateAssets: {
         cogUrl: null,
         geojsonUrl: null,
@@ -33,8 +35,12 @@ export class FireModel extends IFireModel {
       processingStatusChanged: [],
       assetsChanged: [],
       currentStepChanged: [],
+      jobIdChanged: [],
       reset: []
     };
+    
+    // Register with state manager
+    stateManager.registerComponent('fire', this);
   }
   
   /**
@@ -55,7 +61,6 @@ export class FireModel extends IFireModel {
    * @param {any} data - Event data
    */
   notify(event, data) {
-
     if (this.listeners[event]) {
       this.listeners[event].forEach(callback => callback(data));
     }
@@ -81,6 +86,7 @@ export class FireModel extends IFireModel {
    */
   setFireEventName(name) {
     this.state.fireEventName = name;
+    stateManager.updateSharedState('fireEventName', name, 'fire');
     this.notify('fireEventNameChanged', name);
     return this;
   }
@@ -91,7 +97,19 @@ export class FireModel extends IFireModel {
    */
   setParkUnit(unit) {
     this.state.parkUnit = unit;
+    stateManager.updateSharedState('parkUnit', unit, 'fire');
     this.notify('parkUnitChanged', unit);
+    return this;
+  }
+  
+  /**
+   * Set job ID
+   * @param {string} jobId - Job ID
+   */
+  setJobId(jobId) {
+    this.state.jobId = jobId;
+    stateManager.updateSharedState('jobId', jobId, 'fire');
+    this.notify('jobIdChanged', jobId);
     return this;
   }
   
@@ -111,6 +129,7 @@ export class FireModel extends IFireModel {
    */
   setProcessingStatus(status) {
     this.state.processingStatus = status;
+    stateManager.updateSharedState('processingStatus', status, 'fire');
     this.notify('processingStatusChanged', status);
     return this;
   }
@@ -131,6 +150,15 @@ export class FireModel extends IFireModel {
    */
   setIntermediateAssets(assets) {
     this.state.intermediateAssets = {...this.state.intermediateAssets, ...assets};
+    
+    // Update shared state assets
+    if (assets.cogUrl) {
+      stateManager.updateAsset('cogUrl', assets.cogUrl, 'fire');
+    }
+    if (assets.geojsonUrl) {
+      stateManager.updateAsset('geojsonUrl', assets.geojsonUrl, 'fire');
+    }
+    
     this.notify('assetsChanged', { type: 'intermediate', assets: this.state.intermediateAssets });
     return this;
   }
@@ -141,6 +169,15 @@ export class FireModel extends IFireModel {
    */
   setFinalAssets(assets) {
     this.state.finalAssets = {...this.state.finalAssets, ...assets};
+    
+    // Update shared state assets
+    if (assets.cogUrl) {
+      stateManager.updateAsset('refinedCogUrl', assets.cogUrl, 'fire');
+    }
+    if (assets.geojsonUrl) {
+      stateManager.updateAsset('refinedGeojsonUrl', assets.geojsonUrl, 'fire');
+    }
+    
     this.notify('assetsChanged', { type: 'final', assets: this.state.finalAssets });
     return this;
   }
@@ -153,6 +190,7 @@ export class FireModel extends IFireModel {
     this.state.finalAssets = { cogUrl: null, geojsonUrl: null };
     this.state.processingStatus = 'idle';
     this.state.currentStep = 'upload';
+    this.state.jobId = null;
     this.notify('reset');
     return this;
   }
@@ -180,6 +218,9 @@ export class FireModel extends IFireModel {
     
     try {
       const response = await api.analyzeFire(data);
+      
+      // Store the job ID for later use in refinement
+      this.setJobId(response.job_id);
       
       // Poll for results
       const result = await api.pollUntilComplete(() => 
@@ -209,13 +250,18 @@ export class FireModel extends IFireModel {
     this.setProcessingStatus('processing');
     
     try {
+
+      if (this.state.jobId) {
+        data.job_id = this.state.jobId;
+      }
+      
       const response = await api.submitRefinement(data);
       
       // Poll for results
       const result = await api.pollUntilComplete(() => 
         api.getRefinementStatus(response.fire_event_name, response.job_id)
       );
-      
+
       this.setProcessingStatus('success')
         .setFinalAssets({
           cogUrl: result.cog_url,

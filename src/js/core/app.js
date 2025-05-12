@@ -35,24 +35,10 @@ class App {
     // Initialize vegetation presenter
     vegComponents.presenter.initialize();
     
-    // Set up inter-component communication
-    this.setupStateSharing();
+    // Add the vegetation analysis button to the UI
+    this.addVegetationButton();
     
     this.initialized = true;
-  }
-  
-  /**
-   * Set up state sharing between components
-   */
-  setupStateSharing() {
-    // Listen for state changes in fire component to update vegetation component
-    this.components.fire.model.on('stateChanged', (state) => {
-      // When fire model state changes, share it with vegetation component
-      stateManager.shareState('fire', 'vegetation', state);
-    });
-    
-    // Add button to fire view to trigger vegetation analysis
-    this.addVegetationButton();
   }
   
   /**
