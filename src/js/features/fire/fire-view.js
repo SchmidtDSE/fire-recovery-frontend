@@ -435,10 +435,10 @@ export class FireView extends IFireView {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('prefill_for_test') && urlParams.get('prefill_for_test') === 'true') {
         // Prefill date fields with test values
-        document.getElementById('prefire-start-date').value = '2022-06-01';
-        document.getElementById('prefire-end-date').value = '2022-06-15';
-        document.getElementById('postfire-start-date').value = '2022-07-15';
-        document.getElementById('postfire-end-date').value = '2022-07-30';
+        document.getElementById('prefire-start-date').value = '2023-05-09';
+        document.getElementById('prefire-end-date').value = '2023-06-09';
+        document.getElementById('postfire-start-date').value = '2023-06-17';
+        document.getElementById('postfire-end-date').value = '2023-06-30';
         
         // Add test GeoJSON polygon to the map
         const testPolygon = {
