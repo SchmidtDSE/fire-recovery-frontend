@@ -208,6 +208,8 @@ export class VegetationView extends IVegetationView {
       // Clear any existing layers
       this.resultLayerGroup.clearLayers();
       
+      debugger;
+
       const response = await fetch(vegMapUrl);
       const arrayBuffer = await response.arrayBuffer();
       const georaster = await parseGeoraster(arrayBuffer);

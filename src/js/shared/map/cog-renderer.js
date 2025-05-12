@@ -37,6 +37,7 @@ export async function displayCOGLayer(
       throw new Error(`COG fetch failed with status: ${cogResponse.status}`);
     }
 
+    debugger;
     const arrayBuffer = await cogResponse.arrayBuffer();
     const georaster = await parseGeoraster(arrayBuffer);
     
