@@ -1,21 +1,22 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700&display=swap" rel="stylesheet">
-    <title>Fire Recovery: Fire Severity</title>
-    <link rel="stylesheet" type="text/css" href="./css/style.css" />
+    <meta name="description" content="Fire severity analysis tools for National Park Service fire recovery">
+    <title>Fire Recovery: Fire Severity Analysis</title>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700&display=swap">
+    <link rel="stylesheet" href="./css/main.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 </head>
-
 <body>
-
+    <!-- Navigation -->
     <nav class="navbar">
         <ul class="nav-list">
             <li class="nav-item home"><a href="index.html">Home</a></li>
@@ -28,120 +29,199 @@
         </ul>
     </nav>
 
-    <!-- HEADER IMAGE -->
+    <!-- Hero Banner -->
     <header class="hero-image">
         <div class="black-bar"></div>
         <div class="hero-text-box">
-            <h1>Assess Fire Severity</h1>
+            <h1>Fire Severity</h1>
         </div>
     </header>
 
-    <div class="form-map-container">
-        <!-- upload shapefile -->
-        <div class="upload-and-date-container">
-            <label for="uploadShapefile" class="custom-file-upload">Upload Shapefile</label>
-            <input type="file" id="uploadShapefile" accept=".zip" style="display:none" />
-            <span id="uploadStatus" class="status-message"></span>
-
-            <h3 class="section-heading">Set date range for fire:</h3>
-
-            <form id="date-form" class="date-form">
-                <div class="date-row">
-                    <div class="date-field-container">
-                        <label class="date-label" for="prefire-start-date">Prefire Start Date:</label>
-                        <input class="date-field" type="date" id="prefire-start-date" name="prefireStartDate" required>
-                    </div>
-
-                    <div class="date-field-container">
-                        <label class="date-label" for="prefire-end-date">Prefire End Date:</label>
-                        <input class="date-field" type="date" id="prefire-end-date" name="prefireEndDate" required>
-                    </div>
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Analysis Controls -->
+        <section class="analysis-controls">
+            <div class="form-section">
+                <h2 class="section-title">Analysis Parameters</h2>
+                
+                <!-- Park Unit Selector -->
+                <div class="form-field">
+                    <label class="field-label" for="park-unit">Park Unit:</label>
+                    <select id="park-unit" class="field-input" required>
+                        <option value="">-- Select a park unit --</option>
+                        <!-- Options populated by JavaScript -->
+                    </select>
                 </div>
 
-                <div class="date-row">
-                    <div class="date-field-container">
-                        <label class="date-label" for="postfire-start-date">Postfire Start Date:</label>
-                        <input class="date-field" type="date" id="postfire-start-date" name="postfireStartDate" required>
-                    </div>
-
-                    <div class="date-field-container">
-                        <label class="date-label" for="postfire-end-date">Postfire End Date:</label>
-                        <input class="date-field" type="date" id="postfire-end-date" name="postfireEndDate" required>
-                    </div>
+                <!-- Fire Event Name -->
+                <div class="form-field">
+                    <label class="field-label" for="fire-event-name">Fire Event Name:</label>
+                    <input type="text" id="fire-event-name" class="field-input" 
+                        placeholder="Enter a name for this fire event" required>
                 </div>
 
-                <div class="processing-test-section">
-                    <h3 class="section-heading">Submit dates along with a shapefile or drawn polygon:</h3>
-                    <div class="processing-test-container">
-                        <button id="test-process-button" type="button" class="form-submit-button custom-file-upload">
-                            Get Burn Metrics
-                        </button>
-                        <span id="process-status" style="margin-left: 10px; font-size: 1.5em; vertical-align: middle;"></span>
+                <!-- Fire Severity Metric -->
+                <div class="form-field">
+                    <label class="field-label" for="fire-severity-metric-select">Severity Metric:</label>
+                    <select id="fire-severity-metric-select" class="field-input">
+                        <!-- Options populated by JavaScript -->
+                    </select>
+                </div>
+                
+                <!-- File Upload -->
+                <div class="form-field file-upload">
+                    <label for="upload-shapefile" class="upload-button">
+                        <i class="fas fa-upload"></i> Upload Shapefile
+                    </label>
+                    <input type="file" id="upload-shapefile" accept=".zip" hidden>
+                    <span id="upload-status" class="upload-status"></span>
+                </div>
+            </div>
+
+            <div class="date-section">
+                <h2 class="section-title">Date Range Selection</h2>
+                
+                <!-- Pre-fire Date Range -->
+                <div class="date-group">
+                    <h3 class="date-title">Pre-fire Period</h3>
+                    <div class="date-field-pair">
+                        <div class="date-field">
+                            <label for="prefire-start-date">Start Date:</label>
+                            <input type="date" id="prefire-start-date" required>
+                        </div>
+                        <div class="date-field">
+                            <label for="prefire-end-date">End Date:</label>
+                            <input type="date" id="prefire-end-date" required>
+                        </div>
                     </div>
                 </div>
-            </form>
-
-             <!-- Refine boundary phase buttons container -->
-            <div id="refinement-container" style="display: none;">
-                <p class="refinement-instructions">Draw an outline on the map to further refine the boundary and resubmit or accept current perimeter.</p>
+                
+                <!-- Post-fire Date Range -->
+                <div class="date-group">
+                    <h3 class="date-title">Post-fire Period</h3>
+                    <div class="date-field-pair">
+                        <div class="date-field">
+                            <label for="postfire-start-date">Start Date:</label>
+                            <input type="date" id="postfire-start-date" required>
+                        </div>
+                        <div class="date-field">
+                            <label for="postfire-end-date">End Date:</label>
+                            <input type="date" id="postfire-end-date" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Process Button -->
+                <div class="action-container">
+                    <button id="process-button" type="button" class="primary-button">
+                        <i class="fas fa-fire"></i> Process Fire Analysis
+                    </button>
+                    <span id="process-status" class="process-status"></span>
+                </div>
+            </div>
+            
+            <!-- Boundary Refinement UI (hidden initially) -->
+            <div id="refinement-container" class="refinement-container hidden">
+                <h2 class="section-title">Boundary Refinement</h2>
+                <p class="instructions">Draw an outline on the map to refine the boundary.</p>
                 <div class="button-group">
-                    <button id="refine-button" class="action-button">Refine</button>
+                    <button id="refine-button" class="action-button" disabled>Refine</button>
                     <button id="accept-button" class="action-button">Accept</button>
-                    <button id="start-over-button" class="action-button">Start Over</button>
+                    <button id="reset-button" class="action-button secondary">Reset</button>
                 </div>
             </div>
+        </section>
 
-
-
-            <!-- metrics container -->
-            <div id="metrics-container">
-                <div class="date-summary-container">
-                    <h3 class="section-heading metrics-heading">Selected Date Ranges:</h3>
-                    <div id="prefire-dates"></div>
-                    <div id="postfire-dates"></div>
+        <!-- Map and Results -->
+        <section class="map-and-results">
+            <div class="map-container">
+                <div class="map-controls">
+                    <button class="map-button active" data-map="street">Street Map</button>
+                    <button class="map-button" data-map="satellite">Satellite</button>
+                    <button class="map-button" data-map="vegetation">Vegetation</button>
                 </div>
-                <h3 class="section-heading metrics-heading">Average Fire Severity:</h3>
-                <div id="fire-severity-metric"></div>
-
-                <h3 class="section-heading metrics-heading">Hectares of Cover Class Lost:</h3>
-                <div id="biomass-lost-metric"></div>
+                <div id="map"></div>
             </div>
-
-
-        <!-- Veg Map Table -->
-        <div id="table-container">
-            <table id="example" class="display" style="width:100%">
-                <thead>
-                    <tr>
-                        <th>Vegetation</th>
-                        <th>Color</th>
-                        <th>Hectares</th>
-                        <th>Percent of Full Park</th>
-                        <th>Percent of Burn Area</th>
-                        <th>Burn Severity Mean</th>
-                        <th>Burn Severity SD</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rows will be populated by JavaScript -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-        <!-- map view buttons -->
-        <div class="map-container">
-            <div class="button-container">
-                <button class="map-button active">Street Map</button>
-                <button class="map-button">Satellite Map</button>
-                <button class="map-button">Vegetation Map</button>
+            
+            <!-- Results Panel -->
+            <div class="results-panel hidden">
+                <div class="results-tabs">
+                    <button class="tab-button active" data-tab="metrics">Metrics</button>
+                    <button class="tab-button" data-tab="vegetation">Vegetation</button>
+                    <button class="tab-button" data-tab="export">Export</button>
+                </div>
+                
+                <div class="tab-content" id="metrics-tab">
+                    <div class="metrics-group">
+                        <h3>Date Ranges:</h3>
+                        <div id="prefire-dates" class="metric-value"></div>
+                        <div id="postfire-dates" class="metric-value"></div>
+                    </div>
+                    <div class="metrics-group">
+                        <h3>Fire Severity:</h3>
+                        <div id="fire-severity-metric" class="metric-value"></div>
+                    </div>
+                    <div class="metrics-group">
+                        <h3>Vegetation Impact:</h3>
+                        <div id="biomass-lost-metric" class="metric-value"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content hidden" id="vegetation-tab">
+                    <!-- Status message area for vegetation analysis -->
+                    <div id="vegetation-status" class="status-message"></div>
+                    
+                    <!-- Loading indicator for vegetation analysis -->
+                    <div class="loading-container" id="vegetation-loading" style="display:none;">
+                        <div class="spinner"></div>
+                        <p>Analyzing vegetation impact...</p>
+                    </div>
+                    
+                    <div class="table-container" id="vegetation-table-container">
+                        <table id="vegetation-table" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Color</th>
+                                    <th>Vegetation</th>
+                                    <th>Hectares</th>
+                                    <th>% Park</th>
+                                    <th>% Burn</th>
+                                    <th>Severity</th>
+                                    <th>SD</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Table rows populated by JavaScript -->
+                            </tbody>
+                        </table>
+                        
+                        <!-- Download button for vegetation data -->
+                        <div class="table-actions">
+                            <button id="download-veg-csv" class="action-button">
+                                <i class="fas fa-download"></i> Download CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-content hidden" id="export-tab">
+                    <div class="export-options">
+                        <button class="export-button" data-format="geojson">
+                            <i class="fas fa-file-export"></i> Export GeoJSON
+                        </button>
+                        <button class="export-button" data-format="csv">
+                            <i class="fas fa-table"></i> Export CSV
+                        </button>
+                        <button class="export-button" data-format="report">
+                            <i class="fas fa-file-pdf"></i> Export Report
+                        </button>
+                    </div>
+                </div>
             </div>
+        </section>
+    </main>
 
-            <div id="map"></div>
-        </div>
-    </div>
-
-    <!-- Pages noted in footer need to be created -->
+    <!-- Footer -->
     <footer class="site-footer">
         <nav class="footer-nav">
             <ul>
@@ -151,29 +231,20 @@
             </ul>
         </nav>
     </footer>
-
-    <!-- load leaflet -->
+    
+    <!-- Core Libraries -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <!-- leaflet draw -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-    <!-- library for handling zipped shapefiles -->
     <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
-    <script src="https://unpkg.com/shapefile@latest/shapefile.min.js"></script>
-    <!-- Leaflet filelayer for handling file uploads directly -->
-    <script src="https://unpkg.com/leaflet-filelayer/dist/leaflet.filelayer.js"></script>
-    <!-- georaster api -->
     <script src="https://unpkg.com/georaster"></script>
-    <!-- georaster layer for leaflet -->
     <script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
-    <script src="js/HeaderImage.js"></script>
-    <!-- jquery for veg map table -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-    <script type="module" src="js/vegMapTable.js"></script>
-    <!-- global javascript file -->
-    <script type="module" src="js/FireSeverity.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <!-- Application Scripts -->
+    <script type="module" src="js/core/app.js"></script>
+    <script src="js/core/hero-image.js"></script>
 
 </body>
-
 </html>

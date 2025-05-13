@@ -1,0 +1,223 @@
+/**
+ * Map component styles
+ * Styling for map containers and controls
+ */
+
+/* Main map container */
+.map-container {
+  position: sticky;
+  top: var(--space-md);
+  height: var(--map-height);
+  border: var(--map-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+}
+
+/* Map button controls */
+.map-button {
+  flex: 1;
+  margin: 0;
+  padding: 20px;
+  border: none;
+  background-color: var(--input-bg-color, #FFFDFF);
+  color: black;
+  cursor: pointer;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 14pt;
+}
+
+.map-button:hover {
+  border: 4px solid var(--input-hover-color, #BBB7AD);
+}
+
+.map-button.active {
+  border: 4px solid var(--input-hover-color, #BBB7AD);
+  filter: drop-shadow(1px 1px 4px rgba(0, 0, 0, 0.6));
+}
+
+/* Map wrapper to ensure proper sizing */
+.map-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+/* Custom styles for Leaflet map elements */
+.leaflet-container {
+  font-family: var(--font-family-sans);
+}
+
+.leaflet-container a {
+  color: var(--brand-primary);
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}
+
+.leaflet-popup-content {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+}
+
+/* Custom map controls */
+.map-controls {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  z-index: 1000;
+  background-color: var(--map-control-background);
+  padding: var(--space-xs);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}
+
+.map-layer-control {
+  position: absolute;
+  bottom: var(--space-lg);
+  right: var(--space-md);
+  z-index: 1000;
+  background-color: var(--map-control-background);
+  padding: var(--space-xs);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}
+
+.map-legend {
+  position: absolute;
+  bottom: var(--space-lg);
+  left: var(--space-md);
+  z-index: 1000;
+  background-color: var(--map-control-background);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  max-width: 200px;
+}
+
+/* Legend styles */
+.legend-title {
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+  font-size: var(--font-size-sm);
+}
+
+.legend-scale {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  font-size: var(--font-size-xs);
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  margin-right: var(--space-xs);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+/* Fire severity legend specific colors */
+.severity-legend .legend-scale {
+  background: linear-gradient(
+    to bottom,
+    var(--severity-low),
+    var(--severity-low-mid),
+    var(--severity-mid),
+    var(--severity-mid-high),
+    var(--severity-high),
+    var(--severity-very-high),
+    var(--severity-extreme),
+    var(--severity-critical),
+    var(--severity-catastrophic)
+  );
+  height: 150px;
+  width: 20px;
+  position: relative;
+}
+
+.severity-legend .min-max-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 150px;
+  margin-left: var(--space-xs);
+  font-size: var(--font-size-xs);
+}
+
+.severity-legend .legend-container {
+  display: flex;
+}
+
+/* Draw controls customization */
+.leaflet-draw-toolbar a {
+  background-color: var(--map-control-background);
+}
+
+/* Map overlay for loading state */
+.map-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+}
+
+/* Map scale styling */
+.leaflet-control-scale {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+}
+
+/* Map zoom controls */
+.map-zoom-control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.map-zoom-control button {
+  width: 30px;
+  height: 30px;
+  background-color: var(--bg-primary);
+  border: var(--border-width-default) solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  padding: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .map-container {
+    height: 400px;
+  }
+  
+  .map-legend, 
+  .map-layer-control {
+    bottom: var(--space-md);
+  }
+  
+  .map-legend {
+    max-width: 150px;
+  }
+}

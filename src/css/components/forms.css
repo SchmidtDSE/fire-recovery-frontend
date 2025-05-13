@@ -1,0 +1,297 @@
+/**
+ * Form components
+ * Styling for all form elements and controls
+ */
+
+/* Form elements */
+.form-group {
+  margin-bottom: var(--space-md);
+}
+
+.form-label {
+  display: inline-block;
+  margin-bottom: var(--space-xs);
+  font-weight: 500;
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  height: calc(2.25rem + 2px);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  background-clip: padding-box;
+  border: var(--border-width-default) solid var(--border-color);
+  border-radius: var(--border-radius);
+  transition: border-color var(--transition-fast) ease-in-out, 
+              box-shadow var(--transition-fast) ease-in-out;
+}
+
+.form-control:focus {
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border-color: var(--brand-primary);
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(55, 8, 85, 0.25);
+}
+
+.form-control::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.form-control:disabled,
+.form-control[readonly] {
+  background-color: var(--bg-secondary);
+  opacity: 1;
+}
+
+/* Select control */
+select.form-control {
+  padding-right: var(--space-lg); /* Space for the arrow */
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right var(--space-sm) center;
+  background-size: 16px 12px;
+}
+
+/* Textarea */
+textarea.form-control {
+  height: auto;
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Input sizes */
+.form-control-sm {
+  height: calc(1.8125rem + 2px);
+  padding: var(--space-xxs) var(--space-xs);
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-sm);
+}
+
+.form-control-lg {
+  height: calc(2.875rem + 2px);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-lg);
+  border-radius: var(--border-radius-lg);
+}
+
+/* Form help text */
+.form-text {
+  display: block;
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+/* Form validation states */
+.form-control.is-invalid {
+  border-color: var(--danger);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-valid {
+  border-color: var(--success);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2328a745' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+/* Invalid feedback text */
+.invalid-feedback {
+  display: none;
+  width: 100%;
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--danger);
+}
+
+.form-control.is-invalid ~ .invalid-feedback {
+  display: block;
+}
+
+/* Valid feedback text */
+.valid-feedback {
+  display: none;
+  width: 100%;
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--success);
+}
+
+.form-control.is-valid ~ .valid-feedback {
+  display: block;
+}
+
+/* Checkboxes and radios */
+.form-check {
+  position: relative;
+  display: block;
+  padding-left: 1.5rem;
+}
+
+.form-check-input {
+  position: absolute;
+  margin-top: 0.3rem;
+  margin-left: -1.5rem;
+}
+
+.form-check-label {
+  margin-bottom: 0;
+}
+
+/* Inline form elements */
+.form-inline {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+}
+
+.form-inline .form-control {
+  display: inline-block;
+  width: auto;
+  vertical-align: middle;
+}
+
+.form-inline .form-group {
+  display: flex;
+  flex: 0 0 auto;
+  flex-flow: row wrap;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.form-inline .form-check {
+  width: auto;
+}
+
+/* Date range inputs */
+.date-range-container {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.date-range-container .form-group {
+  flex: 1;
+}
+
+/* Form rows for organizing form groups */
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -5px;
+  margin-left: -5px;
+}
+
+.form-row > .form-group {
+  padding-right: 5px;
+  padding-left: 5px;
+  flex: 1;
+}
+
+/* Custom file upload button */
+.custom-file-upload {
+  display: inline-block;
+  padding: 10px 20px;
+  margin: 20px 0;
+  font-size: 14pt;
+  color: #000;
+  background-color: var(--input-bg-color, #FFFDFF);
+  border: 1px solid #000;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Public Sans', sans-serif;
+}
+
+.custom-file-upload:hover {
+  background-color: var(--input-hover-color, #BBB7AD);
+}
+
+/* Status message */
+.status-message {
+  margin-left: 10px;
+  font-size: 10pt;
+  vertical-align: middle;
+}
+
+/* Section heading */
+.section-heading {
+  margin-top: 60px;
+  font-weight: bold;
+}
+
+/* Date form */
+.date-form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Date fields */
+.date-field-container {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.date-field {
+  padding: 10px;
+  font-size: 1em;
+  color: #000;
+  background-color: var(--input-bg-color, #FFFDFF);
+  border: 1px solid #000;
+  border-radius: 5px;
+  width: var(--form-field-width, 280px);
+  box-sizing: border-box;
+  font-family: 'Public Sans', sans-serif;
+}
+
+/* Date labels */
+.date-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14pt;
+  font-family: 'Public Sans', sans-serif;
+  width: var(--form-field-width, 280px);
+}
+
+/* Submit button */
+.form-submit-button {
+  display: inline-block;
+}
+
+/* Date row layout */
+.date-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .date-field-container {
+    width: 100%;
+  }
+  
+  .date-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .date-form {
+    gap: 15px;
+  }
+}
