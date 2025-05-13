@@ -189,26 +189,28 @@ export class FireView extends IFireView {
         const buttonText = button.textContent.trim();
         
         // Toggle veg-map-active class on body
-        if (buttonText === 'Vegetation Map') {
+        if (buttonText === 'Vegetation') {
           document.body.classList.add('veg-map-active');
         } else {
           document.body.classList.remove('veg-map-active');
         }
         
         // Switch map layers
-        if (buttonText === 'Vegetation Map') {
+        if (buttonText === 'Vegetation') {
           this.loadCOGLayer();
         } else {
           this.switchToLayer(buttonText === 'Street Map' ? this.streetMapLayer : this.satelliteLayer);
         }
 
-        // Show/hide table based on view
-        if (buttonText === 'Vegetation Map') {
-          if (document.getElementById('fire-severity-metric').style.display === 'block') {
-            document.getElementById('table-container').style.display = 'block';
+        // Show/hide table based on view - Add null check
+        const tableContainer = document.getElementById('table-container');
+        if (buttonText === 'Vegetation') {
+          const fireMetric = document.getElementById('fire-severity-metric');
+          if (fireMetric && fireMetric.style.display === 'block' && tableContainer) {
+            tableContainer.style.display = 'block';
           }
-        } else {
-          document.getElementById('table-container').style.display = 'none';
+        } else if (tableContainer) {
+          tableContainer.style.display = 'none';
         }
       });
     });
@@ -311,7 +313,7 @@ export class FireView extends IFireView {
         opacity: .8,
         resolution: 256,
         pixelValuesToColorFn: value => {
-          if (value === null || value === undefined || value === 0) return 'transparent';
+          if (value === null || value === undefined || value <= 0) return 'transparent';
           if (value < 0.1) return '#F0F921'; // bright yellow
           if (value < 0.2) return '#FDC328';
           if (value < 0.3) return '#F89441';
@@ -454,23 +456,49 @@ export class FireView extends IFireView {
   }
 
   /**
-   * Load COG layer
+   * Load COG layer - Modified to ensure proper base layer is used
    */
   loadCOGLayer() {
     const state = this.presenter.model.getState();
     const parkUnit = state.parkUnit;
     
-    // If we don't have a park unit selected, use the default vegMapCOG
+    if (!parkUnit || !parkUnit.veg_cog_url) {
+      this.showErrorState('No vegetation data available for this park unit');
+      return;
+    }
+    
+    // First, ensure we switch to the street map as base layer
+    this.switchToBaseLayer(this.streetMapLayer);
+    
+    // Then load the vegetation layer on top
     const vegMapUrl = parkUnit.veg_cog_url;
     
     loadVegetationCOGLayer(vegMapUrl, this.map, this.streetMapLayer)
-        .then(layer => {
+      .then(layer => {
         this.cogLayer = layer;
-        })
-        .catch(error => {
+      })
+      .catch(error => {
         console.error("Error in loadCOGLayer:", error);
         this.showErrorState(`Failed to load vegetation map: ${error.message}`);
-        });
+      });
+  }
+
+  /**
+   * Switch to a base layer (removing other base layers)
+   * @param {L.TileLayer} layer - The base layer to switch to
+   */
+  switchToBaseLayer(layer) {
+    // Remove existing base layers
+    if (this.map.hasLayer(this.streetMapLayer)) {
+      this.map.removeLayer(this.streetMapLayer);
+    }
+    
+    if (this.map.hasLayer(this.satelliteLayer)) {
+      this.map.removeLayer(this.satelliteLayer);
+    }
+    
+    // Add the new base layer
+    this.map.addLayer(layer);
   }
 
   /**
@@ -709,6 +737,44 @@ export class FireView extends IFireView {
     const resolveButton = document.getElementById('resolve-button');
     if (resolveButton) {
       resolveButton.remove();
+    }
+  }
+
+  /**
+   * Switch to the specified base layer
+   * @param {L.TileLayer} layer - The layer to switch to
+   */
+  switchToLayer(layer) {
+    // Remove existing base layers
+    if (this.map.hasLayer(this.streetMapLayer)) {
+      this.map.removeLayer(this.streetMapLayer);
+    }
+    
+    if (this.map.hasLayer(this.satelliteLayer)) {
+      this.map.removeLayer(this.satelliteLayer);
+    }
+    
+    // Remove vegetation layer if it exists
+    if (this.cogLayer) {
+      this.map.removeLayer(this.cogLayer);
+    }
+    
+    // Add the new layer
+    this.map.addLayer(layer);
+    
+    // Ensure the GeoJSON stays on top
+    if (this.geoJsonLayerGroup) {
+      this.geoJsonLayerGroup.bringToFront();
+    }
+    
+    // Ensure result layers stay on top if they exist
+    if (this.resultLayerGroup) {
+      // Iterate through each layer in the group and bring it to front
+      this.resultLayerGroup.eachLayer(layer => {
+        if (layer.bringToFront) {
+          layer.bringToFront();
+        }
+      });
     }
   }
 }
