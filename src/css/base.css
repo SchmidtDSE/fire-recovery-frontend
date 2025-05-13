@@ -78,6 +78,10 @@ p {
   margin-bottom: var(--space-md);
 }
 
+p.instructions {
+  padding-bottom: 20px;
+}
+
 small, .text-small {
   font-size: var(--font-size-sm);
 }
@@ -187,6 +191,15 @@ h2 {
   text-align: left;
 }
 
+h2.section-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: black;
+  margin: 0;
+  line-height: 1.2;
+  text-align: left;
+}
+
 h3 {
   font-size: 18px;
   font-weight: 200;
@@ -198,4 +211,28 @@ h3 {
 
 .textbox h3 {
   color: white; /* Override for h3 inside .textbox */
+}
+
+.date-title {
+  padding-top: 8px; /* Override for h3 inside .date-title */
+}
+
+/* background colors for analysis sections */
+.form-section {
+  /* background-color: #EBE8E4; */
+  padding: 40px;
+  border-bottom: 1.5px solid black;
+  /* margin: 40px; */
+
+}
+
+.date-section {
+  /* background-color: #EBE8E4; */
+  padding: 40px;
+  border-bottom: 2px solid black;
+}
+
+.refinement-container {
+  /* background-color: #EBE8E4; */
+  padding: 40px;
 }
