@@ -5,8 +5,15 @@
 
 // TODO: Make endpoints consistent in case
 
+const local = true; // Set to true for local development, false for production
+
 // Base URL configuration
-const API_BASE = 'http://localhost:8000/fire-recovery';
+let API_BASE;
+if (local) {
+  API_BASE = 'http://localhost:8000/fire-recovery';
+} else {
+  API_BASE = 'https://fire-recovery-backend-dev-113009620257.us-central1.run.app/fire-recovery';
+}
 
 // Fire severity endpoints
 export const FIRE_ENDPOINTS = {

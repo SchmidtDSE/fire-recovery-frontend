@@ -85,6 +85,7 @@ export class VegetationPresenter extends IVegetationPresenter {
     // Prepare data for API request
     const resolveData = {
       fire_event_name: fireEventName,
+      job_id: vegState.jobId,
       veg_gpkg_url: vegGpkgUrl,
       fire_cog_url: refinedCogUrl
     };
