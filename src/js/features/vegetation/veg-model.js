@@ -8,15 +8,6 @@ import stateManager from '../../core/state-manager.js';
 export class VegetationModel extends IVegetationModel {
   constructor() {
     super();
-    // Initial state - similar to state.js but specific to vegetation
-    this.state = {
-      fireEventName: null,
-      parkUnit: null,
-      jobId: null,
-      cogUrl: null,
-      processingStatus: 'idle',
-      vegMapResults: null
-    };
     
     // Event listeners
     this.listeners = {
@@ -40,32 +31,32 @@ export class VegetationModel extends IVegetationModel {
   _setupStateManagerListeners() {
     stateManager.on('sharedStateChanged', (event) => {
       if (event.source !== 'vegetation') {
-        switch(event.property) {
-          case 'fireEventName':
-            this.state.fireEventName = event.value;
-            break;
-          case 'parkUnit':
-            this.state.parkUnit = event.value;
-            break;
-          case 'jobId':
-            this.state.jobId = event.value;
-            this.notify('jobIdChanged', event.value);
-            break;
-          case 'processingStatus':
-            this.state.processingStatus = event.value;
-            this.notify('processingStatusChanged', event.value);
-            break;
-        }
-        this.notify('stateChanged', this.state);
+        this.notify('stateChanged', this.getState());
+      }
+    });
+    
+    // Listen for specific property changes
+    stateManager.on('processingStatusChanged', (event) => {
+      if (event.source !== 'vegetation') {
+        this.notify('processingStatusChanged', event.value);
+      }
+    });
+    
+    stateManager.on('jobIdChanged', (event) => {
+      if (event.source !== 'vegetation') {
+        this.notify('jobIdChanged', event.value);
+      }
+    });
+    
+    stateManager.on('vegMapResultsChanged', (event) => {
+      if (event.source !== 'vegetation') {
+        this.notify('resultsChanged', event.value);
       }
     });
     
     stateManager.on('assetsChanged', (event) => {
       if (event.source !== 'vegetation') {
-        if (event.assetType === 'refinedCogUrl') {
-          this.state.cogUrl = event.value;
-          this.notify('stateChanged', this.state);
-        }
+        this.notify('stateChanged', this.getState());
       }
     });
   }
@@ -94,7 +85,7 @@ export class VegetationModel extends IVegetationModel {
     
     // Always notify of state changed
     if (event !== 'stateChanged') {
-      this.notify('stateChanged', this.state);
+      this.notify('stateChanged', this.getState());
     }
   }
   
@@ -103,7 +94,17 @@ export class VegetationModel extends IVegetationModel {
    * @returns {Object} Current state
    */
   getState() {
-    return { ...this.state };
+    const sharedState = stateManager.getSharedState();
+    
+    // Map shared state to the model's expected state structure
+    return {
+      fireEventName: sharedState.fireEventName,
+      parkUnit: sharedState.parkUnit,
+      jobId: sharedState.jobId,
+      processingStatus: sharedState.processingStatus,
+      cogUrl: sharedState.assets.refined.severityCogUrls[sharedState.activeMetric] || null,
+      vegMapResults: sharedState.vegMapResults
+    };
   }
 
   /**
@@ -111,11 +112,9 @@ export class VegetationModel extends IVegetationModel {
    * @param {Object} fireState - Fire model state
    */
   updateFromFireState(fireState) {
-    this.state.fireEventName = fireState.fireEventName || this.state.fireEventName;
-    this.state.parkUnit = fireState.parkUnit || this.state.parkUnit;
-    this.state.jobId = fireState.jobId || this.state.jobId;
-    this.state.cogUrl = fireState.finalAssets?.cogUrl || this.state.cogUrl;
-    this.notify('stateChanged', this.state);
+    // Since we're using shared state, this is mostly a no-op now
+    // Just notify that state changed for any components listening to this model
+    this.notify('stateChanged', this.getState());
     return this;
   }
   
@@ -124,7 +123,6 @@ export class VegetationModel extends IVegetationModel {
    * @param {string} status - Processing status
    */
   setProcessingStatus(status) {
-    this.state.processingStatus = status;
     stateManager.updateSharedState('processingStatus', status, 'vegetation');
     this.notify('processingStatusChanged', status);
     return this;
@@ -135,7 +133,6 @@ export class VegetationModel extends IVegetationModel {
    * @param {string} jobId - Job ID
    */
   setJobId(jobId) {
-    this.state.jobId = jobId;
     stateManager.updateSharedState('jobId', jobId, 'vegetation');
     this.notify('jobIdChanged', jobId);
     return this;
@@ -146,7 +143,7 @@ export class VegetationModel extends IVegetationModel {
    * @param {Object} results - Vegetation map results
    */
   setResults(results) {
-    this.state.vegMapResults = results;
+    stateManager.updateVegMapResults(results, 'vegetation');
     this.notify('resultsChanged', results);
     return this;
   }

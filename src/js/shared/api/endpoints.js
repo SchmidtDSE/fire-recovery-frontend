@@ -5,7 +5,7 @@
 
 // TODO: Make endpoints consistent in case
 
-const local = true; // Set to true for local development, false for production
+const local = false; // Set to true for local development, false for production
 
 // Base URL configuration
 let API_BASE;

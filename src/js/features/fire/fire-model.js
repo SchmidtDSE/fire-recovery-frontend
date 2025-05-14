@@ -8,23 +8,6 @@ import stateManager from '../../core/state-manager.js';
 export class FireModel extends IFireModel {
   constructor() {
     super();
-    // Initial state
-    this.state = {
-      fireEventName: null,
-      parkUnit: null,
-      fireSeverityMetric: 'RBR',
-      processingStatus: 'idle',
-      currentStep: 'upload',
-      jobId: null,
-      intermediateAssets: {
-        cogUrl: null,
-        geojsonUrl: null,
-      },
-      finalAssets: {
-        cogUrl: null,
-        geojsonUrl: null,
-      }
-    };
     
     // Event listeners
     this.listeners = {
@@ -41,6 +24,65 @@ export class FireModel extends IFireModel {
     
     // Register with state manager
     stateManager.registerComponent('fire', this);
+    
+    // Set up listeners for state manager events
+    this._setupStateManagerListeners();
+  }
+  
+  /**
+   * Setup listeners for state manager events
+   * @private
+   */
+  _setupStateManagerListeners() {
+    // Listen for general state changes
+    stateManager.on('sharedStateChanged', (event) => {
+      if (event.source !== 'fire') {
+        this.notify('stateChanged', stateManager.getSharedState());
+      }
+    });
+    
+    // Listen for specific property changes
+    stateManager.on('fireEventNameChanged', (event) => {
+      if (event.source !== 'fire') {
+        this.notify('fireEventNameChanged', event.value);
+      }
+    });
+    
+    stateManager.on('parkUnitChanged', (event) => {
+      if (event.source !== 'fire') {
+        this.notify('parkUnitChanged', event.value);
+      }
+    });
+    
+    stateManager.on('processingStatusChanged', (event) => {
+      if (event.source !== 'fire') {
+        this.notify('processingStatusChanged', event.value);
+      }
+    });
+    
+    stateManager.on('jobIdChanged', (event) => {
+      if (event.source !== 'fire') {
+        this.notify('jobIdChanged', event.value);
+      }
+    });
+    
+    stateManager.on('activeMetricChanged', (event) => {
+      if (event.source !== 'fire') {
+        this.notify('fireSeverityMetricChanged', event.value);
+      }
+    });
+    
+    stateManager.on('currentStepChanged', (event) => {
+      if (event.source !== 'fire') {
+        this.notify('currentStepChanged', event.value);
+      }
+    });
+    
+    stateManager.on('assetsChanged', (event) => {
+      if (event.source !== 'fire') {
+        this.notify('assetsChanged', event);
+      }
+    });
   }
   
   /**
@@ -67,8 +109,8 @@ export class FireModel extends IFireModel {
     
     // Always notify of state changed
     if (event !== 'stateChanged') {
-      console.log("State Change - Event: ", event, "Data: ", data, this.state);
-      this.notify('stateChanged', this.state);
+      console.log("State Change - Event: ", event, "Data: ", data);
+      this.notify('stateChanged', this.getState());
     }
   }
   
@@ -77,7 +119,25 @@ export class FireModel extends IFireModel {
    * @returns {Object} Current state
    */
   getState() {
-    return { ...this.state };
+    const sharedState = stateManager.getSharedState();
+    
+    // Map shared state to the model's expected state structure
+    return {
+      fireEventName: sharedState.fireEventName,
+      parkUnit: sharedState.parkUnit,
+      fireSeverityMetric: sharedState.activeMetric,
+      processingStatus: sharedState.processingStatus,
+      currentStep: sharedState.currentStep,
+      jobId: sharedState.jobId,
+      intermediateAssets: {
+        cogUrl: sharedState.assets.coarse.severityCogUrls[sharedState.activeMetric] || null,
+        geojsonUrl: sharedState.assets.coarse.geojsonUrl
+      },
+      finalAssets: {
+        cogUrl: sharedState.assets.refined.severityCogUrls[sharedState.activeMetric] || null,
+        geojsonUrl: sharedState.assets.refined.geojsonUrl
+      }
+    };
   }
   
   /**
@@ -85,7 +145,6 @@ export class FireModel extends IFireModel {
    * @param {string} name - Fire event name
    */
   setFireEventName(name) {
-    this.state.fireEventName = name;
     stateManager.updateSharedState('fireEventName', name, 'fire');
     this.notify('fireEventNameChanged', name);
     return this;
@@ -96,7 +155,6 @@ export class FireModel extends IFireModel {
    * @param {Object} unit - Park unit data
    */
   setParkUnit(unit) {
-    this.state.parkUnit = unit;
     stateManager.updateSharedState('parkUnit', unit, 'fire');
     this.notify('parkUnitChanged', unit);
     return this;
@@ -107,7 +165,6 @@ export class FireModel extends IFireModel {
    * @param {string} jobId - Job ID
    */
   setJobId(jobId) {
-    this.state.jobId = jobId;
     stateManager.updateSharedState('jobId', jobId, 'fire');
     this.notify('jobIdChanged', jobId);
     return this;
@@ -118,7 +175,7 @@ export class FireModel extends IFireModel {
    * @param {string} metric - Metric type
    */
   setFireSeverityMetric(metric) {
-    this.state.fireSeverityMetric = metric;
+    stateManager.setActiveMetric(metric, 'fire');
     this.notify('fireSeverityMetricChanged', metric);
     return this;
   }
@@ -128,7 +185,6 @@ export class FireModel extends IFireModel {
    * @param {string} status - Processing status
    */
   setProcessingStatus(status) {
-    this.state.processingStatus = status;
     stateManager.updateSharedState('processingStatus', status, 'fire');
     this.notify('processingStatusChanged', status);
     return this;
@@ -139,7 +195,7 @@ export class FireModel extends IFireModel {
    * @param {string} step - Current step
    */
   setCurrentStep(step) {
-    this.state.currentStep = step;
+    stateManager.updateCurrentStep(step, 'fire');
     this.notify('currentStepChanged', step);
     return this;
   }
@@ -149,22 +205,28 @@ export class FireModel extends IFireModel {
    * @param {Object} assets - Asset URLs
    */
   setIntermediateAssets(assets) {
-    this.state.intermediateAssets = {...this.state.intermediateAssets, ...assets};
-    
     // Update shared state assets
     if (assets.cogUrl) {
       // Update the nested asset structure with current metric
-      const metric = this.state.fireSeverityMetric;
+      const metric = stateManager.getSharedState().activeMetric;
       const severityCogUrls = {
+        ...stateManager.getSharedState().assets.coarse.severityCogUrls,
         [metric]: assets.cogUrl
       };
       stateManager.updateAsset('coarse.severityCogUrls', severityCogUrls, 'fire');
     }
+    
     if (assets.geojsonUrl) {
       stateManager.updateAsset('coarse.geojsonUrl', assets.geojsonUrl, 'fire');
     }
     
-    this.notify('assetsChanged', { type: 'intermediate', assets: this.state.intermediateAssets });
+    this.notify('assetsChanged', { 
+      type: 'intermediate', 
+      assets: {
+        cogUrl: assets.cogUrl || this.getState().intermediateAssets.cogUrl,
+        geojsonUrl: assets.geojsonUrl || this.getState().intermediateAssets.geojsonUrl
+      } 
+    });
     return this;
   }
   
@@ -173,22 +235,28 @@ export class FireModel extends IFireModel {
    * @param {Object} assets - Asset URLs
    */
   setFinalAssets(assets) {
-    this.state.finalAssets = {...this.state.finalAssets, ...assets};
-    
     // Update shared state assets
     if (assets.cogUrl) {
       // Update the nested asset structure with current metric
-      const metric = this.state.fireSeverityMetric;
+      const metric = stateManager.getSharedState().activeMetric;
       const severityCogUrls = {
+        ...stateManager.getSharedState().assets.refined.severityCogUrls,
         [metric]: assets.cogUrl
       };
       stateManager.updateAsset('refined.severityCogUrls', severityCogUrls, 'fire');
     }
+    
     if (assets.geojsonUrl) {
       stateManager.updateAsset('refined.geojsonUrl', assets.geojsonUrl, 'fire');
     }
     
-    this.notify('assetsChanged', { type: 'final', assets: this.state.finalAssets });
+    this.notify('assetsChanged', { 
+      type: 'final', 
+      assets: {
+        cogUrl: assets.cogUrl || this.getState().finalAssets.cogUrl,
+        geojsonUrl: assets.geojsonUrl || this.getState().finalAssets.geojsonUrl
+      }
+    });
     return this;
   }
   
@@ -196,11 +264,17 @@ export class FireModel extends IFireModel {
    * Reset the state
    */
   resetState() {
-    this.state.intermediateAssets = { cogUrl: null, geojsonUrl: null };
-    this.state.finalAssets = { cogUrl: null, geojsonUrl: null };
-    this.state.processingStatus = 'idle';
-    this.state.currentStep = 'upload';
-    this.state.jobId = null;
+    // Clear assets
+    stateManager.updateAsset('coarse.geojsonUrl', null, 'fire');
+    stateManager.updateAsset('coarse.severityCogUrls', {}, 'fire');
+    stateManager.updateAsset('refined.geojsonUrl', null, 'fire');
+    stateManager.updateAsset('refined.severityCogUrls', {}, 'fire');
+    
+    // Reset status and step
+    stateManager.updateSharedState('processingStatus', 'idle', 'fire');
+    stateManager.updateCurrentStep('upload', 'fire');
+    stateManager.updateSharedState('jobId', null, 'fire');
+    
     this.notify('reset');
     return this;
   }
@@ -210,12 +284,15 @@ export class FireModel extends IFireModel {
    * Keeps intermediate assets but clears final assets
    */
   resetToRefinementStep() {
-    // Keep intermediate assets, fire event name, and park unit
-    this.state.finalAssets = { cogUrl: null, geojsonUrl: null };
-    this.state.processingStatus = 'success';
-    this.state.currentStep = 'refine';
+    // Clear final assets
+    stateManager.updateAsset('refined.geojsonUrl', null, 'fire');
+    stateManager.updateAsset('refined.severityCogUrls', {}, 'fire');
+    
+    // Set status and step
+    stateManager.updateSharedState('processingStatus', 'success', 'fire');
+    stateManager.updateCurrentStep('refine', 'fire');
+    
     this.notify('resetToRefinement');
-    this.notify('currentStepChanged', 'refine');
     return this;
   }
 
@@ -260,9 +337,9 @@ export class FireModel extends IFireModel {
     this.setProcessingStatus('processing');
     
     try {
-
-      if (this.state.jobId) {
-        data.job_id = this.state.jobId;
+      const jobId = stateManager.getSharedState().jobId;
+      if (jobId) {
+        data.job_id = jobId;
       }
       
       const response = await api.submitRefinement(data);

@@ -1,0 +1,43 @@
+/* Color break controls */
+.color-break-controls {
+  padding: 15px;
+  margin: 15px 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--bg-secondary);
+}
+
+.color-break-controls h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.color-sliders {
+  margin: 20px 0;
+}
+
+.color-break-slider {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+  gap: 10px;
+}
+
+.color-swatch {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #ccc;
+}
+
+.break-slider {
+  flex: 1;
+}
+
+.break-value {
+  width: 60px;
+  text-align: center;
+}
+
+#reset-color-breaks {
+  margin-top: 15px;
+}

@@ -202,6 +202,15 @@
                 </div>
                 
                 <div class="tab-content hidden" id="export-tab">
+                    <!-- Add color break controls section -->
+                    <div class="color-break-controls">
+                        <h4>Fire Severity Color Breaks</h4>
+                        <p>Adjust the threshold values for each color break:</p>
+                        <div class="color-sliders">
+                            <!-- Sliders will be populated by JavaScript -->
+                        </div>
+                        <button id="reset-color-breaks" class="action-button secondary">Reset to Defaults</button>
+                    </div>
                     <div class="export-options">
                         <button class="export-button" data-format="geojson">
                             <i class="fas fa-file-export"></i> Export GeoJSON
