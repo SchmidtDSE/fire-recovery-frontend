@@ -48,6 +48,22 @@ export function toggleLayerVisibility(map, layer) {
   }
 }
 
+
+/**
+ * Remove all layers from the map.
+ * 
+ * @param {L.Map} map - Leaflet map instance
+ */
+export function clearLayers(map) {
+  if (map) {
+    map.eachLayer(layer => {
+      if (layer instanceof L.Layer) {
+        map.removeLayer(layer);
+      }
+    });
+  }
+}
+
 /**
  * Set layer opacity
  * @param {L.Layer} layer - Layer to adjust

@@ -745,36 +745,10 @@ export class FireView extends IFireView {
    * @param {L.TileLayer} layer - The layer to switch to
    */
   switchToLayer(layer) {
-    // Remove existing base layers
-    if (this.map.hasLayer(this.streetMapLayer)) {
-      this.map.removeLayer(this.streetMapLayer);
-    }
+    // Get the map manager instance
+    const mapManager = MapManager.getInstance();
     
-    if (this.map.hasLayer(this.satelliteLayer)) {
-      this.map.removeLayer(this.satelliteLayer);
-    }
-    
-    // Remove vegetation layer if it exists
-    if (this.cogLayer) {
-      this.map.removeLayer(this.cogLayer);
-    }
-    
-    // Add the new layer
-    this.map.addLayer(layer);
-    
-    // Ensure the GeoJSON stays on top
-    if (this.geoJsonLayerGroup) {
-      this.geoJsonLayerGroup.bringToFront();
-    }
-    
-    // Ensure result layers stay on top if they exist
-    if (this.resultLayerGroup) {
-      // Iterate through each layer in the group and bring it to front
-      this.resultLayerGroup.eachLayer(layer => {
-        if (layer.bringToFront) {
-          layer.bringToFront();
-        }
-      });
-    }
+    // Use the MapManager method to switch layers while preserving important layers
+    mapManager.switchToBaseLayer(layer, this.resultLayerGroup, this.geoJsonLayerGroup);
   }
 }

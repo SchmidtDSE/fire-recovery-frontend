@@ -1,4 +1,5 @@
 import { DEFAULT_MAP_CENTER, DEFAULT_ZOOM_LEVEL, MAP_TILES } from '../../core/config.js';
+import { switchBaseLayer } from './map-layers.js';
 
 /**
  * Map Manager Singleton
@@ -38,6 +39,22 @@ export class MapManager {
     return this.map;
   }
   
+
+  /**
+   * Switch to specified base layer while preserving feature and result layers
+   * @param {L.TileLayer} baseLayer - The base layer to switch to
+   * @param {L.LayerGroup} [resultLayerGroup] - Optional result layer group to preserve
+   * @param {L.FeatureGroup} [geoJsonLayerGroup] - Optional GeoJSON feature group to preserve
+   */
+  switchToBaseLayer(baseLayer, resultLayerGroup = null, geoJsonLayerGroup = null) {
+    switchBaseLayer(
+      this.map,
+      baseLayer,
+      resultLayerGroup || this.createLayerGroup(),
+      geoJsonLayerGroup || this.createFeatureGroup()
+    );
+  }
+
   /**
    * Setup standard base layers used across the application
    */
