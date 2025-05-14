@@ -210,7 +210,8 @@ h3 {
 }
 
 .textbox h3 {
-  color: white; /* Override for h3 inside .textbox */
+  color: white;
+  font-weight: 200; /* Override for h3 inside .textbox */
 }
 
 .date-title {
