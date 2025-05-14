@@ -59,20 +59,20 @@ export class VegetationPresenter extends IVegetationPresenter {
   async handleVegMapResolution() {
 
     // Get the current application state
-    const fireState = stateManager.getSharedState('fire');
+    const sharedState = stateManager.getSharedState();
     const vegState = this.model.getState();
     
     // Check for required data
-    const fireEventName = fireState.fireEventName || vegState.fireEventName;
-    const refinedCogUrl = fireState.assets.refinedCogUrl; // This should be the final severity COG
-    const parkUnit = vegState.parkUnit || fireState.parkUnit;
-    
+    const fireEventName = sharedState.fireEventName || vegState.fireEventName;
+    // Get the active COG URL for refined severity (true for refined)
+    const refinedCogUrl = stateManager.getActiveCogUrl(true); 
+    const parkUnit = vegState.parkUnit || sharedState.parkUnit;
     if (!fireEventName || !refinedCogUrl) {
       this.view.showMessage('Error: Missing fire event name or severity data. Complete fire analysis first.', 'error');
       return;
     }
     
-    // Get vegetation geopackage URL from park unit
+    // Get the veg geopkg url for this park
     const vegGpkgUrl = parkUnit?.veg_geopkg_url;
     
     if (!vegGpkgUrl) {

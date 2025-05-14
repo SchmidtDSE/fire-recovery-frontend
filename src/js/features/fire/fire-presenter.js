@@ -47,10 +47,12 @@ export class FirePresenter extends IFirePresenter {
     });
     
     this.model.on('assetsChanged', (data) => {
-      if (data.type === 'intermediate' && data.assets.cogUrl) {
-        this.view.displayCOGLayer(data.assets.cogUrl);
-      } else if (data.type === 'final' && data.assets.cogUrl) {
-        this.view.displayCOGLayer(data.assets.cogUrl);
+      // Use state manager to get the current active COG URL instead of direct access
+      const useRefined = data.type === 'final';
+      const cogUrl = stateManager.getActiveCogUrl(useRefined);
+      
+      if (cogUrl) {
+        this.view.displayCOGLayer(cogUrl);
       }
     });
   }
@@ -227,50 +229,14 @@ export class FirePresenter extends IFirePresenter {
    */
   updateMapVisualization() {
     const state = this.model.getState();
-    const metric = state.fireSeverityMetric;
+    const metric = state.activeMetric || 'RBR';
     
-    let cogUrl;
+    // Get COG URL from state manager instead of direct access
+    const useRefined = state.currentStep === 'resolve' || state.currentStep === 'complete';
+    const cogUrl = stateManager.getActiveCogUrl(useRefined);
     
-    // Determine which COG URL to use based on selected metric and state
-    if (state.finalAssets && state.finalAssets.cogUrl) {
-      // If we have final assets, use the appropriate final COG
-      const baseUrl = state.finalAssets.cogUrl.replace('_rbr.tif', '');
-      
-      switch (metric) {
-        case 'RBR':
-          cogUrl = `${baseUrl}_rbr.tif`;
-          break;
-        case 'dNBR':
-          cogUrl = `${baseUrl}_dnbr.tif`;
-          break;
-        case 'RdNBR':
-          cogUrl = `${baseUrl}_rdnbr.tif`;
-          break;
-        default:
-          cogUrl = state.finalAssets.cogUrl;
-      }
-      
-      // Display the updated COG
-      this.view.displayCOGLayer(cogUrl);
-    } else if (state.intermediateAssets && state.intermediateAssets.cogUrl) {
-      // If we only have intermediate assets, use the appropriate intermediate COG
-      const baseUrl = state.intermediateAssets.cogUrl.replace('_rbr.tif', '');
-      
-      switch (metric) {
-        case 'RBR':
-          cogUrl = `${baseUrl}_rbr.tif`;
-          break;
-        case 'dNBR':
-          cogUrl = `${baseUrl}_dnbr.tif`;
-          break;
-        case 'RdNBR':
-          cogUrl = `${baseUrl}_rdnbr.tif`;
-          break;
-        default:
-          cogUrl = state.intermediateAssets.cogUrl;
-      }
-      
-      // Display the updated COG
+    if (cogUrl) {
+      // Display the COG layer with the URL
       this.view.displayCOGLayer(cogUrl);
     }
   }

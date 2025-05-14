@@ -19,11 +19,16 @@ class StateManager {
       parkUnit: null,
       jobId: null,
       processingStatus: 'idle',
+      activeMetric: 'RBR', // Default active metric
       assets: {
-        cogUrl: null,
-        geojsonUrl: null,
-        refinedCogUrl: null,
-        refinedGeojsonUrl: null
+        coarse: {
+          geojsonUrl: null,
+          severityCogUrls: {} // Map of metrics (RBR, dNBR, RdNBR) to URLs
+        },
+        refined: {
+          geojsonUrl: null,
+          severityCogUrls: {} // Map of metrics to URLs
+        }
       }
     };
     
@@ -36,7 +41,8 @@ class StateManager {
       'parkUnitChanged',
       'jobIdChanged',
       'processingStatusChanged',
-      'assetsChanged'
+      'assetsChanged',
+      'activeMetricChanged'
     );
   }
   
@@ -106,15 +112,19 @@ class StateManager {
   }
   
   /**
-   * Update asset state
-   * @param {string} assetType - Asset type (cogUrl, geojsonUrl, etc.)
-   * @param {string} value - New value
+   * Update asset state for nested properties
+   * @param {string} assetGroup - Asset group ('coarse' or 'refined')
+   * @param {string} assetType - Asset type ('geojsonUrl' or 'severityCogUrls')
+   * @param {any} value - New value (string for geojson, object for severity cogs)
    * @param {string} source - Source component name
    */
-  updateAsset(assetType, value, source) {
-    if (assetType in this.sharedState.assets) {
-      this.sharedState.assets[assetType] = value;
+  updateNestedAsset(assetGroup, assetType, value, source) {
+    if (this.sharedState.assets[assetGroup] && 
+        assetType in this.sharedState.assets[assetGroup]) {
+      this.sharedState.assets[assetGroup][assetType] = value;
+      
       this.dispatch.call('assetsChanged', this, {
+        assetGroup,
         assetType,
         value,
         source,
@@ -130,6 +140,77 @@ class StateManager {
       });
     }
     return this;
+  }
+  
+  /**
+   * Update asset state directly (without legacy mapping)
+   * @param {string} assetType - Asset type in new format 'coarse.severityCogUrls' or 'refined.geojsonUrl'
+   * @param {any} value - New value
+   * @param {string} source - Source component name
+   */
+  updateAsset(assetType, value, source) {
+    // Parse the asset type to get the group and property
+    const [assetGroup, assetProperty] = assetType.split('.');
+    
+    // Validate that we have a proper format
+    if (!assetGroup || !assetProperty || 
+        !this.sharedState.assets[assetGroup] ||
+        !(assetProperty in this.sharedState.assets[assetGroup])) {
+      console.warn(`Invalid asset type: ${assetType}. Expected format: 'group.property'`);
+      return this;
+    }
+    
+    // Use updateNestedAsset with the parsed components
+    this.updateNestedAsset(assetGroup, assetProperty, value, source);
+    
+    return this;
+  }
+  
+  /**
+   * Set the active severity metric
+   * @param {string} metric - Metric name (RBR, dNBR, or RdNBR)
+   * @param {string} source - Source component name
+   */
+  setActiveMetric(metric, source) {
+    if (this.sharedState.activeMetric !== metric) {
+      this.sharedState.activeMetric = metric;
+      
+      this.dispatch.call('activeMetricChanged', this, {
+        value: metric,
+        source,
+      });
+      
+      // Also dispatch general state changed
+      this.dispatch.call('sharedStateChanged', this, {
+        property: 'activeMetric',
+        value: metric,
+        source,
+        state: this.sharedState
+      });
+    }
+    return this;
+  }
+  
+  /**
+   * Get the active COG URL based on current metric and refinement status
+   * @param {boolean} useRefined - Whether to use refined COG URLs
+   * @returns {string|null} The active COG URL
+   */
+  getActiveCogUrl(useRefined = false) {
+    const metric = this.sharedState.activeMetric;
+    const assetGroup = useRefined ? 'refined' : 'coarse';
+    
+    return this.sharedState.assets[assetGroup].severityCogUrls[metric] || null;
+  }
+  
+  /**
+   * Get all available metrics for a given refinement status
+   * @param {boolean} useRefined - Whether to check refined COG URLs
+   * @returns {string[]} Array of available metric names
+   */
+  getAvailableMetrics(useRefined = false) {
+    const assetGroup = useRefined ? 'refined' : 'coarse';
+    return Object.keys(this.sharedState.assets[assetGroup].severityCogUrls);
   }
   
   /**

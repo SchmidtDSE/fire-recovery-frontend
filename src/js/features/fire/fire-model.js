@@ -153,10 +153,15 @@ export class FireModel extends IFireModel {
     
     // Update shared state assets
     if (assets.cogUrl) {
-      stateManager.updateAsset('cogUrl', assets.cogUrl, 'fire');
+      // Update the nested asset structure with current metric
+      const metric = this.state.fireSeverityMetric;
+      const severityCogUrls = {
+        [metric]: assets.cogUrl
+      };
+      stateManager.updateAsset('coarse.severityCogUrls', severityCogUrls, 'fire');
     }
     if (assets.geojsonUrl) {
-      stateManager.updateAsset('geojsonUrl', assets.geojsonUrl, 'fire');
+      stateManager.updateAsset('coarse.geojsonUrl', assets.geojsonUrl, 'fire');
     }
     
     this.notify('assetsChanged', { type: 'intermediate', assets: this.state.intermediateAssets });
@@ -172,10 +177,15 @@ export class FireModel extends IFireModel {
     
     // Update shared state assets
     if (assets.cogUrl) {
-      stateManager.updateAsset('refinedCogUrl', assets.cogUrl, 'fire');
+      // Update the nested asset structure with current metric
+      const metric = this.state.fireSeverityMetric;
+      const severityCogUrls = {
+        [metric]: assets.cogUrl
+      };
+      stateManager.updateAsset('refined.severityCogUrls', severityCogUrls, 'fire');
     }
     if (assets.geojsonUrl) {
-      stateManager.updateAsset('refinedGeojsonUrl', assets.geojsonUrl, 'fire');
+      stateManager.updateAsset('refined.geojsonUrl', assets.geojsonUrl, 'fire');
     }
     
     this.notify('assetsChanged', { type: 'final', assets: this.state.finalAssets });

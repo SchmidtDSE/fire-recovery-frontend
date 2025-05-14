@@ -178,7 +178,10 @@ export const uploadGeojson = async (fireEventName, geojsonData) => {
  * @param {Function} checkFunction - Function to call to check status
  * @param {number} interval - Interval between checks in milliseconds
  * @param {number} maxAttempts - Maximum number of polling attempts
- * @returns {Promise} Promise that resolves with the result or rejects with an error
+ * @returns {Promise} Promise that resolves with the result object containing:
+ *   - For fire severity: result.coarse_severity_cog_urls (dict mapping metric names to URLs)
+ *   - For refinement: result.refined_severity_cog_urls (dict mapping metric names to URLs)
+ *   - For boundary: result.refined_boundary_geojson_url (string URL)
  */
 export const pollUntilComplete = (checkFunction, interval = 2000, maxAttempts = 30) => {
   return createPollingMechanism(checkFunction, interval, maxAttempts);

@@ -61,3 +61,55 @@ export function createPollingMechanism(checkFunction, interval = 2000, maxAttemp
     poll();
   });
 }
+
+/**
+ * Updates state manager with fire severity response data
+ * @param {Object} response - API response containing severity COG URLs
+ * @param {Object} stateManager - State manager instance
+ * @param {boolean} isRefined - Whether this is a refinement response
+ * @returns {Object} The updated state
+ */
+export function updateFireSeverityState(response, stateManager, isRefined = false) {
+  const assetGroup = isRefined ? 'refined' : 'coarse';
+  
+  // Update COG URLs
+  if (isRefined && response.refined_severity_cog_urls) {
+    stateManager.updateNestedAsset(
+      assetGroup, 
+      'severityCogUrls', 
+      response.refined_severity_cog_urls, 
+      'api'
+    );
+  } 
+  else if (!isRefined && response.coarse_severity_cog_urls) {
+    stateManager.updateNestedAsset(
+      assetGroup, 
+      'severityCogUrls', 
+      response.coarse_severity_cog_urls, 
+      'api'
+    );
+  }
+  
+  // Update boundary GeoJSON URL
+  if (isRefined && response.refined_boundary_geojson_url) {
+    stateManager.updateNestedAsset(
+      assetGroup, 
+      'geojsonUrl', 
+      response.refined_boundary_geojson_url, 
+      'api'
+    );
+  }
+  
+  // Set active metric to a valid option if needed
+  const currentMetric = stateManager.getSharedState().activeMetric;
+  const availableMetrics = stateManager.getAvailableMetrics(isRefined);
+  
+  if (availableMetrics.length > 0 && 
+      (!currentMetric || !availableMetrics.includes(currentMetric))) {
+    // Default to RBR if available, otherwise use the first available metric
+    const defaultMetric = availableMetrics.includes('RBR') ? 'RBR' : availableMetrics[0];
+    stateManager.setActiveMetric(defaultMetric, 'api');
+  }
+  
+  return stateManager.getSharedState();
+}

@@ -249,8 +249,6 @@ export class FireView extends IFireView {
       reader.readAsArrayBuffer(file);
     });
   }
-
-  // More view methods like setupDateLimits(), setupParkUnitDropdown(), etc.
   
   /**
    * Show loading state
