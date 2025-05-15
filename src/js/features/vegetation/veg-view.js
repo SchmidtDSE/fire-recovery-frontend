@@ -186,12 +186,12 @@ async showVegetationImpact(csvUrl) {
     // Check if jQuery and DataTables are available
     if (window.$ && $.fn.DataTable) {
       // Destroy existing DataTable instance if it exists
-      if ($.fn.DataTable.isDataTable('#vegetation-table')) {
-        $('#vegetation-table').DataTable().destroy();
+      if ($.fn.DataTable.isDataTable('#veg-impact-table')) {
+        $('#veg-impact-table').DataTable().destroy();
       }
       
       // Clear the table
-      const tableBody = document.querySelector('#vegetation-table tbody');
+      const tableBody = document.querySelector('#veg-impact-table tbody');
       if (tableBody) tableBody.innerHTML = '';
       
       // Filter data to only include rows where percent_fire > 0
@@ -202,7 +202,7 @@ async showVegetationImpact(csvUrl) {
       });
       
       // Create new DataTable
-      const table = $('#vegetation-table').DataTable({
+      const table = $('#veg-impact-table').DataTable({
         data: filteredData,
         columns: [
           {
@@ -219,7 +219,13 @@ async showVegetationImpact(csvUrl) {
             },
             className: 'color-cell'
           },
-          { data: 'Vegetation Community' },
+          { 
+            data: 'Vegetation Community', 
+            width: '50%',
+            render: function(data) {
+              return `<div style="white-space: normal; word-break: break-word;">${data}</div>`;
+            }
+          },
           { data: '% of Burn Area' },
           { data: 'Mean Severity' },
           { data: 'Std Dev' }
@@ -228,8 +234,13 @@ async showVegetationImpact(csvUrl) {
         paging: true,
         searching: true,
         ordering: true,
-        info: true
+        info: true,
+        autoWidth: false,  // Important: disable auto width
+        scrollX: true,     // Enable horizontal scrolling if needed
+        responsive: true   // Make the table responsive
       });
+
+      $('#veg-impact-table_wrapper').css('width', '90%');
       
       // Add helper function for contrast color calculation
       function getContrastColor(hexColor) {

@@ -55,8 +55,8 @@ const PARK_UNITS = [
   { 
     id: 'MOJA',
     name: 'Mojave National Preserve', 
-    veg_cog_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/YOSE/YOSEvegMap.tif',
-    veg_geopkg_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/YOSE/YOSEvegMap.gpkg'
+    veg_cog_url: null,
+    veg_geopkg_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/MN_Geo/MOJN.gpkg'
   }
 ];
 

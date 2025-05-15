@@ -172,7 +172,7 @@ export class VegetationModel extends IVegetationModel {
       
       // Update state with the results
       this.setProcessingStatus('success');
-      this.setResults(result.fire_veg_matrix_url);
+      this.setResults(result);
       
       return result;
     } catch (error) {
