@@ -163,6 +163,8 @@ export class VegetationModel extends IVegetationModel {
       // Save the job ID
       this.setJobId(response.job_id);
       
+      debugger;
+
       // Poll until the job completes
       const result = await api.pollUntilComplete(() => 
         api.getVegMapResult(response.fire_event_name, response.job_id)
@@ -170,7 +172,7 @@ export class VegetationModel extends IVegetationModel {
       
       // Update state with the results
       this.setProcessingStatus('success');
-      this.setResults(result);
+      this.setResults(result.fire_veg_matrix_url);
       
       return result;
     } catch (error) {

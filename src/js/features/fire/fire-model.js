@@ -376,11 +376,29 @@ export class FireModel extends IFireModel {
         api.getRefinementStatus(response.fire_event_name, response.job_id)
       );
 
-      this.setProcessingStatus('success')
-        .setFinalAssets({
-          cogUrl: result.cog_url,
-          geojsonUrl: result.refined_geojson_url
+      this.setProcessingStatus('success');
+      
+      // Get the current active metric
+      const metric = stateManager.getSharedState().activeMetric;
+      
+      // Update all severity COG URLs at once
+      if (result.refined_severity_cog_urls) {
+        stateManager.updateAsset('refined.severityCogUrls', result.refined_severity_cog_urls, 'fire');
+        
+        // Notify of asset change
+        this.notify('assetsChanged', { 
+          type: 'final', 
+          assets: {
+            cogUrl: result.refined_severity_cog_urls[metric] || null,
+            geojsonUrl: result.refined_geojson_url || null
+          } 
         });
+      }
+      
+      // Set geojson URL separately
+      if (result.refined_boundary_geojson_url) {
+        stateManager.updateAsset('refined.geojsonUrl', result.refined_geojson_url, 'fire');
+      }
         
       return result;
     } catch (error) {

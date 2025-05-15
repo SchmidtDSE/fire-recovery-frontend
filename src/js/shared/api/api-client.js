@@ -183,6 +183,6 @@ export const uploadGeojson = async (fireEventName, geojsonData) => {
  *   - For refinement: result.refined_severity_cog_urls (dict mapping metric names to URLs)
  *   - For boundary: result.refined_boundary_geojson_url (string URL)
  */
-export const pollUntilComplete = (checkFunction, interval = 2000, maxAttempts = 30) => {
+export const pollUntilComplete = (checkFunction, interval = 10000, maxAttempts = 500) => {
   return createPollingMechanism(checkFunction, interval, maxAttempts);
 };

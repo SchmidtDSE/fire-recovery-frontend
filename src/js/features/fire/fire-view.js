@@ -40,6 +40,10 @@ export class FireView extends IFireView {
     this.setupFireSeverityMetricDropdown();
     this.setupTestPrefill();
     this.createColorBreakControls();
+
+    stateManager.on('activeMetricChanged', () => {
+      this.refreshMapVisualization();
+  });
   }
   
   /**
@@ -872,16 +876,18 @@ export class FireView extends IFireView {
    * Refresh the map visualization with current settings
    */
   refreshMapVisualization() {
-    debugger;
-    const state = this.presenter.model.getState();
-    
+    const state = stateManager.getSharedState()
+    const activeMetric = state.activeMetric.toLowerCase();
+
+    const coarseUrl = state.assets.coarse.severityCogUrls[activeMetric];
+    const refinedUrl = state.assets.refined.severityCogUrls[activeMetric];
     // Prioritize final assets over intermediate assets
-    if (state.finalAssets?.cogUrl) {
-      console.log("Displaying refined COG:", state.finalAssets.cogUrl);
-      this.displayCOGLayer(state.finalAssets.cogUrl);
-    } else if (state.intermediateAssets?.cogUrl) {
-      console.log("Displaying coarse COG:", state.intermediateAssets.cogUrl);
-      this.displayCOGLayer(state.intermediateAssets.cogUrl);
+    if (refinedUrl) {
+      console.log("Displaying refined COG:", refinedUrl);
+      this.displayCOGLayer(refinedUrl);
+    } else if (coarseUrl) {
+      console.log("Displaying coarse COG:", coarseUrl);
+      this.displayCOGLayer(coarseUrl);
     } else {
       console.warn("No COG URL available in current state");
       // Clear any existing layers if no COG is available

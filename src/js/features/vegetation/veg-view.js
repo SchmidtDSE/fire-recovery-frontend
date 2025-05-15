@@ -34,6 +34,9 @@ export class VegetationView extends IVegetationView {
     if (this.tableContainer) {
       this.createVegetationTable();
     }
+
+    this.addVegetationButton();
+
   }
   
   /**
@@ -459,6 +462,36 @@ async showVegetationImpact(csvUrl) {
     }
   }
   
+  addVegetationButton() {
+    const refinementContainer = document.getElementById('refinement-container');
+    if (!refinementContainer) return;
+    
+    const buttonGroup = refinementContainer.querySelector('.button-group');
+    if (!buttonGroup) return;
+    
+    // Remove existing button if any
+    const existingButton = document.getElementById('resolve-button');
+    if (existingButton) existingButton.remove();
+    
+    // Create new button
+    const resolveButton = document.createElement('button');
+    resolveButton.id = 'resolve-button';
+    resolveButton.className = 'action-button';
+    resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
+    
+    // Add event listener for button click
+    resolveButton.addEventListener('click', () => {
+      console.log('Vegetation button clicked');
+      if (this.presenter) {
+        this.presenter.handleVegAnalysisRequested();
+      } else {
+        console.error('Presenter not available');
+      }
+    });
+    
+    buttonGroup.appendChild(resolveButton);
+  }
+
   /**
    * Display a vegetation map COG layer
    * @param {string} vegMapUrl - URL to the vegetation map COG

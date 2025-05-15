@@ -55,8 +55,20 @@ export class VegetationPresenter extends IVegetationPresenter {
   updateFromFireState(fireState) {
     this.model.updateFromFireState(fireState);
   }
+
+    /**
+   * Handle vegetation analysis requested by the view
+   * This is triggered when the "Analyze Vegetation Impact" button is clicked
+   */
+  handleVegAnalysisRequested() {
+    console.log('Vegetation analysis requested from view');
+    // Call the existing implementation
+    this.handleVegMapResolution();
+  }
   
   async handleVegMapResolution() {
+
+    debugger;
 
     // Get the current application state
     const sharedState = stateManager.getSharedState();
@@ -97,7 +109,7 @@ export class VegetationPresenter extends IVegetationPresenter {
       
       // Show the vegetation impact results
       if (result.status === 'complete') {
-        this.view.showVegetationImpact(result.fire_veg_matrix);
+        this.view.showVegetationImpact(result.fire_veg_matrix_url);
       } else {
         this.view.showMessage('Error processing vegetation data', 'error');
       }

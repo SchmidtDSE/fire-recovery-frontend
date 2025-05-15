@@ -49,12 +49,12 @@ const PARK_UNITS = [
   { 
     id: 'JOTR', 
     name: 'Joshua Tree National Park',
-    veg_cog_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/JOTR/JOTRvegMap.tif',
+    veg_cog_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/MN_Geo/JOTRvegMap.tif',
     veg_geopkg_url: 'https://storage.googleapis.com/national_park_service/joshua_tree/jotr_gpkg/jotrgeodata.gpkg'
   },
   { 
-    id: 'YOSE', 
-    name: 'Yosemite National Park',
+    id: 'MOJA',
+    name: 'Mojave National Preserve', 
     veg_cog_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/YOSE/YOSEvegMap.tif',
     veg_geopkg_url: 'https://storage.googleapis.com/national_park_service/mock_assets_frontend/YOSE/YOSEvegMap.gpkg'
   }

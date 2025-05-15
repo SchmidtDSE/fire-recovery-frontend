@@ -242,10 +242,10 @@ class StateManager {
    * @returns {string|null} The active COG URL
    */
   getActiveCogUrl(useRefined = false) {
-    const metric = this.sharedState.activeMetric;
+    const metric = this.sharedState.activeMetric.toLowerCase();
     const assetGroup = useRefined ? 'refined' : 'coarse';
-    
-    return this.sharedState.assets[assetGroup].severityCogUrls[metric] || null;
+
+    return this.sharedState.assets[assetGroup]['severityCogUrls'][metric] || null;
   }
   
   /**
