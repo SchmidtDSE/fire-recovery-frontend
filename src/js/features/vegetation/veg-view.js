@@ -197,7 +197,7 @@ async showVegetationImpact(csvUrl) {
       // Filter data to only include rows where percent_fire > 0
       const filteredData = data.filter(item => {
         // Convert to number and check if greater than 0
-        const percentFire = parseFloat(item.percent_fire);
+        const percentFire = parseFloat(item["% of Burn Area"]);
         return !isNaN(percentFire) && percentFire > 0;
       });
       
@@ -206,25 +206,44 @@ async showVegetationImpact(csvUrl) {
         data: filteredData,
         columns: [
           {
-            // Color cell
-            data: 'color',
+            // Color cell - improved styling
+            data: 'Color',
             render: function(data) {
-              return `<div style="width:15px; height:15px; background-color:${data || '#cccccc'}; margin:0 auto;"></div>`;
-            }
+              const colorCode = data || '#cccccc';
+              // Get contrasting text color for label
+              const contrastColor = getContrastColor(colorCode);
+              return `<div style="width:30px; height:30px; background-color:${colorCode}; 
+                      border-radius:4px; margin:0 auto; display:flex; align-items:center; 
+                      justify-content:center; border:1px solid #ddd; color:${contrastColor};">
+                      ${colorCode}</div>`;
+            },
+            className: 'color-cell'
           },
-          { data: 'vegetation_type' },
-          { data: 'hectares' },
-          { data: 'percent_park' },
-          { data: 'percent_fire' },
-          { data: 'severity_mean' },
-          { data: 'severity_sd' }
+          { data: 'Vegetation Community' },
+          { data: '% of Burn Area' },
+          { data: 'Mean Severity' },
+          { data: 'Std Dev' }
         ],
-        order: [[4, 'desc']], // Order by percent_fire (index 4) in descending order
+        order: [[2, 'desc']], // Order by % of Burn Area in descending order
         paging: true,
         searching: true,
         ordering: true,
         info: true
       });
+      
+      // Add helper function for contrast color calculation
+      function getContrastColor(hexColor) {
+        // Convert hex to RGB
+        const r = parseInt(hexColor.substr(1, 2), 16);
+        const g = parseInt(hexColor.substr(3, 2), 16);
+        const b = parseInt(hexColor.substr(5, 2), 16);
+        
+        // Calculate perceived brightness
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        
+        // Return black or white based on brightness
+        return brightness > 128 ? '#000000' : '#ffffff';
+      }
     } else {
       // Fallback to basic HTML if DataTables isn't available
       this.createSimpleTable(data);

@@ -39,7 +39,7 @@ export class FireView extends IFireView {
     this.setupParkUnitDropdown();
     this.setupFireSeverityMetricDropdown();
     this.setupTestPrefill();
-    this.createColorBreakControls();
+    // this.createColorBreakControls();
 
     stateManager.on('activeMetricChanged', () => {
       this.refreshMapVisualization();
@@ -425,7 +425,7 @@ export class FireView extends IFireView {
   setupTestPrefill() {
     // Check for test prefill parameter
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('prefill_for_test') && urlParams.get('prefill_for_test') === 'true') {
+    if (urlParams.has('prefill_for_test') && urlParams.get('prefill_for_test') === 'geology') {
         // Prefill date fields with test values
         document.getElementById('prefire-start-date').value = '2023-06-01';
         document.getElementById('prefire-end-date').value = '2023-06-09';
