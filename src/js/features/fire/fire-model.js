@@ -19,6 +19,7 @@ export class FireModel extends IFireModel {
       assetsChanged: [],
       currentStepChanged: [],
       jobIdChanged: [],
+      colorBreaksChanged: [],
       reset: []
     };
     
@@ -83,6 +84,12 @@ export class FireModel extends IFireModel {
         this.notify('assetsChanged', event);
       }
     });
+
+    stateManager.on('colorBreaksChanged', (event) => {
+      if (event.source !== 'fire') {
+        this.notify('colorBreaksChanged', event.value);
+      }
+    });
   }
   
   /**
@@ -110,7 +117,9 @@ export class FireModel extends IFireModel {
     // Always notify of state changed
     if (event !== 'stateChanged') {
       console.log("State Change - Event: ", event, "Data: ", data);
+      console.log("Current State: ", stateManager.getSharedState());
       this.notify('stateChanged', this.getState());
+
     }
   }
   
@@ -314,13 +323,31 @@ export class FireModel extends IFireModel {
         api.getFireAnalysisStatus(response.fire_event_name, response.job_id)
       );
       
+      // Get the current active metric
+      const metric = stateManager.getSharedState().activeMetric;
+      
       this.setProcessingStatus('success')
         .setCurrentStep('refine')
-        .setFireEventName(result.fire_event_name)
-        .setIntermediateAssets({
-          cogUrl: result.cog_url,
-          geojsonUrl: result.geojson_url
+        .setFireEventName(result.fire_event_name);
+      
+      // Update all severity COG URLs at once
+      if (result.coarse_severity_cog_urls) {
+        stateManager.updateAsset('coarse.severityCogUrls', result.coarse_severity_cog_urls, 'fire');
+        
+        // Notify of asset change
+        this.notify('assetsChanged', { 
+          type: 'intermediate', 
+          assets: {
+            cogUrl: result.coarse_severity_cog_urls[metric] || null,
+            geojsonUrl: result.geojson_url || null
+          } 
         });
+      }
+      
+      // Set geojson URL separately
+      if (result.geojson_url) {
+        stateManager.updateAsset('coarse.geojsonUrl', result.geojson_url, 'fire');
+      }
         
       return result;
     } catch (error) {

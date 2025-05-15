@@ -827,7 +827,7 @@ export class FireView extends IFireView {
     newBreaks.sort((a, b) => a - b);
     
     // Update state with new breaks
-    stateManager.updateColorBreaks(newBreaks, colors, 'fire');
+    stateManager.updateColorBreaks(newBreaks, colors, 'fire-view');
     
     // Update UI to reflect sorted breaks
     this.updateColorBreakUI(newBreaks);
@@ -845,7 +845,7 @@ export class FireView extends IFireView {
     const defaultColors = ['#F0F921', '#FDC328', '#F89441', '#E56B5D', '#CB4679', '#A82296', '#7D03A8', '#4B03A1', '#0D0887', '#0D0887'];
     
     // Update state with defaults
-    stateManager.updateColorBreaks(defaultBreaks, defaultColors, 'fire');
+    stateManager.updateColorBreaks(defaultBreaks, defaultColors, 'fire-view');
     
     // Update UI
     this.updateColorBreakUI(defaultBreaks);
@@ -872,15 +872,20 @@ export class FireView extends IFireView {
    * Refresh the map visualization with current settings
    */
   refreshMapVisualization() {
+    debugger;
     const state = this.presenter.model.getState();
     
-    // If there's an active COG layer, refresh it
-    if (state.intermediateAssets?.cogUrl) {
-      this.displayCOGLayer(state.intermediateAssets.cogUrl);
-    }
-    
+    // Prioritize final assets over intermediate assets
     if (state.finalAssets?.cogUrl) {
+      console.log("Displaying refined COG:", state.finalAssets.cogUrl);
       this.displayCOGLayer(state.finalAssets.cogUrl);
+    } else if (state.intermediateAssets?.cogUrl) {
+      console.log("Displaying coarse COG:", state.intermediateAssets.cogUrl);
+      this.displayCOGLayer(state.intermediateAssets.cogUrl);
+    } else {
+      console.warn("No COG URL available in current state");
+      // Clear any existing layers if no COG is available
+      this.resultLayerGroup.clearLayers();
     }
   }
 }

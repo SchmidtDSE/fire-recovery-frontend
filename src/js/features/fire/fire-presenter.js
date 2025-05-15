@@ -1,5 +1,6 @@
 import { IFirePresenter } from './fire-contract.js';
 import * as api from '../../shared/api/api-client.js';
+import stateManager from '../../core/state-manager.js';
 
 /**
  * Implementation of the Fire Presenter
@@ -54,6 +55,11 @@ export class FirePresenter extends IFirePresenter {
       if (cogUrl) {
         this.view.displayCOGLayer(cogUrl);
       }
+    });
+
+    this.model.on('colorBreaksChanged', (colorBreaksData) => {
+      // Update visualization when color breaks change
+      this.updateMapVisualization();
     });
   }
   
