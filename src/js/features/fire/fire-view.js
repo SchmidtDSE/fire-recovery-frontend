@@ -423,40 +423,80 @@ export class FireView extends IFireView {
    * Setup test prefill for development purposes
    */
   setupTestPrefill() {
-    // Check for test prefill parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('prefill_for_test') && urlParams.get('prefill_for_test') === 'geology') {
-        // Prefill date fields with test values
-        document.getElementById('prefire-start-date').value = '2023-06-01';
-        document.getElementById('prefire-end-date').value = '2023-06-09';
-        document.getElementById('postfire-start-date').value = '2023-06-17';
-        document.getElementById('postfire-end-date').value = '2023-06-22';
-        
-        // Add test GeoJSON polygon to the map
-        const testPolygon = {
-        "type": "Polygon",
-        "coordinates": [
-            [
-              [-116.09827589690582, 33.92992500511309],
-              [-116.09827589690582, 33.88079387580245],
-              [-116.01931781556678, 33.88079387580245],
-              [-116.01931781556678, 33.92992500511309],
-              [-116.09827589690582, 33.92992500511309]
-            ]
-        ]
-        };
-        
-        // Clear existing layers first
-        this.geoJsonLayerGroup.clearLayers();
-        
-        // Add the test polygon to the map with the defined style
-        L.geoJSON({ type: "Feature", geometry: testPolygon }, { 
-        style: getDefaultGeoJsonStyle()
-        }).addTo(this.geoJsonLayerGroup);
-        
-        // Fit the map to the polygon bounds
-        this.map.fitBounds(this.geoJsonLayerGroup.getBounds());
-    }
+      // Check for test prefill parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('prefill_for_test')) {
+          const prefillType = urlParams.get('prefill_for_test');
+          
+          if (prefillType === 'geology') {
+              // Prefill date fields with test values
+              document.getElementById('prefire-start-date').value = '2023-06-01';
+              document.getElementById('prefire-end-date').value = '2023-06-09';
+              document.getElementById('postfire-start-date').value = '2023-06-17';
+              document.getElementById('postfire-end-date').value = '2023-06-22';
+              
+              // Add test GeoJSON polygon to the map
+              const testPolygon = {
+              "type": "Polygon",
+              "coordinates": [
+                  [
+                    [-116.09827589690582, 33.92992500511309],
+                    [-116.09827589690582, 33.88079387580245],
+                    [-116.01931781556678, 33.88079387580245],
+                    [-116.01931781556678, 33.92992500511309],
+                    [-116.09827589690582, 33.92992500511309]
+                  ]
+              ]
+              };
+              
+              // Clear existing layers first
+              this.geoJsonLayerGroup.clearLayers();
+              
+              // Add the test polygon to the map with the defined style
+              L.geoJSON({ type: "Feature", geometry: testPolygon }, { 
+              style: getDefaultGeoJsonStyle()
+              }).addTo(this.geoJsonLayerGroup);
+              
+              // Fit the map to the polygon bounds
+              this.map.fitBounds(this.geoJsonLayerGroup.getBounds());
+          }
+          else if (prefillType === 'dome') {
+              // Fire period: August 15 – August 24, 2020
+              // Set prefire and postfire windows to 14 days before and after
+              document.getElementById('prefire-start-date').value = '2020-08-01'; // 14 days before fire
+              document.getElementById('prefire-end-date').value = '2020-08-14';   // day before fire
+              document.getElementById('postfire-start-date').value = '2020-08-25'; // day after fire
+              document.getElementById('postfire-end-date').value = '2020-09-07';  // 14 days after fire
+              
+              // Set fire name
+              document.getElementById('fire-event-name').value = 'Dome Fire';
+              
+              // Add test GeoJSON polygon to the map
+              const domePolygon = {
+              "type": "Polygon",
+              "coordinates": [
+                  [
+                    [-115.47848208608835, 35.36293692678724],
+                    [-115.88028365574644, 35.36293692678724],
+                    [-115.88028365574644, 35.03840845502198],
+                    [-115.47848208608835, 35.03840845502198],
+                    [-115.47848208608835, 35.36293692678724]
+                  ]
+              ]
+              };
+              
+              // Clear existing layers first
+              this.geoJsonLayerGroup.clearLayers();
+              
+              // Add the test polygon to the map with the defined style
+              L.geoJSON({ type: "Feature", geometry: domePolygon }, { 
+              style: getDefaultGeoJsonStyle()
+              }).addTo(this.geoJsonLayerGroup);
+              
+              // Fit the map to the polygon bounds
+              this.map.fitBounds(this.geoJsonLayerGroup.getBounds());
+          }
+      }
   }
 
   /**
