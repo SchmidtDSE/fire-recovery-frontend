@@ -191,9 +191,16 @@ async showVegetationImpact(csvUrl) {
       const tableBody = document.querySelector('#vegetation-table tbody');
       if (tableBody) tableBody.innerHTML = '';
       
+      // Filter data to only include rows where percent_fire > 0
+      const filteredData = data.filter(item => {
+        // Convert to number and check if greater than 0
+        const percentFire = parseFloat(item.percent_fire);
+        return !isNaN(percentFire) && percentFire > 0;
+      });
+      
       // Create new DataTable
       const table = $('#vegetation-table').DataTable({
-        data: data,
+        data: filteredData,
         columns: [
           {
             // Color cell
@@ -209,6 +216,7 @@ async showVegetationImpact(csvUrl) {
           { data: 'severity_mean' },
           { data: 'severity_sd' }
         ],
+        order: [[4, 'desc']], // Order by percent_fire (index 4) in descending order
         paging: true,
         searching: true,
         ordering: true,
@@ -378,20 +386,33 @@ async showVegetationImpact(csvUrl) {
       
       const csvText = await response.text();
       const rows = csvText.split('\n').map(row => row.split(','));
-      const headers = rows[0];
+      const headers = rows[0].map(h => h.trim());
+      
+      // Get column indices by header name
+      const columnIndices = {
+        vegetationType: headers.findIndex(h => h.includes('Vegetation') || h.includes('Community')),
+        color: headers.findIndex(h => h.includes('Color')),
+        hectares: headers.findIndex(h => h.includes('Hectares')),
+        percentPark: headers.findIndex(h => h.includes('% of Park')),
+        percentBurn: headers.findIndex(h => h.includes('% of Burn')),
+        severity: headers.findIndex(h => h.includes('Mean') || h.includes('Severity')),
+        stdDev: headers.findIndex(h => h.includes('Std Dev') || h.includes('SD'))
+      };
+      
+      // Filter for rows with valid data and map to expected format
       const data = rows.slice(1)
-            .filter(row => row.length > 1) // Skip empty rows
-            .map(row => {
-                return [
-                    row[1]?.trim() || '#000000', // color - adapted from vegMapTable.js
-                    row[0]?.trim() || '', // vegetation type
-                    row[2]?.trim() || '', // hectares
-                    row[3]?.trim() || '', // percent park
-                    row[4]?.trim() || '', // percent burn area
-                    row[5]?.trim() || '', // burn severity mean
-                    row[6]?.trim() || ''  // burn severity SD
-                ];
-            });
+        .filter(row => row.length > 1) // Skip empty rows
+        .map(row => {
+          return [
+            row[columnIndices.color]?.trim() || '#000000', // color
+            row[columnIndices.vegetationType]?.trim() || '', // vegetation type
+            row[columnIndices.hectares]?.trim() || '', // hectares
+            row[columnIndices.percentPark]?.trim() || '', // percent park
+            row[columnIndices.percentBurn]?.trim() || '', // percent burn area
+            row[columnIndices.severity]?.trim() || '', // burn severity mean
+            row[columnIndices.stdDev]?.trim() || ''  // burn severity SD
+          ];
+        });
       
       // Update table with CSV data using jQuery DataTable if available
       if (window.$ && $.fn.DataTable) {
