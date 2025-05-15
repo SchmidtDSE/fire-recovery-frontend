@@ -221,14 +221,14 @@ async showVegetationImpact(csvUrl) {
           },
           { 
             data: 'Vegetation Community', 
-            width: '50%',
+            width: '70%',
             render: function(data) {
               return `<div style="white-space: normal; word-break: break-word;">${data}</div>`;
             }
           },
           { data: '% of Burn Area' },
-          { data: 'Mean Severity' },
-          { data: 'Std Dev' }
+          // { data: 'Mean Severity' },
+          // { data: 'Std Dev' }
         ],
         order: [[2, 'desc']], // Order by % of Burn Area in descending order
         paging: true,
