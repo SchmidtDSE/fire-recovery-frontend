@@ -227,8 +227,8 @@ async showVegetationImpact(csvUrl) {
             }
           },
           { data: '% of Burn Area' },
-          // { data: 'Mean Severity' },
-          // { data: 'Std Dev' }
+          { data: 'Mean Severity' },
+          { data: 'Std Dev' }
         ],
         order: [[2, 'desc']], // Order by % of Burn Area in descending order
         paging: true,
