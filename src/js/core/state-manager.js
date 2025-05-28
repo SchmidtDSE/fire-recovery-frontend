@@ -6,33 +6,39 @@ import { dispatch } from 'https://cdn.jsdelivr.net/npm/d3-dispatch@3.0.1/+esm';
  */
 class StateManager {
   constructor() {
-    // Registry of feature components
+    // Keep existing components setup
     this.components = {
       fire: null,
       vegetation: null,
       resources: null
     };
     
-    // Shared application state that's common across components
+    // Shared application state
     this.sharedState = {
       fireEventName: null,
       parkUnit: null,
       jobId: null,
       processingStatus: 'idle',
-      activeMetric: 'RBR', // Default active metric
+      activeMetric: 'RBR',
+      currentStep: 'upload',   // Add from FireModel
+      vegMapResults: null,     // Add from VegetationModel
       assets: {
         coarse: {
           geojsonUrl: null,
-          severityCogUrls: {} // Map of metrics (RBR, dNBR, RdNBR) to URLs
+          severityCogUrls: {} 
         },
         refined: {
           geojsonUrl: null,
-          severityCogUrls: {} // Map of metrics to URLs
+          severityCogUrls: {} 
         }
+      },
+      colorBreaks: {
+        breaks: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+        colors: ['#F0F921', '#FDC328', '#F89441', '#E56B5D', '#CB4679', '#A82296', '#7D03A8', '#4B03A1', '#0D0887', '#0D0887']
       }
     };
     
-    // Create dispatcher for state events
+    // Add new events
     this.dispatch = dispatch(
       'sharedStateChanged',
       'component_registered', 
@@ -42,10 +48,49 @@ class StateManager {
       'jobIdChanged',
       'processingStatusChanged',
       'assetsChanged',
-      'activeMetricChanged'
+      'activeMetricChanged',
+      'colorBreaksChanged',
+      'currentStepChanged',
+      'vegMapResultsChanged'
     );
   }
   
+  updateCurrentStep(step, source) {
+    this.sharedState.currentStep = step;
+    
+    this.dispatch.call('currentStepChanged', this, {
+      value: step,
+      source
+    });
+    
+    this.dispatch.call('sharedStateChanged', this, {
+      property: 'currentStep',
+      value: step,
+      source,
+      state: this.sharedState
+    });
+    
+    return this;
+  }
+  
+  updateVegMapResults(results, source) {
+    this.sharedState.vegMapResults = results;
+    
+    this.dispatch.call('vegMapResultsChanged', this, {
+      value: results,
+      source
+    });
+    
+    this.dispatch.call('sharedStateChanged', this, {
+      property: 'vegMapResults',
+      value: results,
+      source,
+      state: this.sharedState
+    });
+    
+    return this;
+  }
+
   /**
    * Register a feature component
    * @param {string} name - Feature name
@@ -197,10 +242,10 @@ class StateManager {
    * @returns {string|null} The active COG URL
    */
   getActiveCogUrl(useRefined = false) {
-    const metric = this.sharedState.activeMetric;
+    const metric = this.sharedState.activeMetric.toLowerCase();
     const assetGroup = useRefined ? 'refined' : 'coarse';
-    
-    return this.sharedState.assets[assetGroup].severityCogUrls[metric] || null;
+
+    return this.sharedState.assets[assetGroup]['severityCogUrls'][metric] || null;
   }
   
   /**
@@ -211,6 +256,31 @@ class StateManager {
   getAvailableMetrics(useRefined = false) {
     const assetGroup = useRefined ? 'refined' : 'coarse';
     return Object.keys(this.sharedState.assets[assetGroup].severityCogUrls);
+  }
+
+  /**
+   * Update color breaks and colors.
+   * @param {Array} breaks - Array of break values
+   * @param {Array} colors - Array of color values
+   */
+
+  updateColorBreaks(breaks, colors, source) {
+    this.sharedState.colorBreaks = { breaks, colors };
+    
+    this.dispatch.call('colorBreaksChanged', this, {
+      value: { breaks, colors },
+      source
+    });
+    
+    // Also dispatch general state changed
+    this.dispatch.call('sharedStateChanged', this, {
+      property: 'colorBreaks',
+      value: { breaks, colors },
+      source,
+      state: this.sharedState
+    });
+    
+    return this;
   }
   
   /**

@@ -1,3 +1,5 @@
+import stateManager from '../../core/state-manager.js';
+
 /**
  * COG Renderer
  * Utilities for displaying Cloud Optimized GeoTIFFs on maps
@@ -111,24 +113,25 @@ export async function loadVegetationCOGLayer(vegMapUrl, map, baseLayer, opacity 
 }
 
 /**
- * Get default color function for fire severity visualization
+ * Get color function for fire severity visualization based on current state
  * @returns {Function} Function that maps pixel values to colors
  */
 export function getFireSeverityColorFunction() {
+  // Get current color break settings from state
+  const { breaks, colors } = stateManager.getSharedState().colorBreaks;
+
   return value => {
     if (value === null || value === undefined || value === -9999.0) return 'transparent';
-    if (value < 0.1) return '#F0F921'; // bright yellow
-    if (value < 0.2) return '#FDC328';
-    if (value < 0.3) return '#F89441';
-    if (value < 0.4) return '#E56B5D';
-    if (value < 0.5) return '#CB4679';
-    if (value < 0.6) return '#A82296';
-    if (value < 0.7) return '#7D03A8';
-    if (value < 0.8) return '#4B03A1';
-    if (value < 0.9) return '#0D0887'; // darkest purple
-    return '#0D0887';
+    
+    // Find the appropriate color based on breaks
+    for (let i = 0; i < breaks.length; i++) {
+      if (value < breaks[i]) return colors[i];
+    }
+    
+    // Return the last color if no break matches
+    return colors[colors.length - 1];
   };
-}
+};
 
 /**
  * Get default color function for general visualization

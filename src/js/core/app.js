@@ -34,38 +34,8 @@ class App {
     
     // Initialize vegetation presenter
     vegComponents.presenter.initialize();
-    
-    // Add the vegetation analysis button to the UI
-    this.addVegetationButton();
-    
+
     this.initialized = true;
-  }
-  
-  /**
-   * Add a button to the fire view to trigger vegetation analysis
-   */
-  addVegetationButton() {
-    const button = document.getElementById('resolve-button');
-    if (!button) {
-      const refinementContainer = document.getElementById('refinement-container');
-      if (refinementContainer) {
-        const buttonGroup = refinementContainer.querySelector('.button-group');
-        if (buttonGroup) {
-          const newResolveButton = document.createElement('button');
-          newResolveButton.id = 'resolve-button';
-          newResolveButton.className = 'action-button';
-          newResolveButton.textContent = 'Analyze Vegetation Impact';
-          newResolveButton.addEventListener('click', () => {
-            const vegPresenter = stateManager.getComponent('vegetation');
-            if (vegPresenter) {
-              vegPresenter.handleVegMapResolution();
-            }
-          });
-          
-          buttonGroup.appendChild(newResolveButton);
-        }
-      }
-    }
   }
 }
 

@@ -34,6 +34,9 @@ export class VegetationView extends IVegetationView {
     if (this.tableContainer) {
       this.createVegetationTable();
     }
+
+    this.addVegetationButton();
+
   }
   
   /**
@@ -183,37 +186,75 @@ async showVegetationImpact(csvUrl) {
     // Check if jQuery and DataTables are available
     if (window.$ && $.fn.DataTable) {
       // Destroy existing DataTable instance if it exists
-      if ($.fn.DataTable.isDataTable('#vegetation-table')) {
-        $('#vegetation-table').DataTable().destroy();
+      if ($.fn.DataTable.isDataTable('#veg-impact-table')) {
+        $('#veg-impact-table').DataTable().destroy();
       }
       
       // Clear the table
-      const tableBody = document.querySelector('#vegetation-table tbody');
+      const tableBody = document.querySelector('#veg-impact-table tbody');
       if (tableBody) tableBody.innerHTML = '';
       
+      // Filter data to only include rows where percent_fire > 0
+      const filteredData = data.filter(item => {
+        // Convert to number and check if greater than 0
+        const percentFire = parseFloat(item["% of Burn Area"]);
+        return !isNaN(percentFire) && percentFire > 0;
+      });
+      
       // Create new DataTable
-      const table = $('#vegetation-table').DataTable({
-        data: data,
+      const table = $('#veg-impact-table').DataTable({
+        data: filteredData,
         columns: [
           {
-            // Color cell
-            data: 'color',
+            // Color cell - improved styling
+            data: 'Color',
             render: function(data) {
-              return `<div style="width:15px; height:15px; background-color:${data || '#cccccc'}; margin:0 auto;"></div>`;
+              const colorCode = data || '#cccccc';
+              // Get contrasting text color for label
+              const contrastColor = getContrastColor(colorCode);
+              return `<div style="width:30px; height:30px; background-color:${colorCode}; 
+                      border-radius:4px; margin:0 auto; display:flex; align-items:center; 
+                      justify-content:center; border:1px solid #ddd; color:${contrastColor};">
+                      ${colorCode}</div>`;
+            },
+            className: 'color-cell'
+          },
+          { 
+            data: 'Vegetation Community', 
+            width: '70%',
+            render: function(data) {
+              return `<div style="white-space: normal; word-break: break-word;">${data}</div>`;
             }
           },
-          { data: 'vegetation_type' },
-          { data: 'hectares' },
-          { data: 'percent_park' },
-          { data: 'percent_fire' },
-          { data: 'severity_mean' },
-          { data: 'severity_sd' }
+          { data: '% of Burn Area' },
+          // { data: 'Mean Severity' },
+          // { data: 'Std Dev' }
         ],
+        order: [[2, 'desc']], // Order by % of Burn Area in descending order
         paging: true,
         searching: true,
         ordering: true,
-        info: true
+        info: true,
+        autoWidth: false,  // Important: disable auto width
+        scrollX: true,     // Enable horizontal scrolling if needed
+        responsive: true   // Make the table responsive
       });
+
+      $('#veg-impact-table_wrapper').css('width', '90%');
+      
+      // Add helper function for contrast color calculation
+      function getContrastColor(hexColor) {
+        // Convert hex to RGB
+        const r = parseInt(hexColor.substr(1, 2), 16);
+        const g = parseInt(hexColor.substr(3, 2), 16);
+        const b = parseInt(hexColor.substr(5, 2), 16);
+        
+        // Calculate perceived brightness
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        
+        // Return black or white based on brightness
+        return brightness > 128 ? '#000000' : '#ffffff';
+      }
     } else {
       // Fallback to basic HTML if DataTables isn't available
       this.createSimpleTable(data);
@@ -378,20 +419,33 @@ async showVegetationImpact(csvUrl) {
       
       const csvText = await response.text();
       const rows = csvText.split('\n').map(row => row.split(','));
-      const headers = rows[0];
+      const headers = rows[0].map(h => h.trim());
+      
+      // Get column indices by header name
+      const columnIndices = {
+        vegetationType: headers.findIndex(h => h.includes('Vegetation') || h.includes('Community')),
+        color: headers.findIndex(h => h.includes('Color')),
+        hectares: headers.findIndex(h => h.includes('Hectares')),
+        percentPark: headers.findIndex(h => h.includes('% of Park')),
+        percentBurn: headers.findIndex(h => h.includes('% of Burn')),
+        severity: headers.findIndex(h => h.includes('Mean') || h.includes('Severity')),
+        stdDev: headers.findIndex(h => h.includes('Std Dev') || h.includes('SD'))
+      };
+      
+      // Filter for rows with valid data and map to expected format
       const data = rows.slice(1)
-            .filter(row => row.length > 1) // Skip empty rows
-            .map(row => {
-                return [
-                    row[1]?.trim() || '#000000', // color - adapted from vegMapTable.js
-                    row[0]?.trim() || '', // vegetation type
-                    row[2]?.trim() || '', // hectares
-                    row[3]?.trim() || '', // percent park
-                    row[4]?.trim() || '', // percent burn area
-                    row[5]?.trim() || '', // burn severity mean
-                    row[6]?.trim() || ''  // burn severity SD
-                ];
-            });
+        .filter(row => row.length > 1) // Skip empty rows
+        .map(row => {
+          return [
+            row[columnIndices.color]?.trim() || '#000000', // color
+            row[columnIndices.vegetationType]?.trim() || '', // vegetation type
+            row[columnIndices.hectares]?.trim() || '', // hectares
+            row[columnIndices.percentPark]?.trim() || '', // percent park
+            row[columnIndices.percentBurn]?.trim() || '', // percent burn area
+            row[columnIndices.severity]?.trim() || '', // burn severity mean
+            row[columnIndices.stdDev]?.trim() || ''  // burn severity SD
+          ];
+        });
       
       // Update table with CSV data using jQuery DataTable if available
       if (window.$ && $.fn.DataTable) {
@@ -438,6 +492,36 @@ async showVegetationImpact(csvUrl) {
     }
   }
   
+  addVegetationButton() {
+    const refinementContainer = document.getElementById('refinement-container');
+    if (!refinementContainer) return;
+    
+    const buttonGroup = refinementContainer.querySelector('.button-group');
+    if (!buttonGroup) return;
+    
+    // Remove existing button if any
+    const existingButton = document.getElementById('resolve-button');
+    if (existingButton) existingButton.remove();
+    
+    // Create new button
+    const resolveButton = document.createElement('button');
+    resolveButton.id = 'resolve-button';
+    resolveButton.className = 'action-button';
+    resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
+    
+    // Add event listener for button click
+    resolveButton.addEventListener('click', () => {
+      console.log('Vegetation button clicked');
+      if (this.presenter) {
+        this.presenter.handleVegAnalysisRequested();
+      } else {
+        console.error('Presenter not available');
+      }
+    });
+    
+    buttonGroup.appendChild(resolveButton);
+  }
+
   /**
    * Display a vegetation map COG layer
    * @param {string} vegMapUrl - URL to the vegetation map COG

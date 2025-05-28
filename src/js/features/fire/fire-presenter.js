@@ -1,5 +1,6 @@
 import { IFirePresenter } from './fire-contract.js';
 import * as api from '../../shared/api/api-client.js';
+import stateManager from '../../core/state-manager.js';
 
 /**
  * Implementation of the Fire Presenter
@@ -54,6 +55,11 @@ export class FirePresenter extends IFirePresenter {
       if (cogUrl) {
         this.view.displayCOGLayer(cogUrl);
       }
+    });
+
+    this.model.on('colorBreaksChanged', (colorBreaksData) => {
+      // Update visualization when color breaks change
+      this.updateMapVisualization();
     });
   }
   
@@ -140,6 +146,7 @@ export class FirePresenter extends IFirePresenter {
   handleAnalysisComplete(result, formValues) {
     // The view will automatically update based on model state changes
     this.view.showDateSummary(formValues);
+    this.view.refreshMapVisualization();
   }
   
   /**
@@ -184,8 +191,11 @@ export class FirePresenter extends IFirePresenter {
     // Show metrics and table in the view
     this.view.showMetricsAndTable();
     
-    // Make sure the "Analyze Vegetation Impact" button is added
-    this.addVegetationButton();
+    // Get vegetation view and let IT add its own button
+    const vegView = window.app.components.vegetation.view;
+    if (vegView) {
+      vegView.addVegetationButton();
+    }
   }
 
   /**

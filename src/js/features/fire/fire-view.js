@@ -4,6 +4,7 @@ import { displayCOGLayer, loadVegetationCOGLayer } from '../../shared/map/cog-re
 import { getDefaultGeoJsonStyle } from '../../shared/map/draw-tools.js';
 import { MapManager } from '../../shared/map/map-manager.js';
 import { parkUnits } from '../../core/config.js';
+import stateManager from '../../core/state-manager.js';
 
 /**
  * Implementation of the Fire View
@@ -38,6 +39,11 @@ export class FireView extends IFireView {
     this.setupParkUnitDropdown();
     this.setupFireSeverityMetricDropdown();
     this.setupTestPrefill();
+    // this.createColorBreakControls();
+
+    stateManager.on('activeMetricChanged', () => {
+      this.refreshMapVisualization();
+  });
   }
   
   /**
@@ -417,40 +423,80 @@ export class FireView extends IFireView {
    * Setup test prefill for development purposes
    */
   setupTestPrefill() {
-    // Check for test prefill parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('prefill_for_test') && urlParams.get('prefill_for_test') === 'true') {
-        // Prefill date fields with test values
-        document.getElementById('prefire-start-date').value = '2023-06-01';
-        document.getElementById('prefire-end-date').value = '2023-06-09';
-        document.getElementById('postfire-start-date').value = '2023-06-17';
-        document.getElementById('postfire-end-date').value = '2023-06-22';
-        
-        // Add test GeoJSON polygon to the map
-        const testPolygon = {
-        "type": "Polygon",
-        "coordinates": [
-            [
-              [-116.09827589690582, 33.92992500511309],
-              [-116.09827589690582, 33.88079387580245],
-              [-116.01931781556678, 33.88079387580245],
-              [-116.01931781556678, 33.92992500511309],
-              [-116.09827589690582, 33.92992500511309]
-            ]
-        ]
-        };
-        
-        // Clear existing layers first
-        this.geoJsonLayerGroup.clearLayers();
-        
-        // Add the test polygon to the map with the defined style
-        L.geoJSON({ type: "Feature", geometry: testPolygon }, { 
-        style: getDefaultGeoJsonStyle()
-        }).addTo(this.geoJsonLayerGroup);
-        
-        // Fit the map to the polygon bounds
-        this.map.fitBounds(this.geoJsonLayerGroup.getBounds());
-    }
+      // Check for test prefill parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('prefill_for_test')) {
+          const prefillType = urlParams.get('prefill_for_test');
+          
+          if (prefillType === 'geology') {
+              // Prefill date fields with test values
+              document.getElementById('prefire-start-date').value = '2023-06-01';
+              document.getElementById('prefire-end-date').value = '2023-06-09';
+              document.getElementById('postfire-start-date').value = '2023-06-17';
+              document.getElementById('postfire-end-date').value = '2023-06-22';
+              
+              // Add test GeoJSON polygon to the map
+              const testPolygon = {
+              "type": "Polygon",
+              "coordinates": [
+                  [
+                    [-116.09827589690582, 33.92992500511309],
+                    [-116.09827589690582, 33.88079387580245],
+                    [-116.01931781556678, 33.88079387580245],
+                    [-116.01931781556678, 33.92992500511309],
+                    [-116.09827589690582, 33.92992500511309]
+                  ]
+              ]
+              };
+              
+              // Clear existing layers first
+              this.geoJsonLayerGroup.clearLayers();
+              
+              // Add the test polygon to the map with the defined style
+              L.geoJSON({ type: "Feature", geometry: testPolygon }, { 
+              style: getDefaultGeoJsonStyle()
+              }).addTo(this.geoJsonLayerGroup);
+              
+              // Fit the map to the polygon bounds
+              this.map.fitBounds(this.geoJsonLayerGroup.getBounds());
+          }
+          else if (prefillType === 'dome') {
+              // Fire period: August 15 – August 24, 2020
+              // Set prefire and postfire windows to 14 days before and after
+              document.getElementById('prefire-start-date').value = '2020-08-01'; // 14 days before fire
+              document.getElementById('prefire-end-date').value = '2020-08-14';   // day before fire
+              document.getElementById('postfire-start-date').value = '2020-08-25'; // day after fire
+              document.getElementById('postfire-end-date').value = '2020-09-07';  // 14 days after fire
+              
+              // Set fire name
+              document.getElementById('fire-event-name').value = 'Dome Fire';
+              
+              // Add test GeoJSON polygon to the map
+              const domePolygon = {
+              "type": "Polygon",
+              "coordinates": [
+                  [
+                    [-115.47848208608835, 35.36293692678724],
+                    [-115.88028365574644, 35.36293692678724],
+                    [-115.88028365574644, 35.03840845502198],
+                    [-115.47848208608835, 35.03840845502198],
+                    [-115.47848208608835, 35.36293692678724]
+                  ]
+              ]
+              };
+              
+              // Clear existing layers first
+              this.geoJsonLayerGroup.clearLayers();
+              
+              // Add the test polygon to the map with the defined style
+              L.geoJSON({ type: "Feature", geometry: domePolygon }, { 
+              style: getDefaultGeoJsonStyle()
+              }).addTo(this.geoJsonLayerGroup);
+              
+              // Fit the map to the polygon bounds
+              this.map.fitBounds(this.geoJsonLayerGroup.getBounds());
+          }
+      }
   }
 
   /**
@@ -748,5 +794,144 @@ export class FireView extends IFireView {
     
     // Use the MapManager method to switch layers while preserving important layers
     mapManager.switchToBaseLayer(layer, this.resultLayerGroup, this.geoJsonLayerGroup);
+  }
+
+  /**
+   * Create color break controls in the export tab
+   */
+  createColorBreakControls() {
+    // Get the sliders container
+    const slidersContainer = document.querySelector('.color-sliders');
+    if (!slidersContainer) return;
+    
+    // Clear any existing sliders
+    slidersContainer.innerHTML = '';
+    
+    // Get current breaks and colors from state manager
+    const { breaks, colors } = stateManager.getSharedState().colorBreaks;
+    
+    // Create a slider for each break point
+    breaks.forEach((breakValue, index) => {
+      const colorBelow = colors[index];
+      const colorAbove = colors[index + 1] || colors[index];
+      
+      const sliderContainer = document.createElement('div');
+      sliderContainer.className = 'color-break-slider';
+      
+      sliderContainer.innerHTML = `
+        <div class="color-swatch" style="background-color: ${colorBelow}"></div>
+        <input type="range" min="0" max="1" step="0.01" value="${breakValue}" data-index="${index}" class="break-slider">
+        <input type="number" min="0" max="1" step="0.01" value="${breakValue}" class="break-value">
+        <div class="color-swatch" style="background-color: ${colorAbove}"></div>
+      `;
+      
+      slidersContainer.appendChild(sliderContainer);
+      
+      // Add event listeners for changes
+      const rangeInput = sliderContainer.querySelector('.break-slider');
+      const numberInput = sliderContainer.querySelector('.break-value');
+      
+      // Synchronize range and number inputs
+      rangeInput.addEventListener('input', e => {
+        const value = parseFloat(e.target.value);
+        numberInput.value = value;
+        this.updateColorBreak(index, value);
+      });
+      
+      numberInput.addEventListener('change', e => {
+        const value = parseFloat(e.target.value);
+        rangeInput.value = value;
+        this.updateColorBreak(index, value);
+      });
+    });
+    
+    // Add reset button event listener
+    const resetButton = document.getElementById('reset-color-breaks');
+    if (resetButton) {
+      resetButton.addEventListener('click', () => {
+        this.resetColorBreaks();
+      });
+    }
+  }
+
+  /**
+   * Update a color break value
+   * @param {number} index - Index of the break to update
+   * @param {number} value - New break value
+   */
+  updateColorBreak(index, value) {
+    // Get current breaks from state
+    const { breaks, colors } = stateManager.getSharedState().colorBreaks;
+    
+    // Create a copy and update the specified break
+    const newBreaks = [...breaks];
+    newBreaks[index] = value;
+    
+    // Ensure breaks remain in ascending order
+    newBreaks.sort((a, b) => a - b);
+    
+    // Update state with new breaks
+    stateManager.updateColorBreaks(newBreaks, colors, 'fire-view');
+    
+    // Update UI to reflect sorted breaks
+    this.updateColorBreakUI(newBreaks);
+    
+    // Refresh map visualization if COG layer is displayed
+    this.refreshMapVisualization();
+  }
+
+  /**
+   * Reset color breaks to default values
+   */
+  resetColorBreaks() {
+    // Default values from the original implementation
+    const defaultBreaks = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+    const defaultColors = ['#F0F921', '#FDC328', '#F89441', '#E56B5D', '#CB4679', '#A82296', '#7D03A8', '#4B03A1', '#0D0887', '#0D0887'];
+    
+    // Update state with defaults
+    stateManager.updateColorBreaks(defaultBreaks, defaultColors, 'fire-view');
+    
+    // Update UI
+    this.updateColorBreakUI(defaultBreaks);
+    
+    // Refresh map visualization
+    this.refreshMapVisualization();
+  }
+
+  /**
+   * Update the UI to reflect current break values
+   * @param {number[]} breaks - Current break values
+   */
+  updateColorBreakUI(breaks) {
+    const sliders = document.querySelectorAll('.break-slider');
+    const numberInputs = document.querySelectorAll('.break-value');
+    
+    breaks.forEach((value, index) => {
+      if (sliders[index]) sliders[index].value = value;
+      if (numberInputs[index]) numberInputs[index].value = value;
+    });
+  }
+
+  /**
+   * Refresh the map visualization with current settings
+   */
+  refreshMapVisualization() {
+    const state = stateManager.getSharedState()
+    const activeMetric = state.activeMetric.toLowerCase();
+
+    const coarseUrl = state.assets.coarse.severityCogUrls[activeMetric];
+    const refinedUrl = state.assets.refined.severityCogUrls[activeMetric];
+    // Prioritize final assets over intermediate assets
+    if (refinedUrl) {
+      console.log("Displaying refined COG:", refinedUrl);
+      this.displayCOGLayer(refinedUrl);
+    } else if (coarseUrl) {
+      console.log("Displaying coarse COG:", coarseUrl);
+      this.displayCOGLayer(coarseUrl);
+    } else {
+      console.warn("No COG URL available in current state");
+      // Clear any existing layers if no COG is available
+      this.resultLayerGroup.clearLayers();
+    }
   }
 }
