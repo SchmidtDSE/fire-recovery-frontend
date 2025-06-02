@@ -89,21 +89,21 @@ export class VegetationView extends IVegetationView {
     table.id = 'veg-impact-table';
     table.className = 'display';
     
-    // Add table headers
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
+    // // Add table headers
+    // const thead = document.createElement('thead');
+    // const headerRow = document.createElement('tr');
     
-    const headers = ['Color', 'Vegetation Community', 'Hectares', 
-                     '% of Park', '% of Burn Area', 'Mean Severity', 'Std Dev'];
+    // const headers = ['Color', 'Vegetation Community', 'Hectares', 
+    //                  '% of Park', '% of Burn Area', 'Mean Severity', 'Std Dev'];
     
-    headers.forEach(header => {
-      const th = document.createElement('th');
-      th.textContent = header;
-      headerRow.appendChild(th);
-    });
+    // headers.forEach(header => {
+    //   const th = document.createElement('th');
+    //   th.textContent = header;
+    //   headerRow.appendChild(th);
+    // });
     
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
+    // thead.appendChild(headerRow);
+    // table.appendChild(thead);
     
     // Add table body
     const tbody = document.createElement('tbody');
@@ -113,15 +113,15 @@ export class VegetationView extends IVegetationView {
     this.tableContainer.appendChild(table);
     
     // Initialize DataTable if jQuery is available
-    if (window.$ && $.fn.DataTable) {
-      $(document).ready(() => {
-        $('#veg-impact-table').DataTable({
-          paging: false,
-          searching: false,
-          info: false
-        });
-      });
-    }
+    // if (window.$ && $.fn.DataTable) {
+    //   $(document).ready(() => {
+    //     $('#veg-impact-table').DataTable({
+    //       paging: false,
+    //       searching: false,
+    //       info: false
+    //     });
+    //   });
+    // }
   }
 
 async showVegetationImpact(csvUrl) {
@@ -201,16 +201,15 @@ async showVegetationImpact(csvUrl) {
         return !isNaN(percentFire) && percentFire > 0;
       });
       
-      // Create new DataTable
+      // Create new DataTable with explicit header names
       const table = $('#veg-impact-table').DataTable({
         data: filteredData,
         columns: [
           {
-            // Color cell - improved styling WITHOUT text
+            title: "Color", // Add explicit title
             data: 'Color',
             render: function(data) {
               const colorCode = data || '#cccccc';
-              // Remove the ${colorCode} text from the div
               return `<div style="width:30px; height:30px; background-color:${colorCode}; 
                       border-radius:4px; margin:0 auto; display:flex; align-items:center; 
                       justify-content:center; border:1px solid #ddd;"></div>`;
@@ -218,15 +217,16 @@ async showVegetationImpact(csvUrl) {
             className: 'color-cell'
           },
           { 
+            title: "Vegetation Community", // Add explicit title
             data: 'Vegetation Community', 
             width: '70%',
             render: function(data) {
               return `<div style="white-space: normal; word-break: break-word;">${data}</div>`;
             }
           },
-          { data: '% of Burn Area' },
-          { data: 'Mean Severity' },
-          { data: 'Std Dev' }
+          { title: "% of Burn Area", data: '% of Burn Area' }, // Add explicit title
+          { title: "Mean Severity", data: 'Mean Severity' },   // Add explicit title
+          { title: "Std Dev", data: 'Std Dev' }               // Add explicit title
         ],
         order: [[2, 'desc']], // Order by % of Burn Area in descending order
         paging: true,
