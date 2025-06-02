@@ -206,16 +206,14 @@ async showVegetationImpact(csvUrl) {
         data: filteredData,
         columns: [
           {
-            // Color cell - improved styling
+            // Color cell - improved styling WITHOUT text
             data: 'Color',
             render: function(data) {
               const colorCode = data || '#cccccc';
-              // Get contrasting text color for label
-              const contrastColor = getContrastColor(colorCode);
+              // Remove the ${colorCode} text from the div
               return `<div style="width:30px; height:30px; background-color:${colorCode}; 
                       border-radius:4px; margin:0 auto; display:flex; align-items:center; 
-                      justify-content:center; border:1px solid #ddd; color:${contrastColor};">
-                      ${colorCode}</div>`;
+                      justify-content:center; border:1px solid #ddd;"></div>`;
             },
             className: 'color-cell'
           },
