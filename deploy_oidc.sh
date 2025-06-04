@@ -45,5 +45,9 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:$SERVICE_ACCOUNT" \
   --role="roles/iam.serviceAccountTokenCreator"
 
+gcloud iam service-accounts add-iam-policy-binding "$SERVICE_ACCOUNT" \
+  --member="serviceAccount:$SERVICE_ACCOUNT" \
+  --role="roles/iam.serviceAccountTokenCreator"
+
 echo "Setup complete! Use this Workload Identity Provider in your GitHub Actions workflow:"
 echo "$WORKLOAD_IDENTITY_PROVIDER"
