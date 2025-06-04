@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Set your project ID
+# Set your project ID 
 PROJECT_ID="dse-nps"
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 
@@ -48,6 +48,10 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 gcloud iam service-accounts add-iam-policy-binding "$SERVICE_ACCOUNT" \
   --member="serviceAccount:$SERVICE_ACCOUNT" \
   --role="roles/iam.serviceAccountTokenCreator"
+
+gcloud iam service-accounts add-iam-policy-binding "$SERVICE_ACCOUNT" \
+  --member="serviceAccount:$SERVICE_ACCOUNT" \
+  --role="roles/iam.serviceAccounts.getAccessToken"
 
 echo "Setup complete! Use this Workload Identity Provider in your GitHub Actions workflow:"
 echo "$WORKLOAD_IDENTITY_PROVIDER"
