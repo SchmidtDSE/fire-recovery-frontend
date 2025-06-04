@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Set your project ID 
+# Set your project ID
 PROJECT_ID="dse-nps"
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 
