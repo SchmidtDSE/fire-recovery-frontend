@@ -36,11 +36,14 @@ echo "Provider Resource Name: $WORKLOAD_IDENTITY_PROVIDER"
 # Create or use an existing service account
 SERVICE_ACCOUNT="github-actions-sa@$PROJECT_ID.iam.gserviceaccount.com"
 
-# Fix the IAM binding format - use the correct principalSet format
 gcloud iam service-accounts add-iam-policy-binding "$SERVICE_ACCOUNT" \
   --project="$PROJECT_ID" \
   --role="roles/iam.workloadIdentityUser" \
   --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/fire-recovery-pool/attribute.repository/${REPO_PATH}"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SERVICE_ACCOUNT" \
+  --role="roles/iam.serviceAccountTokenCreator"
 
 echo "Setup complete! Use this Workload Identity Provider in your GitHub Actions workflow:"
 echo "$WORKLOAD_IDENTITY_PROVIDER"
