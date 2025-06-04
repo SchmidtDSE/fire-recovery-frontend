@@ -22,6 +22,7 @@ jobs:
       - name: Deploy to production bucket
         if: env.BRANCH_NAME == 'main'
         uses: mamal72/minio-perfect-deploy-action@main
+        continue-on-error: true
         with:
           endpoint: ${{ secrets.MINIO_ENDPOINT }}
           access_key: ${{ secrets.MINIO_ACCESS_KEY }}
@@ -33,6 +34,7 @@ jobs:
       - name: Deploy to development bucket
         if: env.BRANCH_NAME == 'dev'
         uses: mamal72/minio-perfect-deploy-action@main
+        continue-on-error: true
         with:
           endpoint: ${{ secrets.MINIO_ENDPOINT }}
           access_key: ${{ secrets.MINIO_ACCESS_KEY }}
