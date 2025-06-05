@@ -3,7 +3,7 @@
  * Centralizes all API endpoints used in the application
  */
 
-const local = true; // Set to true for local development, false for production
+const local = false; // Set to true for local development, false for production
 
 // Base URL configuration
 let API_BASE;
