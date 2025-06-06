@@ -496,7 +496,58 @@ export class FireView extends IFireView {
               // Fit the map to the polygon bounds
               this.map.fitBounds(this.geoJsonLayerGroup.getBounds());
           }
+          else if (prefillType === 'eureka') {
+              // Fire period: August 15 – August 24, 2020
+              // Set prefire and postfire windows to 14 days before and after
+              document.getElementById('prefire-start-date').value = '2025-05-14'; // 14 days before fire
+              document.getElementById('prefire-end-date').value = '2025-05-29';   // day before fire
+              document.getElementById('postfire-start-date').value = '2025-05-31'; // day after fire
+              document.getElementById('postfire-end-date').value = '2025-06-15';  // 14 days after fire
+              
+              // Set fire name
+              document.getElementById('fire-event-name').value = 'Eureka Fire';
+              
+              // Add test GeoJSON polygon to the map
+              const eurekaPolygon = {
+              "type": "Polygon",
+              "coordinates": [
+                  [
+                    [
+                      -116.36230877683596,
+                      34.09109254753936
+                    ],
+                    [
+                      -116.36230877683596,
+                      34.04366053741498
+                    ],
+                    [
+                      -116.30780280245119,
+                      34.04366053741498
+                    ],
+                    [
+                      -116.30780280245119,
+                      34.09109254753936
+                    ],
+                    [
+                      -116.36230877683596,
+                      34.09109254753936
+                    ]
+                  ]
+                ]
+              };
+
+              // Clear existing layers first
+              this.geoJsonLayerGroup.clearLayers();
+              
+              // Add the test polygon to the map with the defined style
+              L.geoJSON({ type: "Feature", geometry: eurekaPolygon }, { 
+              style: getDefaultGeoJsonStyle()
+              }).addTo(this.geoJsonLayerGroup);
+              
+              // Fit the map to the polygon bounds
+              this.map.fitBounds(this.geoJsonLayerGroup.getBounds());
       }
+    }
   }
 
   /**
