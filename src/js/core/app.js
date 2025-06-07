@@ -1,6 +1,7 @@
 import stateManager from './state-manager.js';
 import { FireFactory } from '../features/fire/fire-factory.js';
 import { VegetationFactory } from '../features/vegetation/veg-factory.js';
+import { AppController } from './app-controller.js';
 
 /**
  * Main application class
@@ -9,6 +10,7 @@ class App {
   constructor() {
     this.initialized = false;
     this.components = {};
+    this.controller = null;
   }
   
   /**
@@ -34,6 +36,16 @@ class App {
     
     // Initialize vegetation presenter
     vegComponents.presenter.initialize();
+    
+    // Initialize the application controller
+    this.controller = new AppController();
+    
+    // Initialize the controller with references to components
+    this.controller.initialize({
+      fire: fireComponents,
+      vegetation: vegComponents,
+      stateManager: stateManager
+    });
 
     this.initialized = true;
   }

@@ -6,22 +6,20 @@ import { dispatch } from 'https://cdn.jsdelivr.net/npm/d3-dispatch@3.0.1/+esm';
  */
 class StateManager {
   constructor() {
-    // Keep existing components setup
     this.components = {
       fire: null,
       vegetation: null,
       resources: null
     };
     
-    // Shared application state
     this.sharedState = {
       fireEventName: null,
       parkUnit: null,
       jobId: null,
       processingStatus: 'idle',
       activeMetric: 'RBR',
-      currentStep: 'upload',   // Add from FireModel
-      vegMapResults: null,     // Add from VegetationModel
+      currentStep: 'upload',
+      vegMapResults: null,
       assets: {
         coarse: {
           geojsonUrl: null,
@@ -38,7 +36,6 @@ class StateManager {
       }
     };
     
-    // Add new events
     this.dispatch = dispatch(
       'sharedStateChanged',
       'component_registered', 
@@ -51,7 +48,8 @@ class StateManager {
       'activeMetricChanged',
       'colorBreaksChanged',
       'currentStepChanged',
-      'vegMapResultsChanged'
+      'vegMapResultsChanged',
+      'stateImported'
     );
   }
   
@@ -289,6 +287,123 @@ class StateManager {
    */
   getSharedState() {
     return { ...this.sharedState };
+  }
+
+  /**
+   * Export the current state to a JSON object
+   * @returns {Object} JSON-serializable state object
+   */
+  exportState() {
+    const exportedState = JSON.parse(JSON.stringify(this.sharedState));
+    
+    exportedState._metadata = {
+      exportDate: new Date().toISOString(),
+      version: '1.0' // For now, just a placeholder
+    };
+    
+    return exportedState;
+  }
+  
+  /**
+   * Import state from a JSON object, completely replacing current state
+   * @param {Object} importedState - State object to import
+   * @param {string} source - Source component triggering the import
+   * @returns {boolean} Success status
+   */
+  importState(importedState, source) {
+    // Validate the imported state
+    if (!this._validateImportedState(importedState)) {
+      console.error('Invalid state format for import');
+      return false;
+    }
+    
+    try {
+      // Store metadata if present before replacing state
+      const metadata = importedState._metadata;
+      
+      // Create a clean copy without metadata
+      const cleanImport = { ...importedState };
+      delete cleanImport._metadata;
+      
+      // Completely replace the current state
+      this.sharedState = JSON.parse(JSON.stringify(cleanImport));
+      
+      // Notify all properties that have changed
+      this._notifyStateReplaced(source);
+      
+      // Dispatch a special event to notify all components of the state import
+      this.dispatch.call('stateImported', this, {
+        source,
+        state: this.sharedState,
+        metadata
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error importing state:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Notify all components that the entire state has been replaced
+   * @private
+   * @param {string} source - Source component name
+   */
+  _notifyStateReplaced(source) {
+    // Dispatch events for all top-level properties
+    Object.entries(this.sharedState).forEach(([property, value]) => {
+      // Dispatch specific property changed event if listeners exist
+      const eventName = property + 'Changed';
+      if (this.dispatch.on(eventName)) {
+        this.dispatch.call(eventName, this, { value, source });
+      }
+      
+      // Special handling for certain properties
+      if (property === 'assets') {
+        this.dispatch.call('assetsChanged', this, {
+          assets: value,
+          source
+        });
+      } else if (property === 'colorBreaks') {
+        this.dispatch.call('colorBreaksChanged', this, {
+          value,
+          source
+        });
+      }
+    });
+    
+    // Dispatch the general state changed event
+    this.dispatch.call('sharedStateChanged', this, {
+      property: '*',  // Indicate complete state replacement
+      value: this.sharedState,
+      source,
+      state: this.sharedState
+    });
+  }
+  
+  /**
+   * Validate an imported state object
+   * @private
+   * @param {Object} state - State object to validate
+   * @returns {boolean} Is the state valid
+   */
+  _validateImportedState(state) {
+    // Basic validation
+    if (!state || typeof state !== 'object') {
+      return false;
+    }
+    
+    // Check for required structure - adjust based on what you consider essential
+    const requiredProperties = ['assets']; // Add other must-have properties
+    for (const prop of requiredProperties) {
+      if (!(prop in state)) {
+        console.warn(`Imported state missing required property: ${prop}`);
+        return false;
+      }
+    }
+    
+    return true;
   }
 }
 

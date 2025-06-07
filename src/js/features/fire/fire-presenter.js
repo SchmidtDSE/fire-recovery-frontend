@@ -291,4 +291,55 @@ export class FirePresenter extends IFirePresenter {
     }
   }
 
+  refreshFromImportedState(state) {
+    console.log('Refreshing Fire UI from imported state');
+    
+    // Update view with current state data
+    if (state.currentStep === 'refine' || state.currentStep === 'resolve') {
+      this.view.showRefinementUI();
+      
+      // If we have refined results, show them
+      if (state.assets.refined.geojsonUrl || 
+          Object.keys(state.assets.refined.severityCogUrls).length > 0) {
+        // Display refined COG layer
+        const cogUrl = stateManager.getActiveCogUrl(true);
+        if (cogUrl) {
+          this.view.displayCOGLayer(cogUrl);
+        }
+        
+        // Update fire metrics display
+        this.view.showMetricsAndTable();
+      } else {
+        // Otherwise show intermediate results
+        const cogUrl = stateManager.getActiveCogUrl(false);
+        if (cogUrl) {
+          this.view.displayCOGLayer(cogUrl);
+        }
+      }
+    }
+    
+    // Update date information if available from state
+    if (state.prefireStartDate && state.prefireEndDate && 
+        state.postfireStartDate && state.postfireEndDate) {
+      this.view.showDateSummary({
+        prefireStart: state.prefireStartDate,
+        prefireEnd: state.prefireEndDate,
+        postfireStart: state.postfireStartDate,
+        postfireEnd: state.postfireEndDate
+      });
+    }
+    
+    // Update fire event name in UI
+    if (state.fireEventName) {
+      const nameInput = document.getElementById('fire-event-name');
+      if (nameInput) nameInput.value = state.fireEventName;
+    }
+    
+    // Update active metric selector
+    if (state.activeMetric) {
+      const metricSelect = document.getElementById('fire-severity-metric-select');
+      if (metricSelect) metricSelect.value = state.activeMetric;
+    }
+  }
+
 }

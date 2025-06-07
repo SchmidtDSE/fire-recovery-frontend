@@ -65,7 +65,7 @@ export class VegetationPresenter extends IVegetationPresenter {
     // Call the existing implementation
     this.handleVegMapResolution();
   }
-  
+
   async handleVegMapResolution() {
 
     debugger;
@@ -116,6 +116,27 @@ export class VegetationPresenter extends IVegetationPresenter {
     } catch (error) {
       console.error('Vegetation analysis error:', error);
       this.view.showMessage(`Error: ${error.message}`, 'error');
+    }
+  }
+
+  refreshFromImportedState(state) {
+    console.log('Refreshing Vegetation UI from imported state');
+    
+    // Check if we have vegetation results to display
+    if (state.vegMapResults) {
+      // Update vegetation table with results
+      if (state.vegMapResults.fire_veg_matrix_url) {
+        this.view.showVegetationImpact(state.vegMapResults.fire_veg_matrix_url);
+      }
+      
+      // Show vegetation tab
+      this.view.showVegetationTab();
+    }
+    
+    // Update vegetation map if park unit is set
+    if (state.parkUnit && state.parkUnit.veg_cog_url) {
+      // Ensure the vegetation button is available
+      this.view.addVegetationButton();
     }
   }
 }
