@@ -1,7 +1,7 @@
 import stateManager from './state-manager.js';
 import { FireFactory } from '../features/fire/fire-factory.js';
 import { VegetationFactory } from '../features/vegetation/veg-factory.js';
-import { AppController } from './app-controller.js';
+import { AppController } from '../core/controller.js';
 
 /**
  * Main application class

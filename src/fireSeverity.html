@@ -215,6 +215,47 @@
         </section>
     </main>
 
+    <div class="tab-content hidden" id="export-tab">
+        <!-- Add state management controls -->
+        <div class="state-management-controls">
+            <h4>Analysis State Management</h4>
+            <p>Save your current analysis state or load a previous one:</p>
+            <div class="state-buttons">
+                <button id="export-state-button" class="action-button">
+                    <i class="fas fa-download"></i> Export Analysis State
+                </button>
+                <button id="import-state-button" class="action-button">
+                    <i class="fas fa-upload"></i> Import Analysis State
+                </button>
+                <input type="file" id="import-state-file" accept=".json" style="display: none;">
+            </div>
+        </div>
+        
+        <!-- Color break controls (existing) -->
+        <div class="color-break-controls">
+            <h4>Fire Severity Color Breaks</h4>
+            <p>Adjust the threshold values for each color break:</p>
+            <div class="color-sliders">
+                <!-- Sliders will be populated by JavaScript -->
+            </div>
+            <button id="reset-color-breaks" class="action-button secondary">Reset to Defaults</button>
+        </div>
+        
+        <!-- Export options (existing) -->
+        <div class="export-options">
+            <button class="export-button" data-format="geojson">
+                <i class="fas fa-file-export"></i> Export GeoJSON
+            </button>
+            <button class="export-button" data-format="csv">
+                <i class="fas fa-table"></i> Export CSV
+            </button>
+            <button class="export-button" data-format="report">
+                <i class="fas fa-file-pdf"></i> Export Report
+            </button>
+        </div>
+    </div>
+
+
     <!-- Footer -->
     <footer class="site-footer">
         <nav class="footer-nav">

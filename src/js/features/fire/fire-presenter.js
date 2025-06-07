@@ -185,9 +185,9 @@ export class FirePresenter extends IFirePresenter {
    * Handle refinement acceptance
    */
   handleAcceptRefinement() {
-    // Update model state if needed
-    const state = this.model.getState();
-    
+    // Update the model to mark the refinement as accepted
+    stateManager.updateCurrentStep('resolve', 'fire');
+
     // Show metrics and table in the view
     this.view.showMetricsAndTable();
     
@@ -294,28 +294,56 @@ export class FirePresenter extends IFirePresenter {
   refreshFromImportedState(state) {
     console.log('Refreshing Fire UI from imported state');
     
-    // Update view with current state data
-    if (state.currentStep === 'refine' || state.currentStep === 'resolve') {
-      this.view.showRefinementUI();
-      
-      // If we have refined results, show them
-      if (state.assets.refined.geojsonUrl || 
-          Object.keys(state.assets.refined.severityCogUrls).length > 0) {
-        // Display refined COG layer
-        const cogUrl = stateManager.getActiveCogUrl(true);
-        if (cogUrl) {
-          this.view.displayCOGLayer(cogUrl);
-        }
+    // First disable all action buttons except Reset
+    this.view.disableActionButtons(['refine', 'accept', 'analyze-vegetation']);
+    this.view.enableActionButtons(['reset']);
+    
+    // Reset the UI elements from input
+    if (state.fireEventName) {
+      this.model.setFireEventName(state.fireEventName);
+    }
+
+    if (state.parkUnit) {
+      this.model.setParkUnit(state.parkUnit);
+    }
+    
+    if (state.jobId) {
+      this.model.setJobId(state.jobId);
+    }
+    
+    if (state.activeMetric) {
+      this.model.setFireSeverityMetric(state.activeMetric);
+    }
+  
+    // Update view based on current step
+    switch(state.currentStep) {
+      case 'upload':
+        // In upload step, all refinement buttons should be disabled
+        break;
         
-        // Update fire metrics display
-        this.view.showMetricsAndTable();
-      } else {
-        // Otherwise show intermediate results
-        const cogUrl = stateManager.getActiveCogUrl(false);
-        if (cogUrl) {
-          this.view.displayCOGLayer(cogUrl);
+      case 'refine':
+        // In refinement step, enable refine button when a shape is drawn
+        this.view.showRefinementUI();
+        
+        // Show the intermediate COG (coarse boundary)
+        const coarseCogUrl = stateManager.getActiveCogUrl(false);
+        if (coarseCogUrl) {
+          this.view.displayCOGLayer(coarseCogUrl);
         }
-      }
+        break;
+        
+      case 'resolve':
+        // In resolve step, show refined results and vegetation button
+        this.view.showRefinementUI();
+        this.view.enableActionButtons(['analyze-vegetation']);
+        
+        // Display refined COG layer
+        const refinedCogUrl = stateManager.getActiveCogUrl(true);
+        if (refinedCogUrl) {
+          this.view.displayCOGLayer(refinedCogUrl);
+          this.view.showMetricsAndTable();
+        }
+        break;
     }
     
     // Update date information if available from state
@@ -340,6 +368,11 @@ export class FirePresenter extends IFirePresenter {
       const metricSelect = document.getElementById('fire-severity-metric-select');
       if (metricSelect) metricSelect.value = state.activeMetric;
     }
+    
+    // Update park unit dropdown
+    if (state.parkUnit && state.parkUnit.id) {
+      const parkSelect = document.getElementById('park-unit');
+      if (parkSelect) parkSelect.value = state.parkUnit.id;
+    }
   }
-
 }

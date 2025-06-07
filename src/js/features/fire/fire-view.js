@@ -601,10 +601,24 @@ export class FireView extends IFireView {
    * @param {Object} formValues - Form values containing dates
    */
   showDateSummary(formValues) {
-    document.getElementById('prefire-dates').textContent = 
-        `Prefire Dates: ${formatDate(formValues.prefireStart)} - ${formatDate(formValues.prefireEnd)}`;
-    document.getElementById('postfire-dates').textContent = 
-        `Postfire Dates: ${formatDate(formValues.postfireStart)} - ${formatDate(formValues.postfireEnd)}`;
+    const prefireDates = document.getElementById('prefire-dates');
+    const postfireDates = document.getElementById('postfire-dates');
+
+    if (prefireDates) {
+      prefireDates.textContent = formValues.prefireStart && formValues.prefireEnd ? 
+        `${formValues.prefireStart} - ${formValues.prefireEnd}` : '';
+    }
+    
+    if (postfireDates) {
+      postfireDates.textContent = formValues.postfireStart && formValues.postfireEnd ? 
+        `${formValues.postfireStart} - ${formValues.postfireEnd}` : '';
+    }
+    
+    // Make sure the date ranges section is visible
+    const dateRangesSection = document.querySelector('.date-ranges');
+    if (dateRangesSection) {
+      dateRangesSection.style.display = 'block';
+    }
   }
 
   /**
@@ -984,5 +998,33 @@ export class FireView extends IFireView {
       // Clear any existing layers if no COG is available
       this.resultLayerGroup.clearLayers();
     }
+  }
+
+  /**
+   * Enable specific action buttons
+   * @param {Array<string>} buttonIds - Array of button IDs to enable
+   */
+  enableActionButtons(buttonIds) {
+    buttonIds.forEach(id => {
+      const button = document.getElementById(id === 'refine' ? 'refine-button' : 
+                                            id === 'accept' ? 'accept-button' :
+                                            id === 'reset' ? 'reset-button' :
+                                            id === 'analyze-vegetation' ? 'analyze-vegetation-button' : id);
+      if (button) button.disabled = false;
+    });
+  }
+
+  /**
+   * Disable specific action buttons
+   * @param {Array<string>} buttonIds - Array of button IDs to disable
+   */
+  disableActionButtons(buttonIds) {
+    buttonIds.forEach(id => {
+      const button = document.getElementById(id === 'refine' ? 'refine-button' : 
+                                            id === 'accept' ? 'accept-button' :
+                                            id === 'reset' ? 'reset-button' :
+                                            id === 'analyze-vegetation' ? 'analyze-vegetation-button' : id);
+      if (button) button.disabled = true;
+    });
   }
 }

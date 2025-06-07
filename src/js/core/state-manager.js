@@ -20,6 +20,10 @@ class StateManager {
       activeMetric: 'RBR',
       currentStep: 'upload',
       vegMapResults: null,
+      prefireStartDate: null,
+      prefireEndDate: null,
+      postfireStartDate: null,
+      postfireEndDate: null,
       assets: {
         coarse: {
           geojsonUrl: null,
@@ -49,7 +53,11 @@ class StateManager {
       'colorBreaksChanged',
       'currentStepChanged',
       'vegMapResultsChanged',
-      'stateImported'
+      'stateImported',
+      'prefireStartDateChanged',
+      'prefireEndDateChanged',
+      'postfireStartDateChanged',
+      'postfireEndDateChanged'
     );
   }
   

@@ -314,7 +314,15 @@ export class FireModel extends IFireModel {
     
     try {
       const response = await api.analyzeFire(data);
-      
+
+      debugger;
+
+      // Update shared state with fire event dates
+      stateManager.updateSharedState('prefireStartDate', data.prefire_start_date, 'fire');
+      stateManager.updateSharedState('prefireEndDate', data.prefire_end_date, 'fire');
+      stateManager.updateSharedState('postfireStartDate', data.postfire_start_date, 'fire');
+      stateManager.updateSharedState('postfireEndDate', data.postfire_end_date, 'fire');
+
       // Store the job ID for later use in refinement
       this.setJobId(response.job_id);
       
