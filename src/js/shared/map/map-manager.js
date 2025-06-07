@@ -56,6 +56,58 @@ export class MapManager {
   }
 
   /**
+   * Display GeoJSON from URL
+   * @param {string} geojsonUrl - URL to the GeoJSON file
+   * @param {L.FeatureGroup} [targetGroup] - Optional target feature group (creates new one if not provided)
+   * @param {Object} [styleOptions] - Optional styling for the GeoJSON
+   * @returns {Promise<L.Layer>} The created GeoJSON layer
+   */
+  async displayGeoJSONFromUrl(geojsonUrl, targetGroup = null, styleOptions) {
+
+    debugger;
+
+    if (!geojsonUrl) {
+      console.warn('No GeoJSON URL provided');
+      return null;
+    }
+    
+    try {
+      // Use provided group or create a new one
+      const featureGroup = targetGroup || this.createFeatureGroup();
+      
+      // Clear existing layers if using an existing group
+      if (targetGroup) {
+        targetGroup.clearLayers();
+      }
+      
+      // Fetch the GeoJSON data
+      const response = await fetch(geojsonUrl);
+      if (!response.ok) {
+        throw new Error(`GeoJSON fetch failed with status: ${response.status}`);
+      }
+      
+      const geojsonData = await response.json();
+      
+      
+      // Add to map with styling
+      const layer = L.geoJSON(geojsonData, { 
+        style: styleOptions
+      }).addTo(featureGroup);
+      
+      // Fit map to the bounds
+      if (featureGroup.getBounds().isValid()) {
+        this.map.fitBounds(featureGroup.getBounds());
+      }
+      
+      return layer;
+    } catch (error) {
+      console.error('Error loading GeoJSON:', error);
+      return null;
+    }
+  }
+
+
+  /**
    * Setup standard base layers used across the application
    */
   setupBaseLayers() {

@@ -48,7 +48,15 @@ export class FirePresenter extends IFirePresenter {
     });
     
     this.model.on('assetsChanged', (data) => {
-      // Use state manager to get the current active COG URL instead of direct access
+      // Check if there's a GeoJSON URL to display
+      if (data.assets && data.assets.geojsonUrl) {
+        // Tell the view to display the GeoJSON
+        this.view.displayGeoJSONFromUrl(data.assets.geojsonUrl, {
+          clearExisting: true  // Clear user drawings when showing the refined boundary
+        });
+      }
+      
+      // Handle COG URL (existing functionality)
       const useRefined = data.type === 'final';
       const cogUrl = stateManager.getActiveCogUrl(useRefined);
       
@@ -115,7 +123,7 @@ export class FirePresenter extends IFirePresenter {
     if (formValues.fireEventName) {
       this.model.setFireEventName(formValues.fireEventName);
     }
-    
+
     // Format data for API request
     const fireSevData = {
       fire_event_name: fireEventName,
@@ -190,6 +198,17 @@ export class FirePresenter extends IFirePresenter {
 
     // Show metrics and table in the view
     this.view.showMetricsAndTable();
+    
+    // Get the refined boundary URL from state
+    const state = stateManager.getSharedState();
+    const refinedGeojsonUrl = state.assets?.refined?.geojsonUrl;
+    
+    // If we have a refined boundary, display it (and clear user drawings)
+    if (refinedGeojsonUrl) {
+      this.view.displayGeoJSONFromUrl(refinedGeojsonUrl, {
+        clearExisting: true  // Clear user drawings when showing the refined boundary
+      });
+    }
     
     // Get vegetation view and let IT add its own button
     const vegView = window.app.components.vegetation.view;
@@ -297,7 +316,7 @@ export class FirePresenter extends IFirePresenter {
     // First disable all action buttons except Reset
     this.view.disableActionButtons(['refine', 'accept', 'analyze-vegetation']);
     this.view.enableActionButtons(['reset']);
-    
+
     // Reset the UI elements from input
     if (state.fireEventName) {
       this.model.setFireEventName(state.fireEventName);
@@ -330,6 +349,12 @@ export class FirePresenter extends IFirePresenter {
         if (coarseCogUrl) {
           this.view.displayCOGLayer(coarseCogUrl);
         }
+        
+        // Display coarse GeoJSON if available
+        if (state.assets?.coarse?.geojsonUrl) {
+          this.view.displayGeoJSONFromUrl(state.assets.coarse.geojsonUrl);
+        }
+
         break;
         
       case 'resolve':
@@ -343,6 +368,12 @@ export class FirePresenter extends IFirePresenter {
           this.view.displayCOGLayer(refinedCogUrl);
           this.view.showMetricsAndTable();
         }
+        
+        // Display refined GeoJSON if available
+        if (state.assets?.refined?.geojsonUrl) {
+          this.view.displayGeoJSONFromUrl(state.assets.refined.geojsonUrl);
+        }
+
         break;
     }
     

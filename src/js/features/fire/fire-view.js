@@ -606,12 +606,12 @@ export class FireView extends IFireView {
 
     if (prefireDates) {
       prefireDates.textContent = formValues.prefireStart && formValues.prefireEnd ? 
-        `${formValues.prefireStart} - ${formValues.prefireEnd}` : '';
+        `Prefire Date Range: ${formValues.prefireStart} - ${formValues.prefireEnd}` : '';
     }
     
     if (postfireDates) {
       postfireDates.textContent = formValues.postfireStart && formValues.postfireEnd ? 
-        `${formValues.postfireStart} - ${formValues.postfireEnd}` : '';
+        `Postfire Date Range: ${formValues.postfireStart} - ${formValues.postfireEnd}` : '';
     }
     
     // Make sure the date ranges section is visible
@@ -1026,5 +1026,44 @@ export class FireView extends IFireView {
                                             id === 'analyze-vegetation' ? 'analyze-vegetation-button' : id);
       if (button) button.disabled = true;
     });
+  }
+
+  /**
+   * Display GeoJSON from URL on the map
+   * @param {string} geojsonUrl - URL to the GeoJSON file
+   * @param {Object} options - Display options
+   */
+  displayGeoJSONFromUrl(geojsonUrl, options = {}) {
+    if (!geojsonUrl) {
+      console.warn('No GeoJSON URL provided');
+      return;
+    }
+    
+    // Use the MapManager to display the GeoJSON
+    const mapManager = MapManager.getInstance();
+    
+    // Set default styling for refined boundaries
+    const defaultStyle = {
+      color: '#ff0000',  // Red color for boundaries
+      weight: 3,
+      opacity: 1,
+      dashArray: '5, 5',
+      fillOpacity: 0.0
+    };
+    
+    // Clear existing drawn shapes if requested
+    if (options.clearExisting) {
+      this.geoJsonLayerGroup.clearLayers();
+    }
+    
+    // Display the GeoJSON
+    mapManager.displayGeoJSONFromUrl(
+      geojsonUrl,
+      this.geoJsonLayerGroup,
+      options.style || defaultStyle
+    );
+    
+    // Update state to indicate we have a refinement
+    this.hasDrawnRefinement = true;
   }
 }

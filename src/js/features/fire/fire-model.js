@@ -306,6 +306,20 @@ export class FireModel extends IFireModel {
   }
 
   /**
+   * Set fire date ranges
+   * @param {Array} prefireDateRange - [startDate, endDate] for prefire period
+   * @param {Array} postfireDateRange - [startDate, endDate] for postfire period
+   */
+  setFireDateRanges(prefireDateRange, postfireDateRange) {
+    stateManager.updateSharedState('prefireStartDate', prefireDateRange[0], 'fire');
+    stateManager.updateSharedState('prefireEndDate', prefireDateRange[1], 'fire');
+    stateManager.updateSharedState('postfireStartDate', postfireDateRange[0], 'fire');
+    stateManager.updateSharedState('postfireEndDate', postfireDateRange[1], 'fire');
+
+    return this;
+  }
+
+  /**
    * Analyze fire severity
    * @param {Object} data - Request data
    */
@@ -315,13 +329,8 @@ export class FireModel extends IFireModel {
     try {
       const response = await api.analyzeFire(data);
 
-      debugger;
-
       // Update shared state with fire event dates
-      stateManager.updateSharedState('prefireStartDate', data.prefire_start_date, 'fire');
-      stateManager.updateSharedState('prefireEndDate', data.prefire_end_date, 'fire');
-      stateManager.updateSharedState('postfireStartDate', data.postfire_start_date, 'fire');
-      stateManager.updateSharedState('postfireEndDate', data.postfire_end_date, 'fire');
+      this.setFireDateRanges(data.prefire_date_range, data.postfire_date_range);
 
       // Store the job ID for later use in refinement
       this.setJobId(response.job_id);
@@ -405,7 +414,7 @@ export class FireModel extends IFireModel {
       
       // Set geojson URL separately
       if (result.refined_boundary_geojson_url) {
-        stateManager.updateAsset('refined.geojsonUrl', result.refined_geojson_url, 'fire');
+        stateManager.updateAsset('refined.geojsonUrl', result.refined_boundary_geojson_url, 'fire');
       }
         
       return result;
