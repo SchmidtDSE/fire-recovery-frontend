@@ -16,6 +16,7 @@ export class AppController {
   initialize(components) {
     this.components = components;
     this.setupStateManagement();
+    this.setupExportButtons();
   }
   
   /**
@@ -70,6 +71,146 @@ export class AppController {
     this.showNotification('Analysis state exported successfully');
   }
   
+  /**
+   * Export the active vegetation impact CSV
+   */
+  exportVegetationCSV() {
+    const state = stateManager.getSharedState();
+    const vegMapResults = state.vegMapResults;
+    
+    if (!vegMapResults || !vegMapResults.csvUrl) {
+      this.showNotification('No vegetation impact data available to export', 'error');
+      return;
+    }
+    
+    this.downloadFromUrl(vegMapResults.csvUrl, `${state.fireEventName || 'vegetation'}-impact.csv`);
+    this.showNotification('Vegetation impact CSV exported successfully');
+  }
+  
+  /**
+   * Export the active COG as a GeoTIFF
+   */
+  exportActiveCOG() {
+    const state = stateManager.getSharedState();
+    const activeMetric = state.activeMetric.toLowerCase();
+    const refinedUrl = state.assets.refined.severityCogUrls[activeMetric];
+    const coarseUrl = state.assets.coarse.severityCogUrls[activeMetric];
+    
+    // Prioritize refined over coarse COG
+    const cogUrl = refinedUrl || coarseUrl;
+    
+    if (!cogUrl) {
+      this.showNotification('No fire severity data available to export', 'error');
+      return;
+    }
+    
+    this.downloadFromUrl(cogUrl, `${state.fireEventName || 'fire'}-severity-${activeMetric}.tif`);
+    this.showNotification(`Fire severity ${activeMetric.toUpperCase()} exported successfully`);
+  }
+  
+  /**
+   * Export the active GeoJSON boundary
+   */
+  exportActiveGeoJSON() {
+    const state = stateManager.getSharedState();
+    const refinedUrl = state.assets.refined.geojsonUrl;
+    const coarseUrl = state.assets.coarse.geojsonUrl;
+    
+    // Prioritize refined over coarse boundary
+    const geojsonUrl = refinedUrl || coarseUrl;
+    
+    if (!geojsonUrl) {
+      this.showNotification('No boundary data available to export', 'error');
+      return;
+    }
+    
+    this.downloadFromUrl(geojsonUrl, `${state.fireEventName || 'fire'}-boundary.geojson`);
+    this.showNotification('Fire boundary GeoJSON exported successfully');
+  }
+  
+  /**
+   * Download a file from a URL
+   * @param {string} url - URL to download
+   * @param {string} filename - Name for the downloaded file
+   */
+  async downloadFromUrl(url, filename) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Download error:', error);
+      this.showNotification(`Error downloading file: ${error.message}`, 'error');
+    }
+  }
+
+  /**
+   * Setup export tab button event listeners
+   */
+  setupExportButtons() {
+    // Export tab contains 3 buttons for different export types
+    const exportButtons = document.querySelectorAll('.export-button');
+    
+    if (exportButtons.length) {
+      exportButtons.forEach(button => {
+        const format = button.getAttribute('data-format');
+        
+        button.addEventListener('click', () => {
+          switch (format) {
+            case 'csv':
+              this.exportVegetationCSV();
+              break;
+            case 'geojson':
+              this.exportActiveGeoJSON();
+              break;
+            case 'report':
+              this.exportActiveCOG();
+              break;
+            default:
+              console.warn(`Unknown export format: ${format}`);
+          }
+        });
+      });
+    }
+    
+    // Also add click handlers for the tab buttons to show the right content
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        // Remove active class from all buttons
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        
+        // Add active class to clicked button
+        button.classList.add('active');
+        
+        // Get tab id
+        const tabId = button.getAttribute('data-tab');
+        
+        // Hide all tab contents
+        tabContents.forEach(content => content.classList.add('hidden'));
+        
+        // Show selected tab content
+        const selectedTab = document.getElementById(`${tabId}-tab`);
+        if (selectedTab) {
+          selectedTab.classList.remove('hidden');
+        }
+      });
+    });
+  }
+
   /**
    * Import state from a file
    * @param {File} file - JSON file to import

@@ -39,7 +39,7 @@ export class FireView extends IFireView {
     this.setupParkUnitDropdown();
     this.setupFireSeverityMetricDropdown();
     this.setupTestPrefill();
-    // this.createColorBreakControls();
+    this.createColorBreakControls();
 
     stateManager.on('activeMetricChanged', () => {
       this.refreshMapVisualization();

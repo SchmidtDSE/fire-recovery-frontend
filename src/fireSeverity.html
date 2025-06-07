@@ -149,12 +149,6 @@
             
             <!-- Results Panel -->
             <div class="results-panel hidden">
-                <div class="results-tabs">
-                    <button class="tab-button active" data-tab="metrics">Metrics</button>
-                    <button class="tab-button" data-tab="vegetation">Vegetation</button>
-                    <button class="tab-button" data-tab="export">Export</button>
-                </div>
-                
                 <div class="tab-content" id="metrics-tab">
                     <div class="metrics-group">
                         <h3>Date Ranges:</h3>
@@ -199,17 +193,6 @@
                         </div>
                         <button id="reset-color-breaks" class="action-button secondary">Reset to Defaults</button>
                     </div>
-                    <div class="export-options">
-                        <button class="export-button" data-format="geojson">
-                            <i class="fas fa-file-export"></i> Export GeoJSON
-                        </button>
-                        <button class="export-button" data-format="csv">
-                            <i class="fas fa-table"></i> Export CSV
-                        </button>
-                        <button class="export-button" data-format="report">
-                            <i class="fas fa-file-pdf"></i> Export Report
-                        </button>
-                    </div>
                 </div>
             </div>
         </section>
@@ -244,13 +227,13 @@
         <!-- Export options (existing) -->
         <div class="export-options">
             <button class="export-button" data-format="geojson">
-                <i class="fas fa-file-export"></i> Export GeoJSON
+                <i class="fas fa-file-export"></i> Export Boundary (GeoJSON)
             </button>
             <button class="export-button" data-format="csv">
-                <i class="fas fa-table"></i> Export CSV
+                <i class="fas fa-table"></i> Export Vegetation Impact Table (CSV)
             </button>
             <button class="export-button" data-format="report">
-                <i class="fas fa-file-pdf"></i> Export Report
+                <i class="fas fa-file-pdf"></i> Export Fire Severity Raster (Cloud Optimized GeoTIFF)
             </button>
         </div>
     </div>
