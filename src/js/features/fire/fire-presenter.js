@@ -334,6 +334,10 @@ export class FirePresenter extends IFirePresenter {
       this.model.setFireSeverityMetric(state.activeMetric);
     }
   
+    if (state.colorBreaks && state.colorBreaks.breaks) {
+      this.view.updateColorBreakUI(state.colorBreaks.breaks);
+    }
+
     // Update view based on current step
     switch(state.currentStep) {
       case 'upload':

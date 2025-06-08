@@ -293,65 +293,65 @@ export class FireView extends IFireView {
     alert(message);
   }
   
-  /**
-   * Display COG layer on map
-   * @param {string} cogUrl - COG URL
-   */
-  async displayCOGLayer(cogUrl) {
-    if (!cogUrl) {
-      console.warn('No COG URL provided');
-      return;
-    }
+  // /**
+  //  * Display COG layer on map
+  //  * @param {string} cogUrl - COG URL
+  //  */
+  // async displayCOGLayer(cogUrl) {
+  //   if (!cogUrl) {
+  //     console.warn('No COG URL provided');
+  //     return;
+  //   }
     
-    try {
-      const cogResponse = await fetch(cogUrl);
-      if (!cogResponse.ok) {
-        throw new Error(`COG fetch failed with status: ${cogResponse.status}`);
-      }
+  //   try {
+  //     const cogResponse = await fetch(cogUrl);
+  //     if (!cogResponse.ok) {
+  //       throw new Error(`COG fetch failed with status: ${cogResponse.status}`);
+  //     }
 
-      const arrayBuffer = await cogResponse.arrayBuffer();
-      const georaster = await parseGeoraster(arrayBuffer);
+  //     const arrayBuffer = await cogResponse.arrayBuffer();
+  //     const georaster = await parseGeoraster(arrayBuffer);
       
-      const resultLayer = new GeoRasterLayer({
-        georaster: georaster,
-        opacity: .8,
-        resolution: 256,
-        pixelValuesToColorFn: value => {
-          if (value === null || value === undefined || value <= 0) return 'transparent';
-          if (value < 0.1) return '#F0F921'; // bright yellow
-          if (value < 0.2) return '#FDC328';
-          if (value < 0.3) return '#F89441';
-          if (value < 0.4) return '#E56B5D';
-          if (value < 0.5) return '#CB4679';
-          if (value < 0.6) return '#A82296';
-          if (value < 0.7) return '#7D03A8';
-          if (value < 0.8) return '#4B03A1';
-          if (value < 0.9) return '#0D0887'; // darkest purple
-          return '#0D0887';
-        }
-      });
+  //     const resultLayer = new GeoRasterLayer({
+  //       georaster: georaster,
+  //       opacity: .8,
+  //       resolution: 256,
+  //       pixelValuesToColorFn: value => {
+  //         if (value === null || value === undefined || value <= 0) return 'transparent';
+  //         if (value < 0.1) return '#F0F921'; // bright yellow
+  //         if (value < 0.2) return '#FDC328';
+  //         if (value < 0.3) return '#F89441';
+  //         if (value < 0.4) return '#E56B5D';
+  //         if (value < 0.5) return '#CB4679';
+  //         if (value < 0.6) return '#A82296';
+  //         if (value < 0.7) return '#7D03A8';
+  //         if (value < 0.8) return '#4B03A1';
+  //         if (value < 0.9) return '#0D0887'; // darkest purple
+  //         return '#0D0887';
+  //       }
+  //     });
 
-      this.resultLayerGroup.clearLayers();
-      resultLayer.addTo(this.resultLayerGroup);
+  //     this.resultLayerGroup.clearLayers();
+  //     resultLayer.addTo(this.resultLayerGroup);
       
-      // Force the result layer to the top
-      this.map.eachLayer(l => {
-        if (l === this.resultLayerGroup) {
-          l.eachLayer(resultL => resultL.bringToFront());
-        }
-      });
+  //     // Force the result layer to the top
+  //     this.map.eachLayer(l => {
+  //       if (l === this.resultLayerGroup) {
+  //         l.eachLayer(resultL => resultL.bringToFront());
+  //       }
+  //     });
 
-      // Check if the layer has valid bounds before fitting
-      const bounds = resultLayer.getBounds();
-      if (bounds && bounds.isValid()) {
-        this.map.fitBounds(bounds);
-      }
+  //     // Check if the layer has valid bounds before fitting
+  //     const bounds = resultLayer.getBounds();
+  //     if (bounds && bounds.isValid()) {
+  //       this.map.fitBounds(bounds);
+  //     }
       
-    } catch (error) {
-      console.error('Error loading COG:', error);
-      this.showErrorState(`Error loading layer: ${error.message}`);
-    }
-  }
+  //   } catch (error) {
+  //     console.error('Error loading COG:', error);
+  //     this.showErrorState(`Error loading layer: ${error.message}`);
+  //   }
+  // }
 
   /**
    * Setup date limits
@@ -896,35 +896,53 @@ export class FireView extends IFireView {
       const rangeInput = sliderContainer.querySelector('.break-slider');
       const numberInput = sliderContainer.querySelector('.break-value');
       
-      // Synchronize range and number inputs
+      // Synchronize range and number inputs - but don't refresh map
       rangeInput.addEventListener('input', e => {
         const value = parseFloat(e.target.value);
         numberInput.value = value;
-        this.updateColorBreak(index, value);
+        this.updateColorBreakState(index, value);
       });
       
       numberInput.addEventListener('change', e => {
         const value = parseFloat(e.target.value);
         rangeInput.value = value;
-        this.updateColorBreak(index, value);
+        this.updateColorBreakState(index, value);
       });
     });
+    
+    // Add apply button
+    const actionButtons = document.createElement('div');
+    actionButtons.className = 'color-break-actions';
+    actionButtons.innerHTML = `
+      <button id="apply-color-breaks" class="action-button">Apply Changes</button>
+      <button id="reset-color-breaks" class="action-button secondary">Reset to Defaults</button>
+    `;
+    slidersContainer.after(actionButtons);
+    
+    // Add apply button event listener
+    const applyButton = document.getElementById('apply-color-breaks');
+    if (applyButton) {
+      applyButton.addEventListener('click', () => {
+        this.refreshMapVisualization();
+      });
+    }
     
     // Add reset button event listener
     const resetButton = document.getElementById('reset-color-breaks');
     if (resetButton) {
       resetButton.addEventListener('click', () => {
         this.resetColorBreaks();
+        this.refreshMapVisualization(); // Apply reset immediately
       });
     }
   }
 
   /**
-   * Update a color break value
+   * Update a color break value in state, but don't refresh map
    * @param {number} index - Index of the break to update
    * @param {number} value - New break value
    */
-  updateColorBreak(index, value) {
+  updateColorBreakState(index, value) {
     // Get current breaks from state
     const { breaks, colors } = stateManager.getSharedState().colorBreaks;
     
@@ -941,8 +959,8 @@ export class FireView extends IFireView {
     // Update UI to reflect sorted breaks
     this.updateColorBreakUI(newBreaks);
     
-    // Refresh map visualization if COG layer is displayed
-    this.refreshMapVisualization();
+    // Note: We don't call refreshMapVisualization() here
+    // It will be called when the Apply button is clicked
   }
 
   /**
@@ -968,13 +986,17 @@ export class FireView extends IFireView {
    * @param {number[]} breaks - Current break values
    */
   updateColorBreakUI(breaks) {
-    const sliders = document.querySelectorAll('.break-slider');
-    const numberInputs = document.querySelectorAll('.break-value');
-    
-    breaks.forEach((value, index) => {
-      if (sliders[index]) sliders[index].value = value;
-      if (numberInputs[index]) numberInputs[index].value = value;
-    });
+    // Ensure the function runs after any pending DOM updates
+    setTimeout(() => {
+      const sliders = document.querySelectorAll('.break-slider');
+      const numberInputs = document.querySelectorAll('.break-value');
+      
+      // Update existing controls
+      breaks.forEach((value, index) => {
+        if (sliders[index]) sliders[index].value = value;
+        if (numberInputs[index]) numberInputs[index].value = value;
+      });
+    }, 0);
   }
 
   /**
@@ -986,16 +1008,19 @@ export class FireView extends IFireView {
 
     const coarseUrl = state.assets.coarse.severityCogUrls[activeMetric];
     const refinedUrl = state.assets.refined.severityCogUrls[activeMetric];
-    // Prioritize final assets over intermediate assets
-    if (refinedUrl) {
-      console.log("Displaying refined COG:", refinedUrl);
-      this.displayCOGLayer(refinedUrl);
-    } else if (coarseUrl) {
-      console.log("Displaying coarse COG:", coarseUrl);
-      this.displayCOGLayer(coarseUrl);
+
+    // Prioritize refined URL if available, otherwise use coarse URL
+    const cogUrl = refinedUrl || coarseUrl;
+    
+    if (cogUrl) {
+      console.log(`Displaying ${refinedUrl ? 'refined' : 'coarse'} COG:`, cogUrl);
+      displayCOGLayer(cogUrl, this.map, this.resultLayerGroup)
+        .catch(error => {
+          console.error('Error displaying COG:', error);
+          this.showErrorState(`Error loading layer: ${error.message}`);
+        });
     } else {
       console.warn("No COG URL available in current state");
-      // Clear any existing layers if no COG is available
       this.resultLayerGroup.clearLayers();
     }
   }

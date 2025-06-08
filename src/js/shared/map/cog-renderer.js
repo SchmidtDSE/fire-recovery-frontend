@@ -5,31 +5,17 @@ import stateManager from '../../core/state-manager.js';
  * Utilities for displaying Cloud Optimized GeoTIFFs on maps
  */
 
+
 /**
  * Display a COG layer on the map
  * @param {string} cogUrl - URL to the COG file
  * @param {L.Map} map - Leaflet map instance
  * @param {L.LayerGroup} layerGroup - Layer group where the COG layer will be added
- * @param {Function} colorFunction - Function to determine colors based on pixel values
- * @param {number} opacity - Layer opacity (0-1)
- * @param {number} resolution - Resolution for COG rendering
  * @returns {Promise<L.Layer|null>} The created layer or null if failed
  */
-export async function displayCOGLayer(
-  cogUrl, 
-  map, 
-  layerGroup, 
-  colorFunction = null, 
-  opacity = 0.8, 
-  resolution = 256
-) {
+export async function displayCOGLayer(cogUrl, map, layerGroup) {
   if (!cogUrl) {
     console.warn('No COG URL provided');
-    return null;
-  }
-  
-  if (typeof parseGeoraster !== 'function') {
-    console.error('parseGeoraster function not available. Make sure to include the georaster library.');
     return null;
   }
   
@@ -42,27 +28,38 @@ export async function displayCOGLayer(
     const arrayBuffer = await cogResponse.arrayBuffer();
     const georaster = await parseGeoraster(arrayBuffer);
     
+    // Get current color breaks from state manager
+    const { breaks, colors } = stateManager.getSharedState().colorBreaks;
+    
     const resultLayer = new GeoRasterLayer({
       georaster: georaster,
-      opacity: opacity,
-      resolution: resolution,
-      pixelValuesToColorFn: colorFunction || getDefaultColorFunction()
+      opacity: .8,
+      resolution: 256,
+      pixelValuesToColorFn: value => {
+        if (value === null || value === undefined || value <= 0) return 'transparent';
+        
+        // Use the breaks from state to determine colors
+        for (let i = 0; i < breaks.length; i++) {
+          if (value < breaks[i]) return colors[i];
+        }
+        
+        // If value is higher than all breaks, use the last color
+        return colors[colors.length - 1];
+      }
     });
 
-    if (layerGroup) {
-      layerGroup.clearLayers();
-      resultLayer.addTo(layerGroup);
-      
-      // Force the result layer to the top
-      map.eachLayer(l => {
-        if (l === layerGroup) {
-          l.eachLayer(resultL => resultL.bringToFront());
-        }
-      });
-    } else {
-      // Add directly to map if no layer group provided
-      resultLayer.addTo(map);
-    }
+    // Clear existing layers in the group
+    layerGroup.clearLayers();
+    
+    // Add the new layer
+    resultLayer.addTo(layerGroup);
+    
+    // Force the result layer to the top
+    map.eachLayer(l => {
+      if (l === layerGroup) {
+        l.eachLayer(resultL => resultL.bringToFront());
+      }
+    });
 
     // Check if the layer has valid bounds before fitting
     const bounds = resultLayer.getBounds();
@@ -73,7 +70,7 @@ export async function displayCOGLayer(
     return resultLayer;
   } catch (error) {
     console.error('Error loading COG:', error);
-    return null;
+    throw error;
   }
 }
 

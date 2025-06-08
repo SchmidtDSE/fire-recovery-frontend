@@ -41,3 +41,13 @@
 #reset-color-breaks {
   margin-top: 15px;
 }
+
+.color-break-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.color-break-actions button {
+  padding: 8px 15px;
+}
