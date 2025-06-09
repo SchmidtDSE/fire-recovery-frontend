@@ -63,9 +63,6 @@ export class MapManager {
    * @returns {Promise<L.Layer>} The created GeoJSON layer
    */
   async displayGeoJSONFromUrl(geojsonUrl, targetGroup = null, styleOptions) {
-
-    debugger;
-
     if (!geojsonUrl) {
       console.warn('No GeoJSON URL provided');
       return null;

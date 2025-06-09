@@ -68,8 +68,6 @@ export class VegetationPresenter extends IVegetationPresenter {
 
   async handleVegMapResolution() {
 
-    debugger;
-
     // Get the current application state
     const sharedState = stateManager.getSharedState();
     const vegState = this.model.getState();
