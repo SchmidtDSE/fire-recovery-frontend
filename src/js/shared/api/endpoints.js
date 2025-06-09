@@ -1,6 +1,6 @@
 /**
  * API Endpoint definitions
- * Centralizes all API endpoints used in the application
+ * Centralizes API endpoints used in the application
  */
 
 // Automatically detect environment based on hostname
