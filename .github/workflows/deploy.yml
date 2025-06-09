@@ -19,26 +19,33 @@ jobs:
       - name: Set environment variable for branch name
         run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
 
+      - name: Install Minio Client
+        run: |
+          wget https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x mc
+          sudo mv mc /usr/local/bin/mc
+
+      - name: Configure Minio Client
+        run: |
+          mc alias set gcp_minio ${{ secrets.MINIO_ENDPOINT }} ${{ secrets.MINIO_ACCESS_KEY }} ${{ secrets.MINIO_SECRET_KEY }}
+          
+      - name: Debug Minio connection
+        run: |
+          mc ls gcp_minio/fire-recovery-web/
+          echo "Current content in target bucket"
+
       - name: Deploy to production bucket
         if: env.BRANCH_NAME == 'main'
-        uses: mamal72/minio-perfect-deploy-action@main
-        continue-on-error: true
-        with:
-          endpoint: ${{ secrets.MINIO_ENDPOINT }}
-          access_key: ${{ secrets.MINIO_ACCESS_KEY }}
-          secret_key: ${{ secrets.MINIO_SECRET_KEY }}
-          bucket: 'fire-recovery-web'
-          source_dir: 'src'
-          target_dir: '/prod'
+        run: |
+          echo "Deploying to production bucket"
+          mc mirror --overwrite --verbose src/ gcp_minio/fire-recovery-web/prod/
+          echo "Verifying deployment..."
+          mc ls gcp_minio/fire-recovery-web/prod/
 
       - name: Deploy to development bucket
         if: env.BRANCH_NAME == 'dev'
-        uses: mamal72/minio-perfect-deploy-action@main
-        continue-on-error: true
-        with:
-          endpoint: ${{ secrets.MINIO_ENDPOINT }}
-          access_key: ${{ secrets.MINIO_ACCESS_KEY }}
-          secret_key: ${{ secrets.MINIO_SECRET_KEY }}
-          bucket: 'fire-recovery-web'
-          source_dir: 'src'
-          target_dir: '/dev'
+        run: |
+          echo "Deploying to development bucket"
+          mc mirror --overwrite --verbose src/ gcp_minio/fire-recovery-web/dev/
+          echo "Verifying deployment..."
+          mc ls gcp_minio/fire-recovery-web/dev/
