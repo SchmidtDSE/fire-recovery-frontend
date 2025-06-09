@@ -38,7 +38,7 @@ jobs:
         if: env.BRANCH_NAME == 'main'
         run: |
           echo "Deploying to production bucket"
-          mc mirror --overwrite --verbose src/ gcp_minio/fire-recovery-web/prod/
+          mc mirror --overwrite --debug --summary src/ gcp_minio/fire-recovery-web/prod/
           echo "Verifying deployment..."
           mc ls gcp_minio/fire-recovery-web/prod/
 
@@ -46,6 +46,6 @@ jobs:
         if: env.BRANCH_NAME == 'dev'
         run: |
           echo "Deploying to development bucket"
-          mc mirror --overwrite --verbose src/ gcp_minio/fire-recovery-web/dev/
+          mc mirror --overwrite --debug --summary src/ gcp_minio/fire-recovery-web/dev/
           echo "Verifying deployment..."
           mc ls gcp_minio/fire-recovery-web/dev/
