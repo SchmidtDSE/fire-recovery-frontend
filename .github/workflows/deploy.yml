@@ -42,15 +42,17 @@ jobs:
       - name: Deploy to production bucket
         if: env.BRANCH_NAME == 'main'
         run: |
-          echo "Deploying to production bucket"
-          mc mirror --overwrite --debug --summary src/ gcp_minio/fire-recovery-web/prod/
+          echo "Deploying to production bucket with no-cache headers"
+          # Use --attr to set cache-control for all files during upload
+          mc mirror --overwrite --debug --summary --attr "Cache-Control=no-cache, no-store, must-revalidate" src/ gcp_minio/fire-recovery-web/prod/
           echo "Verifying deployment..."
           mc ls gcp_minio/fire-recovery-web/prod/
 
       - name: Deploy to development bucket
         if: env.BRANCH_NAME == 'dev'
         run: |
-          echo "Deploying to development bucket"
-          mc mirror --overwrite --debug --summary src/ gcp_minio/fire-recovery-web/dev/
+          echo "Deploying to development bucket with no-cache headers"
+          # Use --attr to set cache-control for all files during upload
+          mc mirror --overwrite --debug --summary --attr "Cache-Control=no-cache, no-store, must-revalidate" src/ gcp_minio/fire-recovery-web/dev/
           echo "Verifying deployment..."
           mc ls gcp_minio/fire-recovery-web/dev/
