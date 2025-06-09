@@ -3,16 +3,17 @@
  * Centralizes all API endpoints used in the application
  */
 
-const local = false; // Set to true for local development, false for production
-// const local = true;
+// Automatically detect environment based on hostname
+const isLocalEnvironment = () => {
+  return window.location.hostname === 'localhost' || 
+         window.location.hostname === '127.0.0.1';
+};
 
-// Base URL configuration
-let API_BASE;
-if (local) {
-  API_BASE = 'http://localhost:8000/fire-recovery';
-} else {
-  API_BASE = 'https://fire-recovery-backend-dev-113009620257.us-central1.run.app/fire-recovery';
-}
+// Base URL configuration - automatically set based on environment
+const API_BASE = isLocalEnvironment() 
+  ? 'http://localhost:8000/fire-recovery'
+  : 'https://fire-recovery-backend-dev-113009620257.us-central1.run.app/fire-recovery';
+
 
 // Fire severity endpoints
 export const FIRE_ENDPOINTS = {
