@@ -19,7 +19,7 @@ jobs:
       - name: Debug endpoints.js file
         run: |
           echo "Current content of endpoints.js:"
-          cat src/endpoints.js
+          cat src/js/shared/api/endpoints.js
 
       - name: Set environment variable for branch name
         run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
