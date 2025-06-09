@@ -42,5 +42,5 @@ export const UPLOAD_ENDPOINTS = {
   GEOJSON: `${API_BASE}/upload/geojson`
 };
 
-// Export the base URL for other configurationsv
+// Export the base URL for other configurations
 export const API_BASE_URL = API_BASE;
