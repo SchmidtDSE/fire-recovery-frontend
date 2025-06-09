@@ -615,8 +615,14 @@ async showVegetationImpact(csvUrl) {
       
       // After a short delay, reset the button to allow re-running the analysis
       setTimeout(() => {
-        resolveButton.disabled = false;
-        resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
+        // resolveButton.disabled = false;
+        // resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
+
+        resolveButton.innerHTML = '<i class="fas fa-traffic-cone"></i> Vegetation Analysis';
+        resolveButton.disabled = true;
+        resolveButton.className = 'action-button disabled';
+        resolveButton.style.opacity = '0.8';
+        resolveButton.style.cursor = 'not-allowed';
       }, 2000);
     }
   }
