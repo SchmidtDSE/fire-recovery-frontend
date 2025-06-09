@@ -210,11 +210,12 @@ export class FirePresenter extends IFirePresenter {
       });
     }
     
-    // Get vegetation view and let IT add its own button
-    const vegView = window.app.components.vegetation.view;
-    if (vegView) {
-      vegView.addVegetationButton();
-    }
+    // TODO: Re-able when veg impact analysis is ready
+    // // Get vegetation view and let IT add its own button
+    // const vegView = window.app.components.vegetation.view;
+    // if (vegView) {
+    //   vegView.addVegetationButton();
+    // }
   }
 
   /**
