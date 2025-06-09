@@ -3,7 +3,7 @@
  * Centralizes all API endpoints used in the application
  */
 
-// Automatically detect environment based on hostname 
+// Automatically detect environment based on hostname
 const isLocalEnvironment = () => {
   return window.location.hostname === 'localhost' || 
          window.location.hostname === '127.0.0.1';
