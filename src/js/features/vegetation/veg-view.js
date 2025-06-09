@@ -501,12 +501,22 @@ async showVegetationImpact(csvUrl) {
     const existingButton = document.getElementById('resolve-button');
     if (existingButton) existingButton.remove();
     
-    // Create new button
-    const resolveButton = document.createElement('button');
-    resolveButton.id = 'resolve-button';
-    resolveButton.className = 'action-button';
-    resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
+    // // Create new button
+    // const resolveButton = document.createElement('button');
+    // resolveButton.id = 'resolve-button';
+    // resolveButton.className = 'action-button';
+    // resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
     
+  // Create new button (disabled for construction)
+  // TODO: re-enable this button when vegetation analysis is proprelyimplemented
+  const resolveButton = document.createElement('button');
+  resolveButton.id = 'resolve-button';
+  resolveButton.className = 'action-button disabled'; // Add disabled class
+  resolveButton.disabled = true; // Actually disable the button
+  resolveButton.innerHTML = '<i class="fa-regular fa-w"></i> Vegetation Analysis'; // Construction emoji
+  resolveButton.style.opacity = '0.8'; // Make it look visually disabled
+  resolveButton.style.cursor = 'not-allowed'; // Change cursor to indicate it's disabled
+
     // Add event listener for button click
     resolveButton.addEventListener('click', () => {
       console.log('Vegetation button clicked');
