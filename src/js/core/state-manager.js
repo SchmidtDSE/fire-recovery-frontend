@@ -302,8 +302,6 @@ class StateManager {
    * @returns {Object} JSON-serializable state object
    */
   exportState() {
-    debugger;
-
     const exportedState = JSON.parse(JSON.stringify(this.sharedState));
     
     exportedState._metadata = {
