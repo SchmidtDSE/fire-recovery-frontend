@@ -885,8 +885,8 @@ export class FireView extends IFireView {
       
       sliderContainer.innerHTML = `
         <div class="color-swatch" style="background-color: ${colorBelow}"></div>
-        <input type="range" min="0" max="1" step="0.01" value="${breakValue}" data-index="${index}" class="break-slider">
-        <input type="number" min="0" max="1" step="0.01" value="${breakValue}" class="break-value">
+        <input type="range" min="-.25" max="1" step="0.01" value="${breakValue}" data-index="${index}" class="break-slider">
+        <input type="number" min="-.25" max="1" step="0.01" value="${breakValue}" class="break-value">
         <div class="color-swatch" style="background-color: ${colorAbove}"></div>
       `;
       
