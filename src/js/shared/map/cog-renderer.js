@@ -36,8 +36,10 @@ export async function displayCOGLayer(cogUrl, map, layerGroup) {
       opacity: .8,
       resolution: 256,
       pixelValuesToColorFn: value => {
-        if (value === null || value === undefined || value <= 0) return 'transparent';
-        
+        // if (value === null || value === undefined || value <= 0) return 'transparent';
+        if (value === null || value === undefined) return 'transparent';
+        if (value === -9999.0) return 'transparent'; // Handle NoData value
+
         // Use the breaks from state to determine colors
         for (let i = 0; i < breaks.length; i++) {
           if (value < breaks[i]) return colors[i];
