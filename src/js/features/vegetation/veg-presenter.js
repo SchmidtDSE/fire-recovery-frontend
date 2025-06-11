@@ -68,8 +68,6 @@ export class VegetationPresenter extends IVegetationPresenter {
 
   async handleVegMapResolution() {
 
-    debugger;
-
     // Get the current application state
     const sharedState = stateManager.getSharedState();
     const vegState = this.model.getState();
@@ -77,7 +75,8 @@ export class VegetationPresenter extends IVegetationPresenter {
     // Check for required data
     const fireEventName = sharedState.fireEventName || vegState.fireEventName;
     // Get the active COG URL for refined severity (true for refined)
-    const refinedCogUrl = stateManager.getActiveCogUrl(true); 
+    const refinedCogUrl = stateManager.getActiveCogUrl(true);
+    const refinedGeojsonUrl = stateManager.getActiveGeojsonUrl(true);
     const parkUnit = vegState.parkUnit || sharedState.parkUnit;
     if (!fireEventName || !refinedCogUrl) {
       this.view.showMessage('Error: Missing fire event name or severity data. Complete fire analysis first.', 'error');
@@ -92,12 +91,17 @@ export class VegetationPresenter extends IVegetationPresenter {
       return;
     }
     
+    // Get classification breaks from the model
+    const classificationBreaks = sharedState.colorBreaks.breaks;
+    
     // Prepare data for API request
     const resolveData = {
       fire_event_name: fireEventName,
       job_id: vegState.jobId,
       veg_gpkg_url: vegGpkgUrl,
-      fire_cog_url: refinedCogUrl
+      fire_cog_url: refinedCogUrl,
+      geojson_url: refinedGeojsonUrl,
+      severity_breaks: classificationBreaks
     };
     
     try {

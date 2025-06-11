@@ -64,8 +64,6 @@ export class MapManager {
    */
   async displayGeoJSONFromUrl(geojsonUrl, targetGroup = null, styleOptions) {
 
-    debugger;
-
     if (!geojsonUrl) {
       console.warn('No GeoJSON URL provided');
       return null;

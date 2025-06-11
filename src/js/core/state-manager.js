@@ -255,6 +255,16 @@ class StateManager {
   }
   
   /**
+   * Get the active GeoJSON URL based on refinement status
+   * @param {boolean} useRefined - Whether to use refined GeoJSON URLs
+   * @returns {string|null} The active GeoJSON URL
+   */
+  getActiveGeojsonUrl(useRefined = false) {
+    const assetGroup = useRefined ? 'refined' : 'coarse';
+    return this.sharedState.assets[assetGroup]['geojsonUrl'] || null;
+  }
+
+  /**
    * Get all available metrics for a given refinement status
    * @param {boolean} useRefined - Whether to check refined COG URLs
    * @returns {string[]} Array of available metric names
@@ -302,7 +312,6 @@ class StateManager {
    * @returns {Object} JSON-serializable state object
    */
   exportState() {
-    debugger;
 
     const exportedState = JSON.parse(JSON.stringify(this.sharedState));
     

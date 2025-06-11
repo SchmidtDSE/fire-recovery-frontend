@@ -162,8 +162,6 @@ export class VegetationModel extends IVegetationModel {
       
       // Save the job ID
       this.setJobId(response.job_id);
-      
-      debugger;
 
       // Poll until the job completes
       const result = await api.pollUntilComplete(() => 
