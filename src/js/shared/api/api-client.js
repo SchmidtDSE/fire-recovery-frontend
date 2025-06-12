@@ -123,7 +123,27 @@ export const getVegMapResult = async (fireEventName, jobId) => {
     throw new Error(processErrorResponse(errorData, response.status));
   }
 
-  return await response.json();
+  const result = await response.json();
+  
+  // If we have a fire_veg_matrix_json_url and status is complete, fetch the JSON data
+  if (result.fire_veg_matrix_json_url && result.status === 'complete') {
+    try {
+      console.log('Fetching vegetation matrix JSON from:', result.fire_veg_matrix_json_url);
+      const matrixResponse = await fetch(result.fire_veg_matrix_json_url);
+      if (matrixResponse.ok) {
+        const matrixData = await matrixResponse.json();
+        console.log('Successfully fetched vegetation matrix data:', matrixData);
+        // Merge the matrix data into the result
+        result.vegetation_impact_data = matrixData;
+      } else {
+        console.warn('Failed to fetch vegetation matrix JSON:', matrixResponse.status, matrixResponse.statusText);
+      }
+    } catch (error) {
+      console.warn('Error fetching vegetation matrix data:', error);
+    }
+  }
+  
+  return result;
 };
 
 /**
