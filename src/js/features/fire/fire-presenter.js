@@ -192,31 +192,85 @@ export class FirePresenter extends IFirePresenter {
   /**
    * Handle refinement acceptance
    */
-  handleAcceptRefinement() {
-    // Update the model to mark the refinement as accepted
-    stateManager.updateCurrentStep('resolve', 'fire');
-
-    // Show metrics and table in the view
-    this.view.showMetricsAndTable();
+  async handleAcceptRefinement() {
+    const state = this.model.getState();
+    const fireEventName = state.fireEventName;
     
-    // Get the refined boundary URL from state
-    const state = stateManager.getSharedState();
-    const refinedGeojsonUrl = state.assets?.refined?.geojsonUrl;
-    
-    // If we have a refined boundary, display it (and clear user drawings)
-    if (refinedGeojsonUrl) {
-      this.view.displayGeoJSONFromUrl(refinedGeojsonUrl, {
-        clearExisting: true  // Clear user drawings when showing the refined boundary
-      });
+    if (!fireEventName) {
+      alert('No fire event name set');
+      return;
     }
+
+    // Check if user has drawn a refinement
+    const drawnGeometry = this.view.getGeometryFromMap();
     
-    // Get vegetation view and let IT add its own button
-    const vegView = window.app.components.vegetation.view;
-    if (vegView) {
-      vegView.addVegetationButton();
+    try {
+      // If no new refinement was drawn, use the coarse boundary as the refined boundary
+      if (!drawnGeometry) {
+        // Get the coarse boundary URL from state
+        const coarseGeojsonUrl = state.assets?.coarse?.geojsonUrl;
+        
+        if (!coarseGeojsonUrl) {
+          alert('No boundary available to accept');
+          return;
+        }
+        
+        // Show loading state
+        this.view.showLoadingState();
+        
+        try {
+          // Fetch the coarse boundary
+          const response = await fetch(coarseGeojsonUrl);
+          const geojsonData = await response.json();
+          
+          // Extract the geometry from the GeoJSON
+          let geometry;
+          if (geojsonData.features && geojsonData.features.length > 0) {
+            geometry = geojsonData.features[0].geometry;
+          } else if (geojsonData.geometry) {
+            geometry = geojsonData.geometry;
+          } else {
+            geometry = geojsonData; // If it's already just the geometry
+          }
+          
+          // Submit the coarse geometry as the refined boundary
+          const refinementData = {
+            fire_event_name: fireEventName,
+            refine_geojson: {
+              geometry: geometry
+            }
+          };
+          
+          await this.model.submitRefinement(refinementData);
+        } catch (error) {
+          console.error('Error processing coarse boundary:', error);
+          this.view.showErrorState(`Error accepting boundary: ${error.message}`);
+          return;
+        }
+      } 
+      // If a new refinement was drawn, we assume it has been handled already
+      // using the normal refinement submission flow
+      
+      // Handle successful acceptance (same for both paths)
+      stateManager.updateCurrentStep('resolve', 'fire');
+      this.view.showMetricsAndTable();
+      
+      // Display the refined boundary
+      const refinedGeojsonUrl = stateManager.getSharedState().assets?.refined?.geojsonUrl;
+      if (refinedGeojsonUrl) {
+        this.view.displayGeoJSONFromUrl(refinedGeojsonUrl, {
+          clearExisting: true
+        });
+      }
+      
+      // Add vegetation button
+      this.addVegetationButton();
+      
+    } catch (error) {
+      console.error('Error accepting boundary:', error);
+      this.view.showErrorState(`Error accepting boundary: ${error.message}`);
     }
   }
-
   /**
    * Add Vegetation Analysis Button
    */
@@ -277,6 +331,7 @@ export class FirePresenter extends IFirePresenter {
    */
   handleShapefileUploaded(file) {
     const fireEventName = this.model.getState().fireEventName;
+    
     if (fireEventName) {
       api.uploadShapefile(fireEventName, file)
         .then(response => {

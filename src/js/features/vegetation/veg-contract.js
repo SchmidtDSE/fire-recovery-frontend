@@ -35,10 +35,9 @@ export class IVegetationView {
   setupEventListeners() {}
   
   /**
-   * Update vegetation map table with results
-   * @param {string} dataUrl - URL to vegetation impact data
+   * Show vegetation impact analysis results
    */
-  updateVegMapTable(dataUrl) {}
+  showVegetationImpact() {}
   
   /**
    * Display loading state

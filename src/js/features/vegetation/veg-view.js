@@ -1,6 +1,7 @@
 import { IVegetationView } from './veg-contract.js';
 import { PARK_UNITS } from '../../core/config.js';
 import { MapManager } from '../../shared/map/map-manager.js';
+import stateManager from '../../core/state-manager.js';
 
 /**
  * Implementation of the Vegetation View
@@ -31,12 +32,7 @@ export class VegetationView extends IVegetationView {
       this.initializeMap();
     }
     
-    if (this.tableContainer) {
-      this.createVegetationTable();
-    }
-
     this.addVegetationButton();
-
   }
   
   /**
@@ -75,188 +71,232 @@ export class VegetationView extends IVegetationView {
     // The "Analyze Vegetation Impact" button is added by App.addVegetationButton()
   }
   
-  /**
-   * Create the vegetation table structure
-   */
-  createVegetationTable() {
-    if (!this.tableContainer) return;
+  async showVegetationImpact() {
+    // Hide any error messages
+    const statusElem = document.getElementById('vegetation-status');
+    if (statusElem) statusElem.innerHTML = '';
+    
+    // Show loading state
+    const loadingElem = document.getElementById('vegetation-loading');
+    if (loadingElem) loadingElem.style.display = 'flex';
+    
+    try {
+      // Get structured data from state manager
+      const vegetationCommunities = stateManager.getVegetationCommunities();
+      
+      if (vegetationCommunities && vegetationCommunities.length > 0) {
+        // Use the structured data directly
+        this.displayStructuredVegetationTable(vegetationCommunities);
+        this.showVegetationTab();
+        
+        // Hide loading
+        if (loadingElem) loadingElem.style.display = 'none';
+      } else {
+        throw new Error('No vegetation communities data available');
+      }
+    } catch (error) {
+      console.error('Error displaying vegetation impact:', error);
+      this.showMessage(`Error loading vegetation data: ${error.message}`, 'error');
+      if (loadingElem) loadingElem.style.display = 'none';
+    }
+  }
+
+  displayStructuredVegetationTable(vegetationCommunities) {
+    // Create table container if it doesn't exist
+    if (!document.getElementById('veg-results-container')) {
+      const container = document.createElement('div');
+      container.id = 'veg-results-container';
+      container.className = 'veg-results-container';
+      container.innerHTML = `
+        <div class="results-header">
+          <h3>Vegetation Impact Analysis</h3>
+          <button id="download-veg-csv" class="action-button">
+            <i class="fas fa-download"></i> Download CSV
+          </button>
+        </div>
+        <div class="table-wrapper">
+          <table id="veg-impact-table" class="vegetation-table">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      `;
+      this.tableContainer.appendChild(container);
+      
+      // Add download handler
+      document.getElementById('download-veg-csv').addEventListener('click', () => {
+        this.downloadCsv();
+      });
+    }
+    
+    const table = document.getElementById('veg-impact-table');
     
     // Clear existing content
-    this.tableContainer.innerHTML = '';
+    table.innerHTML = '';
     
-    // Create table structure
-    const table = document.createElement('table');
-    table.id = 'veg-impact-table';
-    table.className = 'display';
+    // Create table header
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+      <tr>
+        <th class="expand-col"></th>
+        <th class="color-col">Color</th>
+        <th class="name-col">Vegetation Community</th>
+        <th class="hectares-col">Total Hectares</th>
+        <th class="percent-col">% of Park</th>
+        <th class="severity-col">Severity Distribution</th>
+      </tr>
+    `;
+    table.appendChild(thead);
     
-    // // Add table headers
-    // const thead = document.createElement('thead');
-    // const headerRow = document.createElement('tr');
-    
-    // const headers = ['Color', 'Vegetation Community', 'Hectares', 
-    //                  '% of Park', '% of Burn Area', 'Mean Severity', 'Std Dev'];
-    
-    // headers.forEach(header => {
-    //   const th = document.createElement('th');
-    //   th.textContent = header;
-    //   headerRow.appendChild(th);
-    // });
-    
-    // thead.appendChild(headerRow);
-    // table.appendChild(thead);
-    
-    // Add table body
+    // Create table body
     const tbody = document.createElement('tbody');
-    table.appendChild(tbody);
     
-    // Add table to container
-    this.tableContainer.appendChild(table);
+    // Sort communities by total hectares (descending)
+    const sortedCommunities = [...vegetationCommunities].sort((a, b) => b.total_hectares - a.total_hectares);
     
-    // Initialize DataTable if jQuery is available
-    // if (window.$ && $.fn.DataTable) {
-    //   $(document).ready(() => {
-    //     $('#veg-impact-table').DataTable({
-    //       paging: false,
-    //       searching: false,
-    //       info: false
-    //     });
-    //   });
-    // }
-  }
-
-async showVegetationImpact(csvUrl) {
-  // Hide any error messages
-  const statusElem = document.getElementById('vegetation-status');
-  if (statusElem) statusElem.innerHTML = '';
-  
-  // Show loading state
-  const loadingElem = document.getElementById('vegetation-loading');
-  if (loadingElem) loadingElem.style.display = 'flex';
-  
-  try {
-    // Fetch and parse the CSV using Papa Parse
-    Papa.parse(csvUrl, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        if (results.errors.length) {
-          console.error('CSV parsing errors:', results.errors);
-          this.showMessage('Error parsing vegetation data', 'error');
-          return;
+    sortedCommunities.forEach((community, index) => {
+      // Create parent row
+      const parentRow = document.createElement('tr');
+      parentRow.className = 'parent-row';
+      parentRow.dataset.communityIndex = index;
+      
+      // Calculate severity distribution for mini chart
+      const severityData = this.calculateSeverityDistribution(community.severity_breakdown);
+      
+      parentRow.innerHTML = `
+        <td class="expand-cell">
+          <i class="fas fa-plus-circle expand-icon" data-expanded="false"></i>
+        </td>
+        <td class="color-cell">
+          <div class="color-swatch" style="background-color: ${community.color}"></div>
+        </td>
+        <td class="name-cell">
+          <strong>${community.name}</strong>
+        </td>
+        <td class="hectares-cell">
+          ${community.total_hectares.toFixed(2)} ha
+        </td>
+        <td class="percent-cell">
+          ${community.percent_of_park.toFixed(1)}%
+        </td>
+        <td class="severity-cell">
+          ${this.createSeverityMiniChart(severityData)}
+        </td>
+      `;
+      
+      tbody.appendChild(parentRow);
+      
+      // Create child rows (initially hidden)
+      const severityOrder = ['unburned', 'low', 'moderate', 'high'];
+      
+      severityOrder.forEach(severity => {
+        const severityData = community.severity_breakdown[severity];
+        if (severityData && severityData.hectares > 0) {
+          const childRow = document.createElement('tr');
+          childRow.className = 'child-row';
+          childRow.dataset.parentIndex = index;
+          childRow.style.display = 'none';
+          
+          const severityColor = this.getSeverityColor(severity);
+          
+          childRow.innerHTML = `
+            <td></td>
+            <td class="color-cell">
+              <div class="color-swatch small" style="background-color: ${severityColor}"></div>
+            </td>
+            <td class="name-cell severity-name">
+              <span class="severity-label">${this.capitalizeFirst(severity)} Severity</span>
+            </td>
+            <td class="hectares-cell">
+              ${severityData.hectares.toFixed(2)} ha
+            </td>
+            <td class="percent-cell">
+              ${severityData.percent.toFixed(1)}%
+            </td>
+            <td class="severity-cell">
+              <div class="severity-stats">
+                <span class="stat">Mean: ${severityData.mean_severity.toFixed(3)}</span>
+                <span class="stat">Std: ${severityData.std_dev.toFixed(3)}</span>
+              </div>
+            </td>
+          `;
+          
+          tbody.appendChild(childRow);
         }
-        
-        // Hide the loading indicator
-        if (loadingElem) loadingElem.style.display = 'none';
-        
-        // Store the data for potential download
-        this._vegData = results.data;
-        
-        // Use DataTables to display the vegetation data
-        this.populateDataTable(results.data);
-        
-        // Show vegetation tab if not already active
-        this.showVegetationTab();
-      },
-      error: (error) => {
-        // Hide loading indicator
-        if (loadingElem) loadingElem.style.display = 'none';
-        
-        console.error('CSV fetch error:', error);
-        this.showMessage('Error fetching vegetation data', 'error');
-      }
+      });
     });
     
-    // Setup download button handler
-    const downloadBtn = document.getElementById('download-veg-csv');
-    if (downloadBtn) {
-      downloadBtn.onclick = () => this.downloadCsv();
-    }
+    table.appendChild(tbody);
     
-  } catch (error) {
-    // Hide loading indicator
-    if (loadingElem) loadingElem.style.display = 'none';
-    
-    console.error('Vegetation display error:', error);
-    this.showMessage(`Error: ${error.message}`, 'error');
+    // Add expand/collapse functionality
+    this.setupExpandCollapse();
+
   }
-}
 
-  populateDataTable(data) {
-    // Check if jQuery and DataTables are available
-    if (window.$ && $.fn.DataTable) {
-      // Destroy existing DataTable instance if it exists
-      if ($.fn.DataTable.isDataTable('#veg-impact-table')) {
-        $('#veg-impact-table').DataTable().destroy();
-      }
-      
-      // Clear the table
-      const tableBody = document.querySelector('#veg-impact-table tbody');
-      if (tableBody) tableBody.innerHTML = '';
-      
-      // Filter data to only include rows where percent_fire > 0
-      const filteredData = data.filter(item => {
-        // Convert to number and check if greater than 0
-        const percentFire = parseFloat(item["% of Burn Area"]);
-        return !isNaN(percentFire) && percentFire > 0;
-      });
-      
-      // Create new DataTable with explicit header names
-      const table = $('#veg-impact-table').DataTable({
-        data: filteredData,
-        columns: [
-          {
-            title: "Color", // Add explicit title
-            data: 'Color',
-            render: function(data) {
-              const colorCode = data || '#cccccc';
-              return `<div style="width:30px; height:30px; background-color:${colorCode}; 
-                      border-radius:4px; margin:0 auto; display:flex; align-items:center; 
-                      justify-content:center; border:1px solid #ddd;"></div>`;
-            },
-            className: 'color-cell'
-          },
-          { 
-            title: "Vegetation Community", // Add explicit title
-            data: 'Vegetation Community', 
-            width: '70%',
-            render: function(data) {
-              return `<div style="white-space: normal; word-break: break-word;">${data}</div>`;
-            }
-          },
-          { title: "% of Burn Area", data: '% of Burn Area' }, // Add explicit title
-          { title: "Mean Severity", data: 'Mean Severity' },   // Add explicit title
-          { title: "Std Dev", data: 'Std Dev' }               // Add explicit title
-        ],
-        order: [[2, 'desc']], // Order by % of Burn Area in descending order
-        paging: true,
-        searching: true,
-        ordering: true,
-        info: true,
-        autoWidth: false,  // Important: disable auto width
-        scrollX: true,     // Enable horizontal scrolling if needed
-        responsive: true   // Make the table responsive
-      });
+  calculateSeverityDistribution(severityBreakdown) {
+    const severityOrder = ['unburned', 'low', 'moderate', 'high'];
+    return severityOrder.map(severity => ({
+      severity,
+      percent: severityBreakdown[severity]?.percent || 0,
+      hectares: severityBreakdown[severity]?.hectares || 0
+    }));
+  }
 
-      $('#veg-impact-table_wrapper').css('width', '90%');
-      
-      // Add helper function for contrast color calculation
-      function getContrastColor(hexColor) {
-        // Convert hex to RGB
-        const r = parseInt(hexColor.substr(1, 2), 16);
-        const g = parseInt(hexColor.substr(3, 2), 16);
-        const b = parseInt(hexColor.substr(5, 2), 16);
-        
-        // Calculate perceived brightness
-        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-        
-        // Return black or white based on brightness
-        return brightness > 128 ? '#000000' : '#ffffff';
+  createSeverityMiniChart(severityData) {
+    const segments = severityData.map(item => {
+      if (item.percent > 0) {
+        const color = this.getSeverityColor(item.severity);
+        return `<div class="severity-segment" 
+                    style="width: ${item.percent}%; background-color: ${color}"
+                    title="${item.severity}: ${item.percent.toFixed(1)}% (${item.hectares.toFixed(2)} ha)">
+                </div>`;
       }
-    } else {
-      // Fallback to basic HTML if DataTables isn't available
-      this.createSimpleTable(data);
-    }
+      return '';
+    }).join('');
+    
+    return `<div class="severity-mini-chart">${segments}</div>`;
+  }
+
+  getSeverityColor(severity) {
+    const colors = {
+      'unburned': '#90EE90',
+      'low': '#FFD700',
+      'moderate': '#FF8C00',
+      'high': '#FF4500'
+    };
+    return colors[severity.toLowerCase()] || '#cccccc';
+  }
+
+  setupExpandCollapse() {
+    const expandIcons = document.querySelectorAll('.expand-icon');
+    
+    expandIcons.forEach(icon => {
+      icon.addEventListener('click', (e) => {
+        e.preventDefault();
+        const parentRow = icon.closest('.parent-row');
+        const parentIndex = parentRow.dataset.communityIndex;
+        const childRows = document.querySelectorAll(`[data-parent-index="${parentIndex}"]`);
+        const isExpanded = icon.dataset.expanded === 'true';
+        
+        if (isExpanded) {
+          // Collapse
+          icon.classList.remove('fa-minus-circle');
+          icon.classList.add('fa-plus-circle');
+          icon.dataset.expanded = 'false';
+          childRows.forEach(row => row.style.display = 'none');
+        } else {
+          // Expand
+          icon.classList.remove('fa-plus-circle');
+          icon.classList.add('fa-minus-circle');
+          icon.dataset.expanded = 'true';
+          childRows.forEach(row => row.style.display = 'table-row');
+        }
+      });
+    });
+  }
+
+  capitalizeFirst(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
   showVegetationTab() {
@@ -295,198 +335,18 @@ async showVegetationImpact(csvUrl) {
     this.showMessage(message, 'info');
   }
 
-  displayVegetationTable(data) {
-    // Create table container if it doesn't exist
-    if (!document.getElementById('veg-results-container')) {
-      const container = document.createElement('div');
-      container.id = 'veg-results-container';
-      container.className = 'results-container';
-      
-      const title = document.createElement('h3');
-      title.textContent = 'Vegetation Impact Analysis';
-      container.appendChild(title);
-      
-      const tableContainer = document.createElement('div');
-      tableContainer.className = 'table-container';
-      
-      // Create the table
-      const table = document.createElement('table');
-      table.id = 'veg-impact-table';
-      table.className = 'data-table';
-      tableContainer.appendChild(table);
-      container.appendChild(tableContainer);
-      
-      // Add download button
-      const downloadBtn = document.createElement('button');
-      downloadBtn.textContent = 'Download CSV';
-      downloadBtn.className = 'action-button';
-      downloadBtn.addEventListener('click', () => this.downloadCsv());
-      container.appendChild(downloadBtn);
-      
-      document.getElementById('vegetation-section').appendChild(container);
-    }
-    
-    // Store the data for potential download
-    this._vegData = data;
-    
-    // Get reference to table
-    const table = document.getElementById('veg-impact-table');
-    table.innerHTML = '';
-    
-    // Create table header
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    
-    // Add headers
-    const headers = ['Color', 'Vegetation Type', 'Hectares', '% of Park', '% of Fire', 'Mean Severity', 'SD'];
-    headers.forEach(headerText => {
-      const th = document.createElement('th');
-      th.textContent = headerText;
-      headerRow.appendChild(th);
-    });
-    
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-    
-    // Create table body
-    const tbody = document.createElement('tbody');
-    
-    // Add data rows
-    data.forEach(item => {
-      const row = document.createElement('tr');
-      
-      // Color cell - create a colored div
-      const colorCell = document.createElement('td');
-      const colorBox = document.createElement('div');
-      colorBox.style.backgroundColor = item.color || '#cccccc';
-      colorBox.style.width = '15px';
-      colorBox.style.height = '15px';
-      colorBox.style.margin = '0 auto';
-      colorCell.appendChild(colorBox);
-      row.appendChild(colorCell);
-      
-      // Other cells
-      [
-        item.vegetation_type,
-        item.hectares,
-        item.percent_park,
-        item.percent_fire,
-        item.severity_mean,
-        item.severity_sd
-      ].forEach(text => {
-        const td = document.createElement('td');
-        td.textContent = text || '-';
-        row.appendChild(td);
-      });
-      
-      tbody.appendChild(row);
-    });
-    
-    table.appendChild(tbody);
-  }
 
   downloadCsv() {
-    if (!this._vegData) return;
-    
-    // Convert data to CSV using Papa Parse
-    const csv = Papa.unparse(this._vegData);
-    
-    // Create download link
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'vegetation_impact.csv');
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  /**
-   * Update vegetation map table with data
-   * @param {string} csvUrl - URL to vegetation impact CSV data
-   */
-  async updateVegMapTable(csvUrl) {
-    try {
-      const response = await fetch(csvUrl);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const csvText = await response.text();
-      const rows = csvText.split('\n').map(row => row.split(','));
-      const headers = rows[0].map(h => h.trim());
-      
-      // Get column indices by header name
-      const columnIndices = {
-        vegetationType: headers.findIndex(h => h.includes('Vegetation') || h.includes('Community')),
-        color: headers.findIndex(h => h.includes('Color')),
-        hectares: headers.findIndex(h => h.includes('Hectares')),
-        percentPark: headers.findIndex(h => h.includes('% of Park')),
-        percentBurn: headers.findIndex(h => h.includes('% of Burn')),
-        severity: headers.findIndex(h => h.includes('Mean') || h.includes('Severity')),
-        stdDev: headers.findIndex(h => h.includes('Std Dev') || h.includes('SD'))
-      };
-      
-      // Filter for rows with valid data and map to expected format
-      const data = rows.slice(1)
-        .filter(row => row.length > 1) // Skip empty rows
-        .map(row => {
-          return [
-            row[columnIndices.color]?.trim() || '#000000', // color
-            row[columnIndices.vegetationType]?.trim() || '', // vegetation type
-            row[columnIndices.hectares]?.trim() || '', // hectares
-            row[columnIndices.percentPark]?.trim() || '', // percent park
-            row[columnIndices.percentBurn]?.trim() || '', // percent burn area
-            row[columnIndices.severity]?.trim() || '', // burn severity mean
-            row[columnIndices.stdDev]?.trim() || ''  // burn severity SD
-          ];
-        });
-      
-      // Update table with CSV data using jQuery DataTable if available
-      if (window.$ && $.fn.DataTable) {
-        const table = $('#veg-impact-table').DataTable();
-        table.clear();
-        
-        data.forEach(row => {
-          table.row.add([
-            `<div style="width: 15px; height: 15px; background-color: ${row[0]}"></div>`,
-            row[1],
-            row[2],
-            row[3],
-            row[4],
-            row[5],
-            row[6]
-          ]);
-        });
-        
-        table.draw();
-      } else {
-        // Fallback for when jQuery DataTables isn't available
-        const tbody = document.querySelector('#veg-impact-table tbody');
-        tbody.innerHTML = '';
-        
-        data.forEach(row => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td><div style="width: 15px; height: 15px; background-color: ${row[0]}"></div></td>
-            <td>${row[1]}</td>
-            <td>${row[2]}</td>
-            <td>${row[3]}</td>
-            <td>${row[4]}</td>
-            <td>${row[5]}</td>
-            <td>${row[6]}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
-      
-      this.tableContainer.style.display = 'block';
-    } catch (error) {
-      console.error('Error fetching or processing CSV:', error);
-      this.showErrorState(`Error loading vegetation data: ${error.message}`);
+    const csvUrl = stateManager.getVegetationCsvUrl();
+    if (csvUrl) {
+      const link = document.createElement('a');
+      link.href = csvUrl;
+      link.download = 'vegetation_impact_analysis.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      this.showMessage('CSV download not available', 'error');
     }
   }
   
@@ -580,17 +440,6 @@ async showVegetationImpact(csvUrl) {
       console.error('Error displaying vegetation COG:', error);
       this.showErrorState(`Error displaying vegetation map: ${error.message}`);
       return null;
-    }
-  }
-  
-  /**
-   * Display loading state
-   */
-  showLoadingState() {
-    const resolveButton = document.getElementById('resolve-button');
-    if (resolveButton) {
-      resolveButton.disabled = true;
-      resolveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
     }
   }
   

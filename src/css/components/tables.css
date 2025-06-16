@@ -71,66 +71,6 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* DataTables specific styling */
-.dataTables_wrapper {
-  margin-bottom: var(--space-lg);
-  font-size: var(--font-size-sm);
-}
-
-.dataTables_length,
-.dataTables_filter {
-  margin-bottom: var(--space-sm);
-}
-
-.dataTables_info,
-.dataTables_paginate {
-  margin-top: var(--space-sm);
-}
-
-.dataTables_paginate .paginate_button {
-  padding: var(--space-xxs) var(--space-xs);
-  margin-left: 2px;
-  cursor: pointer;
-  border-radius: var(--border-radius-sm);
-}
-
-.dataTables_paginate .paginate_button.current {
-  background-color: var(--brand-primary);
-  color: var(--text-light) !important;
-  border: var(--border-width-default) solid var(--brand-primary);
-}
-
-.dataTables_paginate .paginate_button:hover:not(.current) {
-  background-color: var(--bg-secondary);
-}
-
-/* Vegetation impact summary table */
-.veg-impact-table th {
-  background-color: var(--brand-tertiary);
-  color: var(--text-light);
-}
-
-.veg-impact-table .impact-high {
-  background-color: rgba(220, 53, 69, 0.2);
-}
-
-.veg-impact-table .impact-medium {
-  background-color: rgba(255, 193, 7, 0.2);
-}
-
-.veg-impact-table .impact-low {
-  background-color: rgba(40, 167, 69, 0.2);
-}
-
-/* Fire severity breakdown table */
-.severity-table .severity-header {
-  text-align: center;
-}
-
-.severity-table .severity-column {
-  text-align: right;
-}
-
 /* Table with colored indicators */
 .indicator-column {
   width: 10px;
@@ -203,4 +143,160 @@
   padding-top: var(--space-sm);
   border-top: var(--border-width-default) solid var(--border-color);
   font-size: var(--font-size-sm);
+}
+
+/* Vegetation Impact Analysis Table */
+.veg-results-container {
+  margin-top: var(--space-lg);
+}
+
+.veg-results-container .results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.veg-results-container .results-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+}
+
+.veg-results-container .table-wrapper {
+  max-height: 600px;
+  overflow-y: auto;
+  border: var(--border-width-default) solid var(--border-color);
+  border-radius: var(--border-radius-md);
+}
+
+.vegetation-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.vegetation-table th,
+.vegetation-table td {
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  border: var(--border-width-default) solid var(--border-color);
+}
+
+.vegetation-table th {
+  background-color: var(--bg-secondary);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  text-transform: uppercase;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.vegetation-table .parent-row {
+  background-color: var(--bg-tertiary);
+  font-weight: 500;
+}
+
+.vegetation-table .parent-row:hover {
+  background-color: var(--bg-secondary);
+}
+
+.vegetation-table .child-row {
+  background-color: var(--bg-light);
+  font-size: var(--font-size-xs);
+}
+
+.vegetation-table .child-row .name-cell {
+  padding-left: calc(var(--space-md) + var(--space-lg));
+}
+
+.vegetation-table .expand-col {
+  width: 30px;
+}
+
+.vegetation-table .color-col {
+  width: 60px;
+}
+
+.vegetation-table .expand-icon {
+  cursor: pointer;
+  color: var(--brand-primary);
+  transition: transform var(--transition-fast) ease;
+}
+
+.vegetation-table .expand-icon:hover {
+  transform: scale(1.1);
+  color: var(--brand-secondary);
+}
+
+.vegetation-table .color-swatch {
+  width: 30px;
+  height: 20px;
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-default) solid var(--border-color);
+  display: inline-block;
+}
+
+.vegetation-table .color-swatch.small {
+  width: 20px;
+  height: 15px;
+  margin-left: var(--space-sm);
+}
+
+.vegetation-table .severity-mini-chart {
+  display: flex;
+  width: 150px;
+  height: 20px;
+  border: var(--border-width-default) solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.vegetation-table .severity-segment {
+  height: 100%;
+  min-width: 1px;
+  transition: opacity var(--transition-fast) ease;
+}
+
+.vegetation-table .severity-segment:hover {
+  opacity: 0.8;
+}
+
+.vegetation-table .severity-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+}
+
+.vegetation-table .severity-stats .stat {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.vegetation-table .severity-label {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+/* Responsive adjustments for vegetation table */
+@media (max-width: 768px) {
+  .veg-results-container .results-header {
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: stretch;
+  }
+  
+  .vegetation-table .severity-mini-chart {
+    width: 100px;
+    height: 15px;
+  }
+  
+  .vegetation-table th,
+  .vegetation-table td {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-xs);
+  }
 }

@@ -113,7 +113,7 @@ export class VegetationPresenter extends IVegetationPresenter {
       
       // Show the vegetation impact results
       if (result.status === 'complete') {
-        this.view.showVegetationImpact(result.fire_veg_matrix_url);
+        this.view.showVegetationImpact();
       } else {
         this.view.showMessage('Error processing vegetation data', 'error');
       }
@@ -127,11 +127,9 @@ export class VegetationPresenter extends IVegetationPresenter {
     console.log('Refreshing Vegetation UI from imported state');
     
     // Check if we have vegetation results to display
-    if (state.vegMapResults) {
-      // Update vegetation table with results
-      if (state.vegMapResults.fire_veg_matrix_url) {
-        this.view.showVegetationImpact(state.vegMapResults.fire_veg_matrix_url);
-      }
+    if (state.vegMapResults && state.vegMapResults.vegetation_communities) {
+      // Show vegetation impact using structured data
+      this.view.showVegetationImpact();
       
       // Show vegetation tab
       this.view.showVegetationTab();

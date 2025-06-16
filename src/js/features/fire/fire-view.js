@@ -228,19 +228,23 @@ export class FireView extends IFireView {
   setupShapefileUpload() {
     document.getElementById('upload-shapefile').addEventListener('change', (event) => {
       const file = event.target.files[0];
-      const uploadStatus = document.getElementById('uploadStatus');
+      const uploadStatus = document.getElementById('upload-status');
     
       if (!file || !file.name.endsWith('.zip')) {
         uploadStatus.textContent = 'File upload failed. Please upload a valid shapefile.';
         uploadStatus.style.color = 'red';
         return;
       }
-    
+      
       const reader = new FileReader();
       reader.onload = (e) => {
         shp(e.target.result).then((data) => {
           this.geoJsonLayerGroup.clearLayers();
-          L.geoJSON(data, { style: getDefaultGeoJsonStyle() }).addTo(this.geoJsonLayerGroup);
+          const geoJsonLayer = L.geoJSON(data, { style: getDefaultGeoJsonStyle() }).addTo(this.geoJsonLayerGroup);
+    
+          // Zoom to the bounds of the uploaded shapefile
+          const mapManager = MapManager.getInstance();
+          mapManager.zoomToLayerBounds(this.geoJsonLayerGroup);
     
           uploadStatus.textContent = `${file.name} was uploaded successfully.`;
           uploadStatus.style.color = 'black';

@@ -109,14 +109,24 @@ export const resolveAgainstVegMap = async (data) => {
 };
 
 export const getVegMapResult = async (fireEventName, jobId) => {
-  const response = await fetch(
-    VEGETATION_ENDPOINTS.GET_RESULT(fireEventName, jobId),
-    {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-      mode: 'cors'
-    }
-  );
+  // Import state manager to get current severity breaks
+  const { default: stateManager } = await import('../../core/state-manager.js');
+  
+  // Get the first three classification breaks from the state
+  const colorBreaks = stateManager.getSharedState().colorBreaks;
+  const severityBreaks = colorBreaks.breaks.slice(0, 3); // Get first 3 breaks
+  
+  // Build URL with query parameters
+  const url = new URL(VEGETATION_ENDPOINTS.GET_RESULT(fireEventName, jobId));
+  severityBreaks.forEach(breakValue => {
+    url.searchParams.append('severity_breaks', breakValue);
+  });
+  
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+    mode: 'cors'
+  });
 
   if (!response.ok) {
     const errorData = await response.json();
@@ -124,6 +134,10 @@ export const getVegMapResult = async (fireEventName, jobId) => {
   }
 
   const result = await response.json();
+  
+  // Store both URLs separately for different purposes
+  // CSV URL: for direct download
+  // JSON URL: for fetching structured data for visualization
   
   // If we have a fire_veg_matrix_json_url and status is complete, fetch the JSON data
   if (result.fire_veg_matrix_json_url && result.status === 'complete') {
@@ -133,7 +147,7 @@ export const getVegMapResult = async (fireEventName, jobId) => {
       if (matrixResponse.ok) {
         const matrixData = await matrixResponse.json();
         console.log('Successfully fetched vegetation matrix data:', matrixData);
-        // Merge the matrix data into the result
+        // Merge the matrix data into the result for visualization
         result.vegetation_impact_data = matrixData;
       } else {
         console.warn('Failed to fetch vegetation matrix JSON:', matrixResponse.status, matrixResponse.statusText);
