@@ -423,4 +423,60 @@ export class FireModel extends IFireModel {
       throw error;
     }
   }
+
+  /**
+   * Submit a shapefile to the backend for storage
+   * @param {File} file - Zipped shapefile
+   * @param {string} fireEventName - Name of the fire event
+   * @returns {Promise<Object>} Response from the API
+   */
+  async submitShapefile(file, fireEventName) {
+    try {
+      const response = await api.uploadShapefile(fireEventName, file);
+      console.log('Shapefile uploaded successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('Error uploading shapefile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Submit coarse boundary GeoJSON to the backend
+   * @param {string} fireEventName - Name of the fire event
+   * @param {Object} geometry - GeoJSON geometry
+   * @returns {Promise<Object>} Response from the API
+   */
+  async submitCoarseGeojson(fireEventName, geometry) {
+    this.setProcessingStatus('processing');
+    
+    try {
+      // Format the data for the API
+      const data = {
+        fire_event_name: fireEventName,
+        geojson: {
+          type: 'Feature',
+          geometry: geometry,
+          properties: {}
+        }
+      };
+      
+      const response = await api.uploadGeojson(fireEventName, data.geojson);
+      
+      // Update the state with the GeoJSON URL
+      if (response.refined_boundary_geojson_url) {
+        this.setIntermediateAssets({
+          geojsonUrl: response.refined_boundary_geojson_url
+        });
+      }
+      
+      this.setProcessingStatus('success');
+      return response;
+    } catch (error) {
+      this.setProcessingStatus('error');
+      console.error('Error uploading coarse GeoJSON:', error);
+      throw error;
+    }
+  }
+
 }

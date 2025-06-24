@@ -101,11 +101,18 @@ export class FirePresenter extends IFirePresenter {
    * Handle fire analysis submission
    */
   async handleFireAnalysisSubmission() {
+
+    debugger;
+
     const formValues = this.view.getFormValues();
-    const geometry = this.view.getGeometryFromMap();
+    const drawnGeometry = this.view.getGeometryFromMap();
+    const geoJsonGeometry = this.view.getActiveGeoJson();
+    
+    // Use the manually drawn geometry if available, otherwise use the geometry from the layer group
+    const geometry = drawnGeometry || geoJsonGeometry;
     
     // Validate inputs
-    if (!geometry && this.view.geoJsonLayerGroup.getLayers().length === 0) {
+    if (!geometry) {
       alert('Please either draw a polygon on the map or upload a shapefile');
       return;
     }
@@ -121,24 +128,28 @@ export class FirePresenter extends IFirePresenter {
     
     // Update fire event name in model if provided
     if (formValues.fireEventName) {
-      this.model.setFireEventName(formValues.fireEventName);
+      this.model.setFireEventName(fireEventName);
     }
 
-    // Format data for API request
-    const fireSevData = {
-      fire_event_name: fireEventName,
-      geometry: geometry || this.view.geoJsonLayerGroup.toGeoJSON().features[0].geometry,
-      prefire_date_range: [
-        formValues.prefireStart,
-        formValues.prefireEnd
-      ],
-      postfire_date_range: [
-        formValues.postfireStart,
-        formValues.postfireEnd
-      ]
-    };
-    
     try {
+      // First, upload the coarse boundary as GeoJSON
+      await this.model.submitCoarseGeojson(fireEventName, geometry);
+      
+      // Format data for fire analysis API request
+      const fireSevData = {
+        fire_event_name: fireEventName,
+        geometry: geometry,
+        prefire_date_range: [
+          formValues.prefireStart,
+          formValues.prefireEnd
+        ],
+        postfire_date_range: [
+          formValues.postfireStart,
+          formValues.postfireEnd
+        ]
+      };
+      
+      // Then analyze the fire
       const result = await this.model.analyzeFire(fireSevData);
       this.handleAnalysisComplete(result, formValues);
     } catch (error) {

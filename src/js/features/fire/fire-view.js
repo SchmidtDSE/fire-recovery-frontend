@@ -86,7 +86,7 @@ export class FireView extends IFireView {
       this.geoJsonLayerGroup.clearLayers();
       const layer = event.layer;
       this.geoJsonLayerGroup.addLayer(layer);
-      this.hasDrawnRefinement = true;
+      // this.hasDrawnRefinement = true;
       document.getElementById('refine-button').disabled = false;
     });
   }
@@ -240,16 +240,24 @@ export class FireView extends IFireView {
       reader.onload = (e) => {
         shp(e.target.result).then((data) => {
           this.geoJsonLayerGroup.clearLayers();
-          const geoJsonLayer = L.geoJSON(data, { style: getDefaultGeoJsonStyle() }).addTo(this.geoJsonLayerGroup);
-    
+          L.geoJSON(data, { style: getDefaultGeoJsonStyle() }).addTo(this.geoJsonLayerGroup);
+
           // Zoom to the bounds of the uploaded shapefile
           const mapManager = MapManager.getInstance();
           mapManager.zoomToLayerBounds(this.geoJsonLayerGroup);
-    
+
           uploadStatus.textContent = `${file.name} was uploaded successfully.`;
           uploadStatus.style.color = 'black';
           
-          this.presenter.handleShapefileUploaded(file);
+          // Get fire event name (or create a placeholder)
+          const fireEventName = document.getElementById('fire-event-name').value || 
+                              `Fire_${new Date().getTime()}`;
+          
+          // Upload the original shapefile to the backend for storage
+          this.presenter.model.submitShapefile(file, fireEventName)
+            .catch(err => {
+              console.warn("Error uploading shapefile (non-critical):", err);
+            });
         }).catch((error) => {
           console.error("Error while parsing shapefile:", error);
           uploadStatus.textContent = "Upload failed. Please try again.";
@@ -297,65 +305,38 @@ export class FireView extends IFireView {
     alert(message);
   }
   
-  // /**
-  //  * Display COG layer on map
-  //  * @param {string} cogUrl - COG URL
-  //  */
-  // async displayCOGLayer(cogUrl) {
-  //   if (!cogUrl) {
-  //     console.warn('No COG URL provided');
-  //     return;
-  //   }
+  /**
+   * Get the active GeoJSON from the map
+   * @returns {Object|null} GeoJSON geometry object or null if none exists
+   */
+  getActiveGeoJson() {
+    // Check if the layer group exists and has layers
+    if (!this.geoJsonLayerGroup || this.geoJsonLayerGroup.getLayers().length === 0) {
+      return null;
+    }
     
-  //   try {
-  //     const cogResponse = await fetch(cogUrl);
-  //     if (!cogResponse.ok) {
-  //       throw new Error(`COG fetch failed with status: ${cogResponse.status}`);
-  //     }
-
-  //     const arrayBuffer = await cogResponse.arrayBuffer();
-  //     const georaster = await parseGeoraster(arrayBuffer);
-      
-  //     const resultLayer = new GeoRasterLayer({
-  //       georaster: georaster,
-  //       opacity: .8,
-  //       resolution: 256,
-  //       pixelValuesToColorFn: value => {
-  //         if (value === null || value === undefined || value <= 0) return 'transparent';
-  //         if (value < 0.1) return '#F0F921'; // bright yellow
-  //         if (value < 0.2) return '#FDC328';
-  //         if (value < 0.3) return '#F89441';
-  //         if (value < 0.4) return '#E56B5D';
-  //         if (value < 0.5) return '#CB4679';
-  //         if (value < 0.6) return '#A82296';
-  //         if (value < 0.7) return '#7D03A8';
-  //         if (value < 0.8) return '#4B03A1';
-  //         if (value < 0.9) return '#0D0887'; // darkest purple
-  //         return '#0D0887';
-  //       }
-  //     });
-
-  //     this.resultLayerGroup.clearLayers();
-  //     resultLayer.addTo(this.resultLayerGroup);
-      
-  //     // Force the result layer to the top
-  //     this.map.eachLayer(l => {
-  //       if (l === this.resultLayerGroup) {
-  //         l.eachLayer(resultL => resultL.bringToFront());
-  //       }
-  //     });
-
-  //     // Check if the layer has valid bounds before fitting
-  //     const bounds = resultLayer.getBounds();
-  //     if (bounds && bounds.isValid()) {
-  //       this.map.fitBounds(bounds);
-  //     }
-      
-  //   } catch (error) {
-  //     console.error('Error loading COG:', error);
-  //     this.showErrorState(`Error loading layer: ${error.message}`);
-  //   }
-  // }
+    // Convert the layer group to GeoJSON
+    const geoJson = this.geoJsonLayerGroup.toGeoJSON();
+    
+    // If it's a FeatureCollection, extract the first feature's geometry
+    if (geoJson.type === 'FeatureCollection' && geoJson.features && geoJson.features.length > 0) {
+      return geoJson.features[0].geometry;
+    }
+    
+    // If it's a direct Feature, return its geometry
+    if (geoJson.type === 'Feature' && geoJson.geometry) {
+      return geoJson.geometry;
+    }
+    
+    // If it's already a geometry object (unlikely but possible)
+    if (geoJson.type && ['Point', 'LineString', 'Polygon', 'MultiPoint', 
+                        'MultiLineString', 'MultiPolygon', 'GeometryCollection'].includes(geoJson.type)) {
+      return geoJson;
+    }
+    
+    // No valid geometry found
+    return null;
+  }
 
   /**
    * Setup date limits
