@@ -102,8 +102,6 @@ export class FirePresenter extends IFirePresenter {
    */
   async handleFireAnalysisSubmission() {
 
-    debugger;
-
     const formValues = this.view.getFormValues();
     const drawnGeometry = this.view.getGeometryFromMap();
     const geoJsonGeometry = this.view.getActiveGeoJson();
@@ -200,74 +198,56 @@ export class FirePresenter extends IFirePresenter {
     }
   }
 
+
   /**
-   * Handle refinement acceptance
+   * Submit the coarse boundary as the refined boundary
+   * Uses the existing coarse geometry from state manager
+   * @returns {Promise<Object>} Result of the refinement
    */
-  async handleAcceptRefinement() {
+  async submitCoarseAsRefined() {
     const state = this.model.getState();
     const fireEventName = state.fireEventName;
     
     if (!fireEventName) {
-      alert('No fire event name set');
-      return;
+      throw new Error('No fire event name set');
     }
-
-    // Check if user has drawn a refinement
-    const drawnGeometry = this.view.getGeometryFromMap();
     
+    // Get the coarse geometry - either from the map or from the state
+    let geometry = this.view.getActiveGeoJson();
+    
+    if (!geometry) {
+      throw new Error('No boundary available to accept');
+    }
+    
+    // Submit the coarse geometry as the refined boundary
+    const refinementData = {
+      fire_event_name: fireEventName,
+      refine_geojson: {
+        geometry: geometry
+      }
+    };
+    
+    return await this.model.submitRefinement(refinementData);
+  }
+
+  /**
+   * Handle refinement acceptance
+   */
+  async handleAcceptRefinement() {
     try {
-      // If no new refinement was drawn, use the coarse boundary as the refined boundary
-      if (!drawnGeometry) {
-        // Get the coarse boundary URL from state
-        const coarseGeojsonUrl = state.assets?.coarse?.geojsonUrl;
-        
-        if (!coarseGeojsonUrl) {
-          alert('No boundary available to accept');
-          return;
-        }
-        
-        // Show loading state
-        this.view.showLoadingState();
-        
-        try {
-          // Fetch the coarse boundary
-          const response = await fetch(coarseGeojsonUrl);
-          const geojsonData = await response.json();
-          
-          // Extract the geometry from the GeoJSON
-          let geometry;
-          if (geojsonData.features && geojsonData.features.length > 0) {
-            geometry = geojsonData.features[0].geometry;
-          } else if (geojsonData.geometry) {
-            geometry = geojsonData.geometry;
-          } else {
-            geometry = geojsonData; // If it's already just the geometry
-          }
-          
-          // Submit the coarse geometry as the refined boundary
-          const refinementData = {
-            fire_event_name: fireEventName,
-            refine_geojson: {
-              geometry: geometry
-            }
-          };
-          
-          await this.model.submitRefinement(refinementData);
-        } catch (error) {
-          console.error('Error processing coarse boundary:', error);
-          this.view.showErrorState(`Error accepting boundary: ${error.message}`);
-          return;
-        }
-      } 
-      // If a new refinement was drawn, we assume it has been handled already
-      // using the normal refinement submission flow
+      const state = this.model.getState();
       
-      // Handle successful acceptance (same for both paths)
+      // If we don't already have refined assets, create them
+      if (!state.finalAssets.geojsonUrl || !state.finalAssets.cogUrl) {
+        await this.submitCoarseAsRefined();
+      }
+      
+      // Move to resolve step and update UI
       stateManager.updateCurrentStep('resolve', 'fire');
       this.view.showMetricsAndTable();
       
       // Display the refined boundary
-      const refinedGeojsonUrl = stateManager.getSharedState().assets?.refined?.geojsonUrl;
+      const refinedGeojsonUrl = stateManager.getActiveGeojsonUrl(true);
       if (refinedGeojsonUrl) {
         this.view.displayGeoJSONFromUrl(refinedGeojsonUrl, {
           clearExisting: true
@@ -282,6 +262,7 @@ export class FirePresenter extends IFirePresenter {
       this.view.showErrorState(`Error accepting boundary: ${error.message}`);
     }
   }
+
   /**
    * Add Vegetation Analysis Button
    */

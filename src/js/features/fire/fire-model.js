@@ -126,6 +126,8 @@ export class FireModel extends IFireModel {
   /**
    * Get the current state
    * @returns {Object} Current state
+   * 
+   * TODO: Refactor to use stateManager.getSharedState() directly
    */
   getState() {
     const sharedState = stateManager.getSharedState();
