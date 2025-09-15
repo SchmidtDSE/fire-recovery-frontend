@@ -136,7 +136,7 @@ export class FirePresenter extends IFirePresenter {
       // Format data for fire analysis API request
       const fireSevData = {
         fire_event_name: fireEventName,
-        geometry: geometry,
+        coarse_geojson: geometry,
         prefire_date_range: [
           formValues.prefireStart,
           formValues.prefireEnd
@@ -185,9 +185,7 @@ export class FirePresenter extends IFirePresenter {
     
     const refinementData = {
       fire_event_name: fireEventName,
-      refine_geojson: {
-        geometry: refinedGeometry
-      }
+      refined_geojson: refinedGeometry
     };
     
     try {
@@ -222,9 +220,7 @@ export class FirePresenter extends IFirePresenter {
     // Submit the coarse geometry as the refined boundary
     const refinementData = {
       fire_event_name: fireEventName,
-      refine_geojson: {
-        geometry: geometry
-      }
+      refined_geojson: geometry
     };
     
     return await this.model.submitRefinement(refinementData);
