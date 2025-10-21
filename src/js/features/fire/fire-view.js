@@ -144,10 +144,25 @@ export class FireView extends IFireView {
     });
 
     // Accept button for veg map resolution
-    document.getElementById('accept-button').addEventListener('click', () => {
-      this.presenter.handleAcceptRefinement();
-      document.getElementById('refine-button').disabled = true;
-      document.getElementById('accept-button').disabled = true;
+    document.getElementById('accept-button').addEventListener('click', async () => {
+      const acceptButton = document.getElementById('accept-button');
+      const refineButton = document.getElementById('refine-button');
+
+      // Disable buttons and show loading state
+      acceptButton.disabled = true;
+      refineButton.disabled = true;
+      const originalText = acceptButton.innerHTML;
+      acceptButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+      try {
+        await this.presenter.handleAcceptRefinement();
+        // Keep buttons disabled after successful completion
+      } catch (error) {
+        // Re-enable accept button on error so user can retry
+        acceptButton.disabled = false;
+        acceptButton.innerHTML = originalText;
+        console.error('Accept refinement failed:', error);
+      }
     });
   }
   

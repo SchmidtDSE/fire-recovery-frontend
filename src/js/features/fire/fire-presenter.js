@@ -232,27 +232,35 @@ export class FirePresenter extends IFirePresenter {
   async handleAcceptRefinement() {
     try {
       const state = this.model.getState();
-      
-      // If we don't already have refined assets, create them
+
+      // If we don't already have refined assets, create them and wait for completion
       if (!state.finalAssets.geojsonUrl || !state.finalAssets.cogUrl) {
         await this.submitCoarseAsRefined();
+
+        // Wait for the state to be updated with the new refined assets
+        // The submitRefinement in submitCoarseAsRefined() will trigger model events
+        // when the polling completes, so we need to get the updated state
+        const updatedState = this.model.getState();
+        if (!updatedState.finalAssets.geojsonUrl) {
+          throw new Error('Failed to create refined boundary assets');
+        }
       }
-      
+
       // Move to resolve step and update UI
       stateManager.updateCurrentStep('resolve', 'fire');
       this.view.showMetricsAndTable();
-      
-      // Display the refined boundary
+
+      // Display the refined boundary - get fresh URL from state
       const refinedGeojsonUrl = stateManager.getActiveGeojsonUrl(true);
       if (refinedGeojsonUrl) {
         this.view.displayGeoJSONFromUrl(refinedGeojsonUrl, {
           clearExisting: true
         });
       }
-      
+
       // Add vegetation button
       this.addVegetationButton();
-      
+
     } catch (error) {
       console.error('Error accepting boundary:', error);
       this.view.showErrorState(`Error accepting boundary: ${error.message}`);

@@ -168,6 +168,7 @@ export const uploadShapefile = async (fireEventName, shapefileData) => {
   const formData = new FormData();
   formData.append('fire_event_name', fireEventName);
   formData.append('shapefile', shapefileData);
+  formData.append('boundary_type', 'refined');
 
   const response = await fetch(UPLOAD_ENDPOINTS.SHAPEFILE, {
     method: 'POST',
@@ -186,7 +187,8 @@ export const uploadShapefile = async (fireEventName, shapefileData) => {
 export const uploadGeojson = async (fireEventName, geojsonData) => {
   const data = {
     fire_event_name: fireEventName,
-    geojson: geojsonData
+    geojson: geojsonData,
+    boundary_type: 'coarse'
   };
 
   const response = await fetch(UPLOAD_ENDPOINTS.GEOJSON, {
@@ -217,6 +219,6 @@ export const uploadGeojson = async (fireEventName, geojsonData) => {
  *   - For refinement: result.refined_severity_cog_urls (dict mapping metric names to URLs)
  *   - For boundary: result.refined_boundary_geojson_url (string URL)
  */
-export const pollUntilComplete = (checkFunction, interval = 10000, maxAttempts = 500) => {
+export const pollUntilComplete = (checkFunction, interval = 2000, maxAttempts = 500) => {
   return createPollingMechanism(checkFunction, interval, maxAttempts);
 };
