@@ -156,7 +156,7 @@ export class FireView extends IFireView {
 
       try {
         await this.presenter.handleAcceptRefinement();
-        // Keep buttons disabled after successful completion
+        // Success state is handled by presenter calling showAcceptSuccessState()
       } catch (error) {
         // Re-enable accept button on error so user can retry
         acceptButton.disabled = false;
@@ -252,8 +252,11 @@ export class FireView extends IFireView {
       }
       
       const reader = new FileReader();
-      reader.onload = (e) => {
-        shp(e.target.result).then((data) => {
+      reader.onload = async (e) => {
+        try {
+          const data = await shp(e.target.result);
+
+          // Display shapefile on map
           this.geoJsonLayerGroup.clearLayers();
           L.geoJSON(data, { style: getDefaultGeoJsonStyle() }).addTo(this.geoJsonLayerGroup);
 
@@ -263,21 +266,22 @@ export class FireView extends IFireView {
 
           uploadStatus.textContent = `${file.name} was uploaded successfully.`;
           uploadStatus.style.color = 'black';
-          
+
           // Get fire event name (or create a placeholder)
-          const fireEventName = document.getElementById('fire-event-name').value || 
+          const fireEventName = document.getElementById('fire-event-name').value ||
                               `Fire_${new Date().getTime()}`;
-          
-          // Upload the original shapefile to the backend for storage
-          this.presenter.model.submitShapefile(file, fireEventName)
-            .catch(err => {
-              console.warn("Error uploading shapefile (non-critical):", err);
-            });
-        }).catch((error) => {
-          console.error("Error while parsing shapefile:", error);
+
+          // Upload the shapefile to the backend and update state
+          const response = await this.presenter.model.submitShapefile(file, fireEventName);
+
+          // Treat uploaded shapefile as refined boundary and update state
+          await this.presenter.handleShapefileUploadComplete(response, fireEventName);
+
+        } catch (error) {
+          console.error("Error while processing shapefile:", error);
           uploadStatus.textContent = "Upload failed. Please try again.";
           uploadStatus.style.color = 'red';
-        });
+        }
       };
       reader.readAsArrayBuffer(file);
     });
@@ -289,22 +293,22 @@ export class FireView extends IFireView {
   showLoadingState() {
     const statusIcon = document.getElementById('process-status');
     const processButton = document.getElementById('process-button');
-    
+
     statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     statusIcon.style.color = '#007bff';
     processButton.disabled = true;
   }
-  
+
   /**
    * Show success state
    */
   showSuccessState() {
     const statusIcon = document.getElementById('process-status');
-    
+
     statusIcon.innerHTML = '<i class="fas fa-check"></i>';
     statusIcon.style.color = 'green';
   }
-  
+
   /**
    * Show error state
    * @param {string} message - Error message
@@ -312,12 +316,30 @@ export class FireView extends IFireView {
   showErrorState(message) {
     const statusIcon = document.getElementById('process-status');
     const processButton = document.getElementById('process-button');
-    
+
     statusIcon.innerHTML = '<i class="fas fa-times"></i>';
     statusIcon.style.color = 'red';
     processButton.disabled = false;
-    
+
     alert(message);
+  }
+
+  /**
+   * Show accept button success state
+   */
+  showAcceptSuccessState() {
+    const acceptButton = document.getElementById('accept-button');
+    const refineButton = document.getElementById('refine-button');
+
+    if (acceptButton) {
+      acceptButton.disabled = true;
+      acceptButton.innerHTML = '<i class="fas fa-check"></i> Accepted';
+      acceptButton.style.backgroundColor = '#28a745';
+    }
+
+    if (refineButton) {
+      refineButton.disabled = true;
+    }
   }
   
   /**

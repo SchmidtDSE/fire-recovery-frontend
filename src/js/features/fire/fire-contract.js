@@ -82,17 +82,22 @@ export class IFireView {
    * Display loading state
    */
   showLoadingState() {}
-  
+
   /**
    * Display success state
    */
   showSuccessState() {}
-  
+
   /**
    * Display error state
    * @param {string} message - Error message
    */
   showErrorState(message) {}
+
+  /**
+   * Display accept button success state
+   */
+  showAcceptSuccessState() {}
   
   /**
    * Display COG layer on map

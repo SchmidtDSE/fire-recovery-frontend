@@ -55,14 +55,18 @@ export class FirePresenter extends IFirePresenter {
           clearExisting: true  // Clear user drawings when showing the refined boundary
         });
       }
-      
+
       // Handle COG URL (existing functionality)
       const useRefined = data.type === 'final';
       const cogUrl = stateManager.getActiveCogUrl(useRefined);
-      
+
       if (cogUrl) {
         this.view.displayCOGLayer(cogUrl);
       }
+
+      // Update vegetation button state when assets change
+      // This ensures the button enables/disables based on available data
+      this.addVegetationButton();
     });
 
     this.model.on('colorBreaksChanged', (colorBreaksData) => {
@@ -163,6 +167,33 @@ export class FirePresenter extends IFirePresenter {
   handleAnalysisComplete(result, formValues) {
     // The view will automatically update based on model state changes
     this.view.showDateSummary(formValues);
+
+    // Check if refined boundary was already set (e.g., from shapefile upload)
+    // If so, automatically copy coarse COGs to refined and move to resolve step
+    const sharedState = stateManager.getSharedState();
+    const coarseGeojsonUrl = sharedState.assets?.coarse?.geojsonUrl;
+    const refinedGeojsonUrl = sharedState.assets?.refined?.geojsonUrl;
+
+    // If both URLs exist and are the same, shapefile was uploaded
+    if (coarseGeojsonUrl && refinedGeojsonUrl && coarseGeojsonUrl === refinedGeojsonUrl) {
+      // Copy coarse COG URLs to refined
+      const coarseCogUrls = sharedState.assets?.coarse?.severityCogUrls || {};
+      if (Object.keys(coarseCogUrls).length > 0) {
+        stateManager.updateAsset('refined.severityCogUrls', coarseCogUrls, 'fire');
+
+        // Move to resolve step
+        stateManager.updateCurrentStep('resolve', 'fire');
+
+        // Show metrics and table
+        this.view.showMetricsAndTable();
+
+        // Show accept button as already accepted
+        this.view.showAcceptSuccessState();
+
+        // Add vegetation button (will be enabled since both boundary and COGs exist)
+        this.addVegetationButton();
+      }
+    }
     this.view.refreshMapVisualization();
   }
   
@@ -258,38 +289,118 @@ export class FirePresenter extends IFirePresenter {
         });
       }
 
+      // Show success state for accept button
+      this.view.showAcceptSuccessState();
+
       // Add vegetation button
       this.addVegetationButton();
 
     } catch (error) {
       console.error('Error accepting boundary:', error);
       this.view.showErrorState(`Error accepting boundary: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle shapefile upload completion
+   * When a user uploads a shapefile, treat it as BOTH coarse and refined boundary
+   * User still needs to run fire severity analysis to generate COG data
+   * @param {Object} response - API response from shapefile upload
+   * @param {string} fireEventName - Fire event name
+   */
+  async handleShapefileUploadComplete(response, fireEventName) {
+    try {
+      // Update fire event name if provided
+      if (fireEventName) {
+        stateManager.updateSharedState('fireEventName', fireEventName, 'fire');
+      }
+
+      // Update state with the boundary GeoJSON URL
+      // Set it as BOTH coarse and refined since shapefile is the final boundary
+      // The backend returns the URL where the shapefile was stored as GeoJSON
+      if (response.geojson_url) {
+        // Set as coarse boundary so fire severity analysis can use it
+        stateManager.updateNestedAsset('coarse', 'geojsonUrl', response.geojson_url, 'fire');
+        // Also set as refined boundary since this is the user's final boundary
+        stateManager.updateNestedAsset('refined', 'geojsonUrl', response.geojson_url, 'fire');
+      }
+
+      // NOTE: We do NOT update currentStep to 'resolve' here
+      // User still needs to fill out dates and run fire severity analysis
+      // Once that completes and creates COGs, THEN we can move to 'resolve'
+
+    } catch (error) {
+      console.error('Error processing shapefile upload:', error);
+      this.view.showErrorState(`Error processing shapefile: ${error.message}`);
+      throw error;
     }
   }
 
   /**
    * Add Vegetation Analysis Button
+   * Button is only enabled if BOTH refined boundary AND fire severity data exist
    */
   addVegetationButton() {
     // Target specifically the button group inside the refinement container
     const buttonGroup = document.querySelector('#refinement-container .button-group');
     if (!buttonGroup) return;
-    
+
+    // Check if we have both requirements:
+    // 1. Refined boundary (geojsonUrl)
+    // 2. Fire severity data (at least one COG URL)
+    const sharedState = stateManager.getSharedState();
+    const hasRefinedBoundary = sharedState.assets?.refined?.geojsonUrl != null;
+    const refinedMetrics = stateManager.getAvailableMetrics(true); // true = refined
+    const hasSeverityData = refinedMetrics.length > 0;
+
+    // Button should only be enabled when BOTH conditions are met
+    const canAnalyzeVegetation = hasRefinedBoundary && hasSeverityData;
+
+    // Determine appropriate tooltip message
+    let tooltipMessage = '';
+    if (!hasRefinedBoundary && !hasSeverityData) {
+      tooltipMessage = 'Please complete fire severity analysis and boundary refinement first';
+    } else if (!hasSeverityData) {
+      tooltipMessage = 'Please complete fire severity analysis before analyzing vegetation impact';
+    } else if (!hasRefinedBoundary) {
+      tooltipMessage = 'Please complete boundary refinement before analyzing vegetation impact';
+    }
+
     // Check if button already exists
     let resolveButton = document.getElementById('resolve-button');
     if (resolveButton) {
-      // Reset it if it exists
-      resolveButton.disabled = false;
+      // Update existing button state
+      resolveButton.disabled = !canAnalyzeVegetation;
       resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
+
+      if (!canAnalyzeVegetation) {
+        resolveButton.title = tooltipMessage;
+        resolveButton.style.opacity = '0.5';
+        resolveButton.style.cursor = 'not-allowed';
+      } else {
+        resolveButton.title = '';
+        resolveButton.style.opacity = '1';
+        resolveButton.style.cursor = 'pointer';
+      }
       return;
     }
-    
+
     // Create new button if it doesn't exist
     resolveButton = document.createElement('button');
     resolveButton.id = 'resolve-button';
     resolveButton.className = 'action-button';
     resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
-    
+
+    // Set initial state based on whether both requirements are met
+    resolveButton.disabled = !canAnalyzeVegetation;
+
+    if (!canAnalyzeVegetation) {
+      resolveButton.title = tooltipMessage;
+      resolveButton.style.opacity = '0.5';
+      resolveButton.style.cursor = 'not-allowed';
+    }
+
     // Add event listener
     resolveButton.addEventListener('click', () => {
       const vegPresenter = window.app.components.vegetation.presenter;
@@ -297,7 +408,7 @@ export class FirePresenter extends IFirePresenter {
         vegPresenter.handleVegMapResolution();
       }
     });
-    
+
     // Add to DOM
     buttonGroup.appendChild(resolveButton);
   }
