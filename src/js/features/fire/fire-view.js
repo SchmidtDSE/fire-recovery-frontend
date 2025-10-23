@@ -1048,6 +1048,24 @@ export class FireView extends IFireView {
   }
 
   /**
+   * Display COG layer on the map
+   * @param {string} cogUrl - URL to the COG file
+   */
+  displayCOGLayer(cogUrl) {
+    if (!cogUrl) {
+      console.warn('No COG URL provided to displayCOGLayer');
+      return;
+    }
+
+    console.log('Displaying COG:', cogUrl);
+    displayCOGLayer(cogUrl, this.map, this.resultLayerGroup)
+      .catch(error => {
+        console.error('Error displaying COG:', error);
+        this.showErrorState(`Error loading layer: ${error.message}`);
+      });
+  }
+
+  /**
    * Enable specific action buttons
    * @param {Array<string>} buttonIds - Array of button IDs to enable
    */

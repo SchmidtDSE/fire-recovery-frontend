@@ -56,13 +56,9 @@ export class FirePresenter extends IFirePresenter {
         });
       }
 
-      // Handle COG URL (existing functionality)
-      const useRefined = data.type === 'final';
-      const cogUrl = stateManager.getActiveCogUrl(useRefined);
-
-      if (cogUrl) {
-        this.view.displayCOGLayer(cogUrl);
-      }
+      // Refresh the map visualization to show the latest COG
+      // This handles both coarse and refined COGs correctly
+      this.view.refreshMapVisualization();
 
       // Update vegetation button state when assets change
       // This ensures the button enables/disables based on available data
@@ -70,8 +66,8 @@ export class FirePresenter extends IFirePresenter {
     });
 
     this.model.on('colorBreaksChanged', (colorBreaksData) => {
-      // Update visualization when color breaks change
-      this.updateMapVisualization();
+      // Refresh the map visualization when color breaks change
+      this.view.refreshMapVisualization();
     });
   }
   
@@ -402,10 +398,23 @@ export class FirePresenter extends IFirePresenter {
     }
 
     // Add event listener
-    resolveButton.addEventListener('click', () => {
-      const vegPresenter = window.app.components.vegetation.presenter;
-      if (vegPresenter) {
-        vegPresenter.handleVegMapResolution();
+    resolveButton.addEventListener('click', async () => {
+      // Show loading state on the button
+      const originalText = resolveButton.innerHTML;
+      resolveButton.disabled = true;
+      resolveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+
+      try {
+        const vegPresenter = window.app.components.vegetation.presenter;
+        if (vegPresenter) {
+          await vegPresenter.handleVegMapResolution();
+        }
+      } catch (error) {
+        console.error('Vegetation analysis failed:', error);
+      } finally {
+        // Reset button state
+        resolveButton.disabled = false;
+        resolveButton.innerHTML = originalText;
       }
     });
 
@@ -418,17 +427,9 @@ export class FirePresenter extends IFirePresenter {
    * Update map visualization based on selected metric
    */
   updateMapVisualization() {
-    const state = this.model.getState();
-    const metric = state.activeMetric || 'RBR';
-    
-    // Get COG URL from state manager instead of direct access
-    const useRefined = state.currentStep === 'resolve' || state.currentStep === 'complete';
-    const cogUrl = stateManager.getActiveCogUrl(useRefined);
-    
-    if (cogUrl) {
-      // Display the COG layer with the URL
-      this.view.displayCOGLayer(cogUrl);
-    }
+    // Delegate to view's refreshMapVisualization which handles all the logic
+    // for selecting the correct COG (coarse vs refined) based on state
+    this.view.refreshMapVisualization();
   }
 
   

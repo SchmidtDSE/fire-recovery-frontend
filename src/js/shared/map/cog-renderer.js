@@ -18,9 +18,16 @@ export async function displayCOGLayer(cogUrl, map, layerGroup) {
     console.warn('No COG URL provided');
     return null;
   }
-  
+
   try {
-    const cogResponse = await fetch(cogUrl);
+    // Add cache busting via URL parameter to avoid CORS preflight issues
+    // This is critical when switching between coarse and refined COGs
+    const cacheBuster = `_cb=${Date.now()}`;
+    const urlWithCacheBuster = cogUrl.includes('?')
+      ? `${cogUrl}&${cacheBuster}`
+      : `${cogUrl}?${cacheBuster}`;
+
+    const cogResponse = await fetch(urlWithCacheBuster);
     if (!cogResponse.ok) {
       throw new Error(`COG fetch failed with status: ${cogResponse.status}`);
     }
@@ -37,27 +44,39 @@ export async function displayCOGLayer(cogUrl, map, layerGroup) {
       resolution: 256,
       pixelValuesToColorFn: value => {
         if (value === null || value === undefined || value <= 0) return 'transparent';
-        
+
         // Use the breaks from state to determine colors
         for (let i = 0; i < breaks.length; i++) {
           if (value < breaks[i]) return colors[i];
         }
-        
+
         // If value is higher than all breaks, use the last color
         return colors[colors.length - 1];
       }
     });
 
+    // Remove layer group from map temporarily
+    const wasOnMap = map.hasLayer(layerGroup);
+    if (wasOnMap) {
+      map.removeLayer(layerGroup);
+    }
+
     // Clear existing layers in the group
     layerGroup.clearLayers();
-    
-    // Add the new layer
+
+    // Add the new layer to the group
     resultLayer.addTo(layerGroup);
-    
-    // Force the result layer to the top
-    map.eachLayer(l => {
-      if (l === layerGroup) {
-        l.eachLayer(resultL => resultL.bringToFront());
+
+    // Re-add layer group to map if it was previously on the map
+    if (wasOnMap) {
+      layerGroup.addTo(map);
+    }
+
+    // Force all layers in the group to the front
+    // LayerGroup doesn't have bringToFront, so we iterate its layers
+    layerGroup.eachLayer(layer => {
+      if (layer.bringToFront) {
+        layer.bringToFront();
       }
     });
 
@@ -66,7 +85,7 @@ export async function displayCOGLayer(cogUrl, map, layerGroup) {
     if (bounds && bounds.isValid()) {
       map.fitBounds(bounds);
     }
-    
+
     return resultLayer;
   } catch (error) {
     console.error('Error loading COG:', error);

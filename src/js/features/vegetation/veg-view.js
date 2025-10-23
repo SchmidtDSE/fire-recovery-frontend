@@ -142,7 +142,7 @@ export class VegetationView extends IVegetationView {
         <th class="color-col">Color</th>
         <th class="name-col">Vegetation Community</th>
         <th class="hectares-col">Total Hectares</th>
-        <th class="percent-col">% of Park</th>
+        <th class="percent-col">% of Fire Perimeter</th>
         <th class="severity-col">Severity Distribution</th>
       </tr>
     `;
