@@ -4,3 +4,41 @@
 src/tmp
 
 .claude
+
+# Node.js dependencies (ephemeral)
+node_modules/
+.pnpm-store/
+
+# Build outputs (ephemeral)
+dist/
+dist-ssr/
+*.local
+
+# Environment files (local only)
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+
+# Auto-generated API types (will be regenerated on build)
+# NOTE: Can be committed if team wants to track schema changes in git
+src/types/api.ts
