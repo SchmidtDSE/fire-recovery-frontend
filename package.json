@@ -1,0 +1,26 @@
+{
+  "name": "fire-recovery-frontend",
+  "version": "1.0.0",
+  "description": "Fire Recovery Frontend Application with TypeScript and Vite",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "pnpm type-check",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "codegen:local": "openapi-typescript http://localhost:8000/openapi.json -o src/types/api.ts",
+    "codegen:dev": "openapi-typescript https://fire-recovery-backend-dev-113009620257.us-central1.run.app/openapi.json -o src/types/api.ts",
+    "prebuild": "pnpm codegen:dev"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "openapi-typescript": "^6.7.3",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.1"
+}
