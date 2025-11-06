@@ -42,3 +42,9 @@ Thumbs.db
 # Auto-generated API types (will be regenerated on build)
 # NOTE: Can be committed if team wants to track schema changes in git
 src/types/api.ts
+
+# Testing
+coverage/
+test-results.xml
+.vitest/
+*.test-results.json
