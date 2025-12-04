@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "pnpm type-check",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "codegen:local": "openapi-typescript http://localhost:8000/openapi.json -o src/types/api.ts",
