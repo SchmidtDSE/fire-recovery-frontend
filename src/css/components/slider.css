@@ -51,3 +51,18 @@
 .color-break-actions button {
   padding: 8px 15px;
 }
+
+.severity-label {
+  font-size: 0.85em;
+  font-weight: 500;
+  min-width: 70px;
+  color: var(--text-color);
+}
+
+.severity-label:first-child {
+  text-align: right;
+}
+
+.severity-label:last-child {
+  text-align: left;
+}

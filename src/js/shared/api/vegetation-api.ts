@@ -41,7 +41,7 @@ export async function getVegMapResult(
       const stateManagerModule = await import('../../../core/state-manager.js');
       const stateManager = (stateManagerModule as any).default;
       const colorBreaks = stateManager.getSharedState().colorBreaks;
-      breaks = colorBreaks.breaks.slice(0, 3); // Get first 3 breaks
+      breaks = colorBreaks.breaks;
     } catch (error) {
       console.warn('Could not get severity breaks from state manager:', error);
       // Continue without severity breaks - backend will use defaults

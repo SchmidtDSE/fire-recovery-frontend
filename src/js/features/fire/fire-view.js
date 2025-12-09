@@ -896,22 +896,32 @@ export class FireView extends IFireView {
     
     // Get current breaks and colors from state manager
     const { breaks, colors } = stateManager.getSharedState().colorBreaks;
-    
+
+    // Severity level labels for each break point
+    const severityLabels = [
+      { below: 'Unburned', above: 'Low' },
+      { below: 'Low', above: 'Moderate' },
+      { below: 'Moderate', above: 'High' }
+    ];
+
     // Create a slider for each break point
     breaks.forEach((breakValue, index) => {
       const colorBelow = colors[index];
       const colorAbove = colors[index + 1] || colors[index];
-      
+      const labels = severityLabels[index] || { below: '', above: '' };
+
       const sliderContainer = document.createElement('div');
       sliderContainer.className = 'color-break-slider';
-      
+
       sliderContainer.innerHTML = `
+        <span class="severity-label">${labels.below}</span>
         <div class="color-swatch" style="background-color: ${colorBelow}"></div>
         <input type="range" min="0" max="1" step="0.01" value="${breakValue}" data-index="${index}" class="break-slider">
         <input type="number" min="0" max="1" step="0.01" value="${breakValue}" class="break-value">
         <div class="color-swatch" style="background-color: ${colorAbove}"></div>
+        <span class="severity-label">${labels.above}</span>
       `;
-      
+
       slidersContainer.appendChild(sliderContainer);
       
       // Add event listeners for changes
@@ -989,9 +999,9 @@ export class FireView extends IFireView {
    * Reset color breaks to default values
    */
   resetColorBreaks() {
-    // Default values from the original implementation
-    const defaultBreaks = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
-    const defaultColors = ['#F0F921', '#FDC328', '#F89441', '#E56B5D', '#CB4679', '#A82296', '#7D03A8', '#4B03A1', '#0D0887', '#0D0887'];
+    // Default values - 3 breaks for 4 severity levels
+    const defaultBreaks = [0.1, 0.2, 0.3];
+    const defaultColors = ['#F0F921', '#E56B5D', '#7D03A8', '#0D0887'];
     
     // Update state with defaults
     stateManager.updateColorBreaks(defaultBreaks, defaultColors, 'fire-view');

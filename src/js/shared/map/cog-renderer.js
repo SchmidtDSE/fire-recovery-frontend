@@ -43,9 +43,11 @@ export async function displayCOGLayer(cogUrl, map, layerGroup) {
       opacity: .8,
       resolution: 256,
       pixelValuesToColorFn: value => {
-        if (value === null || value === undefined || value <= 0) return 'transparent';
+        // NoData values (typically -9999 or similar) should be transparent
+        if (value === null || value === undefined || value <= -1) return 'transparent';
 
         // Use the breaks from state to determine colors
+        // Values from -1 to break[0] are "unburned" (colors[0])
         for (let i = 0; i < breaks.length; i++) {
           if (value < breaks[i]) return colors[i];
         }
@@ -137,13 +139,15 @@ export function getFireSeverityColorFunction() {
   const { breaks, colors } = stateManager.getSharedState().colorBreaks;
 
   return value => {
-    if (value === null || value === undefined || value === -9999.0) return 'transparent';
-    
+    // NoData values should be transparent
+    if (value === null || value === undefined || value <= -1) return 'transparent';
+
     // Find the appropriate color based on breaks
+    // Values from -1 to break[0] are "unburned" (colors[0])
     for (let i = 0; i < breaks.length; i++) {
       if (value < breaks[i]) return colors[i];
     }
-    
+
     // Return the last color if no break matches
     return colors[colors.length - 1];
   };
