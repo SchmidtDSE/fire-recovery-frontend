@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import path from 'path'
 
 export default defineConfig({
+  root: 'src',  // HTML files are in src/
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
