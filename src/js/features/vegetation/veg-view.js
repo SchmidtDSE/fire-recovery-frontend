@@ -331,8 +331,10 @@ export class VegetationView extends IVegetationView {
       if (messageElem) messageElem.textContent = message;
       loadingElem.style.display = 'flex';
     }
-    
-    this.showMessage(message, 'info');
+
+    // Clear any previous status message to avoid duplicate text
+    const statusElem = document.getElementById('vegetation-status');
+    if (statusElem) statusElem.innerHTML = '';
   }
 
 

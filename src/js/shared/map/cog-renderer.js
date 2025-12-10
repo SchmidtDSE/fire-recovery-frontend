@@ -5,6 +5,88 @@ import stateManager from '../../core/state-manager.js';
  * Utilities for displaying Cloud Optimized GeoTIFFs on maps
  */
 
+// Module-level state to track the current fire severity COG layer
+let currentCOGLayer = null;
+let currentCOGUrl = null;
+let cachedGeoraster = null;
+
+/**
+ * Get a color function that dynamically reads breaks from state
+ * @returns {Function} Function that maps pixel values to colors
+ */
+function getDynamicColorFunction() {
+  return value => {
+    if (value === null || value === undefined || value <= -1) return 'transparent';
+    const { breaks, colors } = stateManager.getSharedState().colorBreaks;
+    for (let i = 0; i < breaks.length; i++) {
+      if (value < breaks[i]) return colors[i];
+    }
+    return colors[colors.length - 1];
+  };
+}
+
+/**
+ * Clear the current COG layer's tile caches
+ * @param {boolean} clearGeoraster - Also clear cached georaster data (for URL changes)
+ */
+export function clearCOGLayerCaches(clearGeoraster = false) {
+  if (currentCOGLayer) {
+    // Clear GeoRasterLayer's internal caches
+    if (currentCOGLayer.cache) {
+      currentCOGLayer.cache = {};
+    }
+    if (currentCOGLayer._cache) {
+      currentCOGLayer._cache = { innerTile: {}, tile: {} };
+    }
+    if (currentCOGLayer._tiles) {
+      currentCOGLayer._tiles = {};
+    }
+  }
+
+  if (clearGeoraster) {
+    cachedGeoraster = null;
+    currentCOGUrl = null;
+  }
+}
+
+/**
+ * Update the colors on the current COG layer without recreating it
+ * @returns {boolean} True if colors were updated, false if no layer exists
+ */
+export function updateCOGLayerColors() {
+  if (!currentCOGLayer) {
+    console.warn('No COG layer to update colors on');
+    return false;
+  }
+
+  try {
+    // Update the color function
+    currentCOGLayer.options.pixelValuesToColorFn = getDynamicColorFunction();
+
+    // Clear tile caches (but keep georaster since URL is same)
+    clearCOGLayerCaches(false);
+
+    // Force a complete redraw
+    if (currentCOGLayer.redraw) {
+      currentCOGLayer.redraw();
+    }
+
+    console.log('COG layer colors updated with new breaks');
+    return true;
+  } catch (error) {
+    console.error('Error updating COG layer colors:', error);
+    return false;
+  }
+}
+
+/**
+ * Check if we can update colors on the existing layer (same URL)
+ * @param {string} cogUrl - The URL to check
+ * @returns {boolean} True if the URL matches current layer
+ */
+export function canUpdateExistingLayer(cogUrl) {
+  return currentCOGLayer !== null && currentCOGUrl === cogUrl;
+}
 
 /**
  * Display a COG layer on the map
@@ -20,42 +102,40 @@ export async function displayCOGLayer(cogUrl, map, layerGroup) {
   }
 
   try {
-    // Add cache busting via URL parameter to avoid CORS preflight issues
-    // This is critical when switching between coarse and refined COGs
-    const cacheBuster = `_cb=${Date.now()}`;
-    const urlWithCacheBuster = cogUrl.includes('?')
-      ? `${cogUrl}&${cacheBuster}`
-      : `${cogUrl}?${cacheBuster}`;
+    let georaster;
 
-    const cogResponse = await fetch(urlWithCacheBuster);
-    if (!cogResponse.ok) {
-      throw new Error(`COG fetch failed with status: ${cogResponse.status}`);
+    // Reuse cached georaster if URL matches (avoids re-fetching for color changes)
+    if (cachedGeoraster && currentCOGUrl === cogUrl) {
+      console.log('Reusing cached georaster');
+      georaster = cachedGeoraster;
+    } else {
+      // Fetch and parse new COG
+      const cacheBuster = `_cb=${Date.now()}`;
+      const urlWithCacheBuster = cogUrl.includes('?')
+        ? `${cogUrl}&${cacheBuster}`
+        : `${cogUrl}?${cacheBuster}`;
+
+      console.log('Fetching COG from server...');
+      const cogResponse = await fetch(urlWithCacheBuster);
+      if (!cogResponse.ok) {
+        throw new Error(`COG fetch failed with status: ${cogResponse.status}`);
+      }
+
+      const arrayBuffer = await cogResponse.arrayBuffer();
+      georaster = await parseGeoraster(arrayBuffer);
+      cachedGeoraster = georaster;
     }
 
-    const arrayBuffer = await cogResponse.arrayBuffer();
-    const georaster = await parseGeoraster(arrayBuffer);
-    
-    // Get current color breaks from state manager
-    const { breaks, colors } = stateManager.getSharedState().colorBreaks;
-    
     const resultLayer = new GeoRasterLayer({
       georaster: georaster,
       opacity: .8,
       resolution: 256,
-      pixelValuesToColorFn: value => {
-        // NoData values (typically -9999 or similar) should be transparent
-        if (value === null || value === undefined || value <= -1) return 'transparent';
-
-        // Use the breaks from state to determine colors
-        // Values from -1 to break[0] are "unburned" (colors[0])
-        for (let i = 0; i < breaks.length; i++) {
-          if (value < breaks[i]) return colors[i];
-        }
-
-        // If value is higher than all breaks, use the last color
-        return colors[colors.length - 1];
-      }
+      pixelValuesToColorFn: getDynamicColorFunction()
     });
+
+    // Store reference for later updates
+    currentCOGLayer = resultLayer;
+    currentCOGUrl = cogUrl;
 
     // Remove layer group from map temporarily
     const wasOnMap = map.hasLayer(layerGroup);

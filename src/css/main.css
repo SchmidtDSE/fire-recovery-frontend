@@ -250,3 +250,36 @@ img {
     margin-top: 20px;
     margin-bottom: 20px;
 }
+
+/* Date range display styling */
+.metric-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 0.95rem;
+}
+
+.date-label {
+    font-weight: 600;
+    color: var(--primary-color);
+    min-width: 70px;
+}
+
+.date-value {
+    color: var(--text-color);
+}
+
+/* Color break action buttons container */
+.color-break-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.color-break-actions .action-button {
+    flex: 1;
+    min-width: 0;
+}

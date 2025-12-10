@@ -1,6 +1,6 @@
 import { IFireView } from './fire-contract.js';
 import { formatDate, getTodayISO } from '../../shared/utils/date-utils.js';
-import { displayCOGLayer, loadVegetationCOGLayer } from '../../shared/map/cog-renderer.js';
+import { displayCOGLayer, loadVegetationCOGLayer, updateCOGLayerColors, canUpdateExistingLayer, clearCOGLayerCaches } from '../../shared/map/cog-renderer.js';
 import { getDefaultGeoJsonStyle } from '../../shared/map/draw-tools.js';
 import { MapManager } from '../../shared/map/map-manager.js';
 import { parkUnits } from '../../core/config.js';
@@ -626,21 +626,38 @@ export class FireView extends IFireView {
     const prefireDates = document.getElementById('prefire-dates');
     const postfireDates = document.getElementById('postfire-dates');
 
-    if (prefireDates) {
-      prefireDates.textContent = formValues.prefireStart && formValues.prefireEnd ? 
-        `Prefire Date Range: ${formValues.prefireStart} - ${formValues.prefireEnd}` : '';
+    if (prefireDates && formValues.prefireStart && formValues.prefireEnd) {
+      prefireDates.innerHTML = `
+        <span class="date-label">Pre-fire:</span>
+        <span class="date-value">${this.formatDateRange(formValues.prefireStart, formValues.prefireEnd)}</span>
+      `;
     }
-    
-    if (postfireDates) {
-      postfireDates.textContent = formValues.postfireStart && formValues.postfireEnd ? 
-        `Postfire Date Range: ${formValues.postfireStart} - ${formValues.postfireEnd}` : '';
+
+    if (postfireDates && formValues.postfireStart && formValues.postfireEnd) {
+      postfireDates.innerHTML = `
+        <span class="date-label">Post-fire:</span>
+        <span class="date-value">${this.formatDateRange(formValues.postfireStart, formValues.postfireEnd)}</span>
+      `;
     }
-    
+
     // Make sure the date ranges section is visible
     const dateRangesSection = document.querySelector('.date-ranges');
     if (dateRangesSection) {
       dateRangesSection.style.display = 'block';
     }
+  }
+
+  /**
+   * Format a date range for display
+   * @param {string} start - Start date (YYYY-MM-DD)
+   * @param {string} end - End date (YYYY-MM-DD)
+   * @returns {string} Formatted date range
+   */
+  formatDateRange(start, end) {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    const startDate = new Date(start).toLocaleDateString('en-US', options);
+    const endDate = new Date(end).toLocaleDateString('en-US', options);
+    return `${startDate} — ${endDate}`;
   }
 
   /**
@@ -964,7 +981,7 @@ export class FireView extends IFireView {
     if (resetButton) {
       resetButton.addEventListener('click', () => {
         this.resetColorBreaks();
-        this.refreshMapVisualization(); // Apply reset immediately
+        this.refreshMapVisualization();
       });
     }
   }
@@ -1043,8 +1060,20 @@ export class FireView extends IFireView {
 
     // Prioritize refined URL if available, otherwise use coarse URL
     const cogUrl = refinedUrl || coarseUrl;
-    
+
     if (cogUrl) {
+      // If same URL, just update colors (for break changes) - much faster
+      if (canUpdateExistingLayer(cogUrl)) {
+        console.log('Updating COG layer colors with new breaks');
+        if (updateCOGLayerColors()) {
+          return; // Successfully updated
+        }
+        // Fall through to full reload if update failed
+      }
+
+      // URL is different (e.g., coarse → refined) - clear old caches including georaster
+      clearCOGLayerCaches(true);
+
       console.log(`Displaying ${refinedUrl ? 'refined' : 'coarse'} COG:`, cogUrl);
       displayCOGLayer(cogUrl, this.map, this.resultLayerGroup)
         .catch(error => {
