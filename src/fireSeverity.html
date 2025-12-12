@@ -125,13 +125,31 @@
             
             <!-- Boundary Refinement UI (hidden initially) -->
             <div id="refinement-container" class="refinement-container hidden">
-                <h2 class="section-title">Boundary Refinement</h2>
-                <p class="instructions">Draw an outline on the map to refine the boundary. 
-                    After accepting, analyze the vegetation impact.</p>
-                <div class="button-group">
-                    <button id="refine-button" class="action-button" disabled>Refine</button>
-                    <button id="accept-button" class="action-button">Accept</button>
-                    <button id="reset-button" class="action-button secondary">Reset</button>
+                <!-- Workflow 1: Boundary Refinement -->
+                <div class="workflow-group" id="boundary-workflow">
+                    <h2 class="section-title">1. Boundary Refinement</h2>
+                    <p class="instructions">Draw an outline on the map to refine the boundary, then accept when satisfied.</p>
+                    <div class="workflow-buttons">
+                        <button id="refine-button" class="action-button" disabled>Refine</button>
+                        <button id="accept-button" class="action-button">Accept</button>
+                    </div>
+                </div>
+
+                <!-- Workflow 2: Vegetation Analysis -->
+                <div class="workflow-group" id="vegetation-workflow">
+                    <h2 class="section-title">2. Vegetation Analysis</h2>
+                    <p class="instructions">Analyze vegetation impact, then accept when satisfied.</p>
+                    <div class="workflow-buttons">
+                        <button id="analyze-veg-button" class="action-button" disabled>
+                            <i class="fas fa-leaf"></i> Analyze
+                        </button>
+                        <button id="accept-veg-button" class="action-button" disabled>Accept</button>
+                    </div>
+                </div>
+
+                <!-- Reset button (affects all workflows) -->
+                <div class="workflow-reset">
+                    <button id="reset-button" class="action-button secondary">Reset All</button>
                 </div>
             </div>
         </section>
