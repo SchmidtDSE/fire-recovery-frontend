@@ -3,16 +3,39 @@
  * Centralizes API endpoints used in the application
  */
 
-// Automatically detect environment based on hostname
-const isLocalEnvironment = () => {
-  return window.location.hostname === 'localhost' || 
-         window.location.hostname === '127.0.0.1';
+// Backend URLs per environment
+const BACKEND_URLS = {
+  local: 'http://localhost:8000',
+  dev: 'https://fire-recovery-backend-dev-113009620257.us-central1.run.app',
+  prod: 'https://fire-recovery-backend-prod-113009620257.us-central1.run.app'
+};
+
+/**
+ * Detect environment based on hostname and URL path
+ * - localhost/127.0.0.1 → local
+ * - /prod/ in path → prod
+ * - otherwise → dev
+ */
+const detectEnvironment = () => {
+  if (typeof window === 'undefined') return 'dev';
+
+  const hostname = window.location.hostname;
+  const pathname = window.location.pathname;
+
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'local';
+  }
+
+  if (pathname.startsWith('/prod/') || pathname === '/prod') {
+    return 'prod';
+  }
+
+  return 'dev';
 };
 
 // Base URL configuration - automatically set based on environment
-const API_BASE = isLocalEnvironment() 
-  ? 'http://localhost:8000/fire-recovery'
-  : 'https://fire-recovery-backend-dev-113009620257.us-central1.run.app/fire-recovery';
+const environment = detectEnvironment();
+const API_BASE = `${BACKEND_URLS[environment]}/fire-recovery`;
 
 
 // Fire severity endpoints

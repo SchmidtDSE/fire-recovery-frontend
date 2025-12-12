@@ -3,35 +3,53 @@
  * Handles environment-based API URL selection
  */
 
+// Backend URLs per environment
+const BACKEND_URLS = {
+  local: 'http://localhost:8000',
+  dev: 'https://fire-recovery-backend-dev-113009620257.us-central1.run.app',
+  prod: 'https://fire-recovery-backend-prod-113009620257.us-central1.run.app'
+} as const;
+
+type Environment = keyof typeof BACKEND_URLS;
+
 /**
- * Detect if running in local environment
+ * Detect environment based on hostname and URL path
+ * - localhost/127.0.0.1 → local
+ * - /prod/ in path → prod
+ * - otherwise → dev
  */
-function isLocalEnvironment(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.location.hostname === 'localhost' ||
-         window.location.hostname === '127.0.0.1';
+function detectEnvironment(): Environment {
+  if (typeof window === 'undefined') return 'dev';
+
+  const hostname = window.location.hostname;
+  const pathname = window.location.pathname;
+
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'local';
+  }
+
+  if (pathname.startsWith('/prod/') || pathname === '/prod') {
+    return 'prod';
+  }
+
+  return 'dev';
 }
 
 /**
  * Get API base URL based on environment
  * Priority:
  * 1. Vite environment variable (VITE_API_BASE_URL)
- * 2. Auto-detect based on hostname
- * 3. Default to dev backend
+ * 2. Auto-detect based on hostname and path
  */
 export function getApiBaseUrl(): string {
-  // Check for Vite environment variable
+  // Check for Vite environment variable (allows override)
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
 
-  // Auto-detect based on hostname
-  if (isLocalEnvironment()) {
-    return 'http://localhost:8000';
-  }
-
-  // Default to dev backend
-  return 'https://fire-recovery-backend-dev-113009620257.us-central1.run.app';
+  // Auto-detect environment
+  const environment = detectEnvironment();
+  return BACKEND_URLS[environment];
 }
 
 /**
