@@ -5,6 +5,8 @@ import { getDefaultGeoJsonStyle } from '../../shared/map/draw-tools.js';
 import { MapManager } from '../../shared/map/map-manager.js';
 import { parkUnits } from '../../core/config.js';
 import stateManager from '../../core/state-manager.js';
+import { ButtonStateManager } from '../../shared/ui/button-state-manager.js';
+import { ActionAcceptGroup } from '../../shared/ui/action-accept-group.js';
 
 /**
  * Implementation of the Fire View
@@ -28,6 +30,10 @@ export class FireView extends IFireView {
     
     // UI state
     this.hasDrawnRefinement = false;
+
+    // Workflow groups (initialized in setupEventListeners)
+    this.boundaryWorkflow = null;
+    this.vegetationWorkflow = null;
   }
   
   /**
@@ -101,35 +107,65 @@ export class FireView extends IFireView {
       processButton.addEventListener('click', () => this.presenter.handleFireAnalysisSubmission());
     }
     
-    // Refinement buttons
-    document.getElementById('refine-button').addEventListener('click', () => {
-      if (!this.hasDrawnRefinement) {
-        alert('Please draw a refined boundary on the map');
-        return;
-      }
-      this.presenter.handleRefinementSubmission();
+    // Workflow 1: Boundary Refinement (Refine → Accept)
+    this.boundaryWorkflow = new ActionAcceptGroup({
+      actionButton: document.getElementById('refine-button'),
+      acceptButton: document.getElementById('accept-button'),
+      actionConfig: {
+        loadingText: 'Refining...',
+        successText: 'Refined'
+      },
+      acceptConfig: {
+        loadingText: 'Processing...',
+        successText: 'Accepted'
+      },
+      canAction: () => this.hasDrawnRefinement,
+      actionDisabledMessage: 'Please draw a refined boundary on the map',
+      onAction: () => this.presenter.handleRefinementSubmission(),
+      onAccept: () => this.presenter.handleAcceptRefinement()
     });
-    
+    this.boundaryWorkflow.initialize();
+
+    // Workflow 2: Vegetation Analysis (Analyze → Accept)
+    this.vegetationWorkflow = new ActionAcceptGroup({
+      actionButton: document.getElementById('analyze-veg-button'),
+      acceptButton: document.getElementById('accept-veg-button'),
+      actionConfig: {
+        loadingText: 'Analyzing...',
+        successText: 'Analyzed'
+      },
+      acceptConfig: {
+        loadingText: 'Finalizing...',
+        successText: 'Accepted'
+      },
+      canAction: () => this.canAnalyzeVegetation(),
+      actionDisabledMessage: 'Please complete boundary refinement first',
+      onAction: () => this.handleVegetationAnalysis(),
+      onAccept: () => this.handleVegetationAccept()
+    });
+    this.vegetationWorkflow.initialize();
+
+    // Reset button
     document.getElementById('reset-button').addEventListener('click', () => {
       this.presenter.handleReset();
     });
-    
+
     // Map layer buttons
     this.setupMapButtons();
-    
+
     // Shapefile upload
     this.setupShapefileUpload();
-    
+
     // Fire event name input
     document.getElementById('fire-event-name').addEventListener('input', (e) => {
       this.presenter.handleFireEventNameChange(e.target.value);
     });
-    
+
     // Fire severity metric dropdown
     document.getElementById('fire-severity-metric-select').addEventListener('change', (e) => {
       this.presenter.handleMetricChange(e.target.value);
     });
-    
+
     // Park unit dropdown
     document.getElementById('park-unit').addEventListener('change', (e) => {
       const select = e.target;
@@ -141,28 +177,6 @@ export class FireView extends IFireView {
         veg_geopkg_url: selectedOption.dataset.vegGeopkgUrl
       };
       this.presenter.handleParkUnitChange(parkData);
-    });
-
-    // Accept button for veg map resolution
-    document.getElementById('accept-button').addEventListener('click', async () => {
-      const acceptButton = document.getElementById('accept-button');
-      const refineButton = document.getElementById('refine-button');
-
-      // Disable buttons and show loading state
-      acceptButton.disabled = true;
-      refineButton.disabled = true;
-      const originalText = acceptButton.innerHTML;
-      acceptButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-      try {
-        await this.presenter.handleAcceptRefinement();
-        // Success state is handled by presenter calling showAcceptSuccessState()
-      } catch (error) {
-        // Re-enable accept button on error so user can retry
-        acceptButton.disabled = false;
-        acceptButton.innerHTML = originalText;
-        console.error('Accept refinement failed:', error);
-      }
     });
   }
   
@@ -328,17 +342,84 @@ export class FireView extends IFireView {
    * Show accept button success state
    */
   showAcceptSuccessState() {
-    const acceptButton = document.getElementById('accept-button');
+    ButtonStateManager.applySuccessState(
+      document.getElementById('accept-button'),
+      'Accepted'
+    );
+    // Also disable refine button (boundary is finalized)
     const refineButton = document.getElementById('refine-button');
-
-    if (acceptButton) {
-      acceptButton.disabled = true;
-      acceptButton.innerHTML = '<i class="fas fa-check"></i> Accepted';
-      acceptButton.style.backgroundColor = '#28a745';
-    }
-
     if (refineButton) {
       refineButton.disabled = true;
+    }
+  }
+
+  /**
+   * Show refine button success state (called when Accept is successful)
+   */
+  showRefineSuccessState() {
+    ButtonStateManager.applySuccessState(
+      document.getElementById('refine-button'),
+      'Refined'
+    );
+  }
+
+  /**
+   * Check if vegetation analysis can be performed
+   * Requires: boundary workflow completed AND fire severity data exists
+   * @returns {boolean}
+   */
+  canAnalyzeVegetation() {
+    const sharedState = stateManager.getSharedState();
+    const hasRefinedBoundary = sharedState.assets?.refined?.geojsonUrl != null;
+    const refinedMetrics = stateManager.getAvailableMetrics(true);
+    const hasSeverityData = refinedMetrics.length > 0;
+    return hasRefinedBoundary && hasSeverityData;
+  }
+
+  /**
+   * Handle vegetation analysis action
+   * @returns {Promise}
+   */
+  async handleVegetationAnalysis() {
+    const vegPresenter = window.app?.components?.vegetation?.presenter;
+    if (vegPresenter) {
+      return await vegPresenter.handleVegMapResolution();
+    }
+    throw new Error('Vegetation presenter not available');
+  }
+
+  /**
+   * Handle vegetation accept action
+   * For now this is a simple acknowledgment - could be extended for export/save
+   * @returns {Promise}
+   */
+  async handleVegetationAccept() {
+    // Vegetation analysis is already complete, this just finalizes the workflow
+    // Could be extended to save results, export, etc.
+    console.log('Vegetation analysis accepted');
+    return Promise.resolve();
+  }
+
+  /**
+   * Enable the vegetation workflow (called after boundary is accepted)
+   */
+  enableVegetationWorkflow() {
+    const analyzeButton = document.getElementById('analyze-veg-button');
+    const acceptVegButton = document.getElementById('accept-veg-button');
+
+    if (analyzeButton) {
+      analyzeButton.disabled = false;
+    }
+    // Accept remains disabled until analysis is run
+  }
+
+  /**
+   * Enable vegetation accept button (called after analysis completes)
+   */
+  enableVegetationAccept() {
+    const acceptVegButton = document.getElementById('accept-veg-button');
+    if (acceptVegButton) {
+      acceptVegButton.disabled = false;
     }
   }
   
@@ -716,28 +797,16 @@ export class FireView extends IFireView {
     // Show metrics
     document.getElementById('fire-severity-metric').style.display = 'block';
     document.getElementById('biomass-lost-metric').style.display = 'block';
-    
+
     // Show table only when in vegetation map view
     const vegMapButton = Array.from(document.querySelectorAll('.map-button'))
         .find(button => button.textContent.trim() === 'Vegetation Map');
-    
+
     if (vegMapButton && vegMapButton.classList.contains('active')) {
         document.getElementById('table-container').style.display = 'block';
     }
-    
-    // Add a button for vegetation resolution if it doesn't exist
-    const resolveButton = document.getElementById('resolve-button');
-    if (!resolveButton) {
-        const buttonGroup = document.querySelector('.button-group');
-        
-        const newResolveButton = document.createElement('button');
-        newResolveButton.id = 'resolve-button';
-        newResolveButton.className = 'action-button';
-        newResolveButton.textContent = 'Analyze Vegetation Impact';
-        newResolveButton.addEventListener('click', () => this.presenter.handleVegMapResolution());
-        
-        buttonGroup.appendChild(newResolveButton);
-    }
+
+    // Vegetation buttons are now in HTML and managed by ActionAcceptGroup
   }
 
   /**
