@@ -59,10 +59,6 @@ export class FirePresenter extends IFirePresenter {
       // Refresh the map visualization to show the latest COG
       // This handles both coarse and refined COGs correctly
       this.view.refreshMapVisualization();
-
-      // Update vegetation button state when assets change
-      // This ensures the button enables/disables based on available data
-      this.addVegetationButton();
     });
 
     this.model.on('colorBreaksChanged', (colorBreaksData) => {
@@ -285,11 +281,11 @@ export class FirePresenter extends IFirePresenter {
         });
       }
 
-      // Show success state for accept button
-      this.view.showAcceptSuccessState();
+      // Show success state for accept button (now handled by ActionAcceptGroup)
+      // this.view.showAcceptSuccessState();
 
-      // Add vegetation button
-      this.addVegetationButton();
+      // Enable vegetation workflow (buttons are now in HTML)
+      this.view.enableVegetationWorkflow();
 
     } catch (error) {
       console.error('Error accepting boundary:', error);
@@ -332,96 +328,6 @@ export class FirePresenter extends IFirePresenter {
       throw error;
     }
   }
-
-  /**
-   * Add Vegetation Analysis Button
-   * Button is only enabled if BOTH refined boundary AND fire severity data exist
-   */
-  addVegetationButton() {
-    // Target specifically the button group inside the refinement container
-    const buttonGroup = document.querySelector('#refinement-container .button-group');
-    if (!buttonGroup) return;
-
-    // Check if we have both requirements:
-    // 1. Refined boundary (geojsonUrl)
-    // 2. Fire severity data (at least one COG URL)
-    const sharedState = stateManager.getSharedState();
-    const hasRefinedBoundary = sharedState.assets?.refined?.geojsonUrl != null;
-    const refinedMetrics = stateManager.getAvailableMetrics(true); // true = refined
-    const hasSeverityData = refinedMetrics.length > 0;
-
-    // Button should only be enabled when BOTH conditions are met
-    const canAnalyzeVegetation = hasRefinedBoundary && hasSeverityData;
-
-    // Determine appropriate tooltip message
-    let tooltipMessage = '';
-    if (!hasRefinedBoundary && !hasSeverityData) {
-      tooltipMessage = 'Please complete fire severity analysis and boundary refinement first';
-    } else if (!hasSeverityData) {
-      tooltipMessage = 'Please complete fire severity analysis before analyzing vegetation impact';
-    } else if (!hasRefinedBoundary) {
-      tooltipMessage = 'Please complete boundary refinement before analyzing vegetation impact';
-    }
-
-    // Check if button already exists
-    let resolveButton = document.getElementById('resolve-button');
-    if (resolveButton) {
-      // Update existing button state
-      resolveButton.disabled = !canAnalyzeVegetation;
-      resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
-
-      if (!canAnalyzeVegetation) {
-        resolveButton.title = tooltipMessage;
-        resolveButton.style.opacity = '0.5';
-        resolveButton.style.cursor = 'not-allowed';
-      } else {
-        resolveButton.title = '';
-        resolveButton.style.opacity = '1';
-        resolveButton.style.cursor = 'pointer';
-      }
-      return;
-    }
-
-    // Create new button if it doesn't exist
-    resolveButton = document.createElement('button');
-    resolveButton.id = 'resolve-button';
-    resolveButton.className = 'action-button';
-    resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
-
-    // Set initial state based on whether both requirements are met
-    resolveButton.disabled = !canAnalyzeVegetation;
-
-    if (!canAnalyzeVegetation) {
-      resolveButton.title = tooltipMessage;
-      resolveButton.style.opacity = '0.5';
-      resolveButton.style.cursor = 'not-allowed';
-    }
-
-    // Add event listener
-    resolveButton.addEventListener('click', async () => {
-      // Show loading state on the button
-      const originalText = resolveButton.innerHTML;
-      resolveButton.disabled = true;
-      resolveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
-
-      try {
-        const vegPresenter = window.app.components.vegetation.presenter;
-        if (vegPresenter) {
-          await vegPresenter.handleVegMapResolution();
-        }
-      } catch (error) {
-        console.error('Vegetation analysis failed:', error);
-      } finally {
-        // Reset button state
-        resolveButton.disabled = false;
-        resolveButton.innerHTML = originalText;
-      }
-    });
-
-    // Add to DOM
-    buttonGroup.appendChild(resolveButton);
-  }
-
 
   /**
    * Update map visualization based on selected metric
