@@ -10,6 +10,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: true,   // Expose to all network interfaces for container access
     open: false,  // Don't auto-open browser in container
     // Serve existing HTML files directly without bundling
     fs: {
