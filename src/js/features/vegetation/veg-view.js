@@ -352,34 +352,13 @@ export class VegetationView extends IVegetationView {
     }
   }
   
+  /**
+   * @deprecated Vegetation button is now defined in HTML and managed by ActionAcceptGroup in fire-view.js
+   * This method is kept for backwards compatibility but does nothing.
+   */
   addVegetationButton() {
-    const refinementContainer = document.getElementById('refinement-container');
-    if (!refinementContainer) return;
-    
-    const buttonGroup = refinementContainer.querySelector('.button-group');
-    if (!buttonGroup) return;
-    
-    // Remove existing button if any
-    const existingButton = document.getElementById('resolve-button');
-    if (existingButton) existingButton.remove();
-    
-    // Create new button
-    const resolveButton = document.createElement('button');
-    resolveButton.id = 'resolve-button';
-    resolveButton.className = 'action-button';
-    resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
-    
-    // Add event listener for button click
-    resolveButton.addEventListener('click', () => {
-      console.log('Vegetation button clicked');
-      if (this.presenter) {
-        this.presenter.handleVegAnalysisRequested();
-      } else {
-        console.error('Presenter not available');
-      }
-    });
-    
-    buttonGroup.appendChild(resolveButton);
+    // No-op: Vegetation workflow buttons are now in HTML
+    // and managed by ActionAcceptGroup in fire-view.js
   }
 
   /**
@@ -447,19 +426,11 @@ export class VegetationView extends IVegetationView {
   
   /**
    * Display success state
+   * Note: Button state is now managed by ButtonStateManager.
+   * This method remains for model event compatibility and any additional success-related UI updates.
    */
   showSuccessState() {
-    const resolveButton = document.getElementById('resolve-button');
-    if (resolveButton) {
-      // First show completion message
-      resolveButton.innerHTML = '<i class="fas fa-check"></i> Analysis Complete';
-      
-      // After a short delay, reset the button to allow re-running the analysis
-      setTimeout(() => {
-        resolveButton.disabled = false;
-        resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
-      }, 2000);
-    }
+    console.log('Vegetation analysis completed successfully');
   }
   
   /**

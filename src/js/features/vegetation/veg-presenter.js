@@ -56,14 +56,15 @@ export class VegetationPresenter extends IVegetationPresenter {
     this.model.updateFromFireState(fireState);
   }
 
-    /**
+  /**
    * Handle vegetation analysis requested by the view
    * This is triggered when the "Analyze Vegetation Impact" button is clicked
+   * @returns {Promise} - Returns the promise from handleVegMapResolution for proper async handling
    */
-  handleVegAnalysisRequested() {
+  async handleVegAnalysisRequested() {
     console.log('Vegetation analysis requested from view');
-    // Call the existing implementation
-    this.handleVegMapResolution();
+    // Call the existing implementation and await it
+    return await this.handleVegMapResolution();
   }
 
   async handleVegMapResolution() {
