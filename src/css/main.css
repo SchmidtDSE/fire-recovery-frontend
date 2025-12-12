@@ -245,7 +245,7 @@ img {
     overflow-x: hidden; /* Prevent horizontal overflow */
 }
 
-/* results tabs section: metrics, vegetation and export buttons */
+/* Results panel section spacing */
 .results-tabs {
     margin-top: 20px;
     margin-bottom: 20px;

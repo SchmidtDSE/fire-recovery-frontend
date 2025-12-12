@@ -300,18 +300,7 @@ export class VegetationView extends IVegetationView {
   }
 
   showVegetationTab() {
-    // Show the vegetation tab and make it active
-    const tabs = document.querySelectorAll('.tab-button');
-    const contents = document.querySelectorAll('.tab-content');
-    
-    // Deactivate all tabs
-    tabs.forEach(tab => tab.classList.remove('active'));
-    contents.forEach(content => content.classList.add('hidden'));
-    
-    // Activate vegetation tab
-    const vegTab = document.querySelector('.tab-button[data-tab="vegetation"]');
-    if (vegTab) vegTab.classList.add('active');
-    
+    // Ensure vegetation section is visible (no longer using tabs)
     const vegContent = document.getElementById('vegetation-tab');
     if (vegContent) vegContent.classList.remove('hidden');
   }

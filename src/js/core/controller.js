@@ -184,31 +184,6 @@ export class AppController {
       });
     }
     
-    // Also add click handlers for the tab buttons to show the right content
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
-    tabButtons.forEach(button => {
-      button.addEventListener('click', () => {
-        // Remove active class from all buttons
-        tabButtons.forEach(btn => btn.classList.remove('active'));
-        
-        // Add active class to clicked button
-        button.classList.add('active');
-        
-        // Get tab id
-        const tabId = button.getAttribute('data-tab');
-        
-        // Hide all tab contents
-        tabContents.forEach(content => content.classList.add('hidden'));
-        
-        // Show selected tab content
-        const selectedTab = document.getElementById(`${tabId}-tab`);
-        if (selectedTab) {
-          selectedTab.classList.remove('hidden');
-        }
-      });
-    });
   }
 
   /**
