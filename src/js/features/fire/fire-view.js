@@ -707,6 +707,12 @@ export class FireView extends IFireView {
     const prefireDates = document.getElementById('prefire-dates');
     const postfireDates = document.getElementById('postfire-dates');
 
+    // Hide placeholder text when showing actual content
+    const placeholder = document.getElementById('satellite-info-placeholder');
+    if (placeholder) {
+      placeholder.style.display = 'none';
+    }
+
     if (prefireDates && formValues.prefireStart && formValues.prefireEnd) {
       prefireDates.innerHTML = `
         <span class="date-label">Pre-fire:</span>
@@ -892,12 +898,18 @@ export class FireView extends IFireView {
     this.resultLayerGroup.clearLayers();
     this.geoJsonLayerGroup.clearLayers();
     
-    // Clear date summary
+    // Clear date summary and restore placeholder
     document.getElementById('prefire-dates').textContent = '';
     document.getElementById('postfire-dates').textContent = '';
+    const satellitePlaceholder = document.getElementById('satellite-info-placeholder');
+    if (satellitePlaceholder) {
+      satellitePlaceholder.style.display = 'block';
+    }
     
-    // Hide veg table
+    // Hide veg table and restore placeholder
     document.body.classList.remove('veg-map-active');
+    const vegPlaceholder = document.getElementById('vegetation-placeholder');
+    if (vegPlaceholder) vegPlaceholder.style.display = 'block';
 
     // Reset refinement state
     this.hasDrawnRefinement = false;
@@ -947,8 +959,10 @@ export class FireView extends IFireView {
     document.getElementById('fire-severity-metric').style.display = 'none';
     document.getElementById('biomass-lost-metric').style.display = 'none';
     
-    // Make sure the vegetation table is hidden
+    // Make sure the vegetation table is hidden and placeholder is restored
     document.getElementById('vegetation-table-container').style.display = 'none';
+    const vegPlaceholder = document.getElementById('vegetation-placeholder');
+    if (vegPlaceholder) vegPlaceholder.style.display = 'block';
     
     // Remove vegetation resolution button if it exists
     const resolveButton = document.getElementById('resolve-button');

@@ -75,11 +75,15 @@ export class VegetationView extends IVegetationView {
     // Hide any error messages
     const statusElem = document.getElementById('vegetation-status');
     if (statusElem) statusElem.innerHTML = '';
-    
+
+    // Hide placeholder text
+    const placeholder = document.getElementById('vegetation-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
+
     // Show loading state
     const loadingElem = document.getElementById('vegetation-loading');
     if (loadingElem) loadingElem.style.display = 'flex';
-    
+
     try {
       // Get structured data from state manager
       const vegetationCommunities = stateManager.getVegetationCommunities();
