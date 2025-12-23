@@ -5,18 +5,28 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "pnpm type-check",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "codegen:local": "openapi-typescript http://localhost:8000/openapi.json -o src/types/api.ts",
     "codegen:dev": "openapi-typescript https://fire-recovery-backend-dev-113009620257.us-central1.run.app/openapi.json -o src/types/api.ts",
-    "prebuild": "pnpm codegen:dev"
+    "prebuild": "pnpm codegen:dev",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:ci": "vitest run --coverage --reporter=default --reporter=junit --outputFile=test-results.xml"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "@vitest/coverage-v8": "^4.0.7",
+    "@vitest/ui": "^4.0.7",
+    "happy-dom": "^20.0.10",
+    "msw": "^2.12.0",
     "openapi-typescript": "^6.7.3",
     "typescript": "^5.3.3",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "vitest": "^4.0.7"
   },
   "engines": {
     "node": ">=20.0.0",
