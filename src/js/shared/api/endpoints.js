@@ -13,7 +13,7 @@ const BACKEND_URLS = {
 /**
  * Detect environment based on hostname and URL path
  * - localhost/127.0.0.1 → local
- * - /prod/ in path → prod
+ * - /prod/ in path → prod (the site is served at /fire-recovery-web/prod/...)
  * - otherwise → dev
  */
 const detectEnvironment = () => {
@@ -26,7 +26,7 @@ const detectEnvironment = () => {
     return 'local';
   }
 
-  if (pathname.startsWith('/prod/') || pathname === '/prod') {
+  if (pathname.includes('/prod/') || pathname.endsWith('/prod')) {
     return 'prod';
   }
 
