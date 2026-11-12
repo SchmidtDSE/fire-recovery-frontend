@@ -47,6 +47,10 @@
 
         /* GLEN's map draw button: show when drawing is on */
         #draw-toggle.active { background-color: #3b82f6; color: white; }
+        /* mapbox-gl-draw's cursor rules target .mapboxgl-* classes; the same rules for MapLibre's */
+        .maplibregl-map.mouse-add .maplibregl-canvas-container.maplibregl-interactive { cursor: crosshair; }
+        .maplibregl-map.mouse-pointer .maplibregl-canvas-container.maplibregl-interactive { cursor: pointer; }
+        .maplibregl-map.mouse-move .maplibregl-canvas-container.maplibregl-interactive { cursor: move; }
         .basemap-toggle { position: absolute; top: 10px; right: 10px; z-index: 1; display: flex; box-shadow: 0 0 0 2px rgba(0,0,0,.1); border-radius: 4px; overflow: hidden; }
         .basemap-toggle button { border: none; padding: 6px 12px; background: white; cursor: pointer; font: inherit; }
         .basemap-toggle button.active { background: black; color: white; }

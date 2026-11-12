@@ -139,15 +139,24 @@ const result = document.getElementById('submit-result');
 const submitButton = document.getElementById('submit-button');
 const value = (id) => document.getElementById(id).value.trim();
 
+// Each date fills the next one if it's empty, so that date's picker opens near it.
+// An end date may not precede its start (min), which the browser enforces on submit.
+const dates = ['prefire-start-date', 'prefire-end-date', 'postfire-start-date', 'postfire-end-date']
+  .map((id) => document.getElementById(id));
+dates.forEach((input, i) => input.addEventListener('change', () => {
+  const next = dates[i + 1];
+  const isStart = i % 2 === 0;
+  if (!next || !input.value) return;
+  if (isStart) next.min = input.value;
+  if (!next.value || (isStart && next.value < input.value)) next.value = input.value;
+}));
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const geometry = currentPerimeter();
   const prefire = [value('prefire-start-date'), value('prefire-end-date')];
   const postfire = [value('postfire-start-date'), value('postfire-end-date')];
   if (!geometry) return show('error', '<p>Draw or upload a fire perimeter first.</p>');
-  if (prefire[0] > prefire[1] || postfire[0] > postfire[1]) {
-    return show('error', '<p>Each start date must be on or before its end date.</p>');
-  }
 
   const body = {
     fire_event_name: value('fire-event-name'),
