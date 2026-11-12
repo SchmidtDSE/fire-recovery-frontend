@@ -125,13 +125,31 @@
             
             <!-- Boundary Refinement UI (hidden initially) -->
             <div id="refinement-container" class="refinement-container hidden">
-                <h2 class="section-title">Boundary Refinement</h2>
-                <p class="instructions">Draw an outline on the map to refine the boundary. 
-                    After accepting, analyze the vegetation impact.</p>
-                <div class="button-group">
-                    <button id="refine-button" class="action-button" disabled>Refine</button>
-                    <button id="accept-button" class="action-button">Accept</button>
-                    <button id="reset-button" class="action-button secondary">Reset</button>
+                <!-- Workflow 1: Boundary Refinement -->
+                <div class="workflow-group" id="boundary-workflow">
+                    <h2 class="section-title">1. Boundary Refinement</h2>
+                    <p class="instructions">Draw an outline on the map to refine the boundary, then accept when satisfied.</p>
+                    <div class="workflow-buttons">
+                        <button id="refine-button" class="action-button" disabled>Refine</button>
+                        <button id="accept-button" class="action-button">Accept</button>
+                    </div>
+                </div>
+
+                <!-- Workflow 2: Vegetation Analysis -->
+                <div class="workflow-group" id="vegetation-workflow">
+                    <h2 class="section-title">2. Vegetation Analysis</h2>
+                    <p class="instructions">Analyze vegetation impact, then accept when satisfied.</p>
+                    <div class="workflow-buttons">
+                        <button id="analyze-veg-button" class="action-button" disabled>
+                            <i class="fas fa-leaf"></i> Analyze
+                        </button>
+                        <button id="accept-veg-button" class="action-button" disabled>Accept</button>
+                    </div>
+                </div>
+
+                <!-- Reset button (affects all workflows) -->
+                <div class="workflow-reset">
+                    <button id="reset-button" class="action-button secondary">Reset All</button>
                 </div>
             </div>
         </section>
@@ -149,95 +167,62 @@
             
             <!-- Results Panel -->
             <div class="results-panel hidden">
-                <div class="tab-content" id="metrics-tab">
+                <!-- Satellite Info Box -->
+                <div class="results-box" id="metrics-tab">
+                    <h4>Satellite Info</h4>
+                    <p id="satellite-info-placeholder" class="placeholder-text">Satellite imagery date ranges will appear here after running fire analysis.</p>
                     <div class="metrics-group">
-                        <h3>Date Ranges:</h3>
                         <div id="prefire-dates" class="metric-value"></div>
                         <div id="postfire-dates" class="metric-value"></div>
                     </div>
-                    
-                    <!-- Wrapped fire severity and vegetation impact in analysis-output class -->
-                    <div class="analysis-output">
-                        <div class="metrics-group">
-                            <h3>Fire Severity:</h3>
-                            <div id="fire-severity-metric" class="metric-value"></div>
-                        </div>
-                        <div class="metrics-group">
-                            <h3>Vegetation Impact:</h3>
-                            <div id="biomass-lost-metric" class="metric-value"></div>
-                        </div>
-                    </div>
+                    <!-- Hidden fire severity metric div (required by JS) -->
+                    <div id="fire-severity-metric" class="metric-value" style="display:none;"></div>
+                    <div id="biomass-lost-metric" class="metric-value"></div>
                 </div>
-                
-                <div class="tab-content hidden" id="vegetation-tab">
+
+                <!-- Vegetation Impact Box -->
+                <div class="results-box" id="vegetation-tab">
+                    <h4>Vegetation Impact Analysis</h4>
+                    <p id="vegetation-placeholder" class="placeholder-text">Vegetation community impacts will appear here after clicking Analyze in the vegetation workflow.</p>
                     <!-- Status message area for vegetation analysis -->
                     <div id="vegetation-status" class="status-message"></div>
-                    
+
                     <!-- Loading indicator for vegetation analysis -->
                     <div class="loading-container" id="vegetation-loading" style="display:none;">
                         <div class="spinner"></div>
                         <p>Analyzing vegetation impact...</p>
                     </div>
-                    
+
                     <div class="table-container" id="vegetation-table-container">
                     </div>
                 </div>
-                
-                <div class="tab-content hidden" id="export-tab">
-                    <!-- Add color break controls section -->
-                    <div class="color-break-controls">
-                        <h4>Fire Severity Color Breaks</h4>
-                        <p>Adjust the threshold values for each color break:</p>
-                        <div class="color-sliders">
-                            <!-- Sliders will be populated by JavaScript -->
-                        </div>
-                        <button id="reset-color-breaks" class="action-button secondary">Reset to Defaults</button>
+
+                <!-- Analysis State Box -->
+                <div class="results-box state-management-controls">
+                    <h4>Analysis State</h4>
+                    <p>Save your current analysis to continue later, or load a previous analysis.</p>
+                    <div class="state-buttons">
+                        <button id="export-state-button" class="action-button">
+                            <i class="fas fa-download"></i> Save State
+                        </button>
+                        <button id="import-state-button" class="action-button">
+                            <i class="fas fa-upload"></i> Upload State
+                        </button>
+                        <input type="file" id="import-state-file" accept=".json" hidden>
+                    </div>
+                </div>
+
+                <!-- Color Break Controls Box -->
+                <div class="results-box color-break-controls">
+                    <h4>Fire Severity Color Breaks</h4>
+                    <p>Adjust the threshold values for each color break:</p>
+                    <div class="color-sliders">
+                        <!-- Sliders will be populated by JavaScript -->
                     </div>
                 </div>
             </div>
         </section>
     </main>
-
-    <div class="tab-content hidden" id="export-tab">
-        <!-- Add state management controls -->
-        <div class="state-management-controls">
-            <h4>Analysis State Management</h4>
-            <p>Save your current analysis state or load a previous one:</p>
-            <div class="state-buttons">
-                <button id="export-state-button" class="action-button">
-                    <i class="fas fa-download"></i> Export Analysis State
-                </button>
-                <button id="import-state-button" class="action-button">
-                    <i class="fas fa-upload"></i> Import Analysis State
-                </button>
-                <input type="file" id="import-state-file" accept=".json" style="display: none;">
-            </div>
-        </div>
-        
-        <!-- Color break controls (existing) -->
-        <div class="color-break-controls">
-            <h4>Fire Severity Color Breaks</h4>
-            <p>Adjust the threshold values for each color break:</p>
-            <div class="color-sliders">
-                <!-- Sliders will be populated by JavaScript -->
-            </div>
-            <button id="reset-color-breaks" class="action-button secondary">Reset to Defaults</button>
-        </div>
-        
-        <!-- Export options (existing) -->
-        <div class="export-options">
-            <button class="export-button" data-format="geojson">
-                <i class="fas fa-file-export"></i> Export Boundary (GeoJSON)
-            </button>
-            <button class="export-button" data-format="csv">
-                <i class="fas fa-table"></i> Export Vegetation Impact Table (CSV)
-            </button>
-            <button class="export-button" data-format="report">
-                <i class="fas fa-file-pdf"></i> Export Fire Severity Raster (Cloud Optimized GeoTIFF)
-            </button>
-        </div>
-    </div>
-
 
     <!-- Footer -->
     <footer class="site-footer">

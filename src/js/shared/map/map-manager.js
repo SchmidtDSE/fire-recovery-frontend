@@ -55,6 +55,21 @@ export class MapManager {
     );
   }
 
+  
+  /**
+   * Zoom to bounds of a specific layer group
+   * @param {L.LayerGroup|L.FeatureGroup} layerGroup - The layer group to zoom to
+   */
+  zoomToLayerBounds(layerGroup) {
+    if (!this.map || !layerGroup) return;
+    
+    const bounds = layerGroup.getBounds();
+    if (bounds && bounds.isValid()) {
+      this.map.fitBounds(bounds);
+    }
+  }
+
+
   /**
    * Display GeoJSON from URL
    * @param {string} geojsonUrl - URL to the GeoJSON file
@@ -63,6 +78,7 @@ export class MapManager {
    * @returns {Promise<L.Layer>} The created GeoJSON layer
    */
   async displayGeoJSONFromUrl(geojsonUrl, targetGroup = null, styleOptions) {
+
     if (!geojsonUrl) {
       console.warn('No GeoJSON URL provided');
       return null;

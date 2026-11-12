@@ -55,19 +55,15 @@ export class FirePresenter extends IFirePresenter {
           clearExisting: true  // Clear user drawings when showing the refined boundary
         });
       }
-      
-      // Handle COG URL (existing functionality)
-      const useRefined = data.type === 'final';
-      const cogUrl = stateManager.getActiveCogUrl(useRefined);
-      
-      if (cogUrl) {
-        this.view.displayCOGLayer(cogUrl);
-      }
+
+      // Refresh the map visualization to show the latest COG
+      // This handles both coarse and refined COGs correctly
+      this.view.refreshMapVisualization();
     });
 
     this.model.on('colorBreaksChanged', (colorBreaksData) => {
-      // Update visualization when color breaks change
-      this.updateMapVisualization();
+      // Refresh the map visualization when color breaks change
+      this.view.refreshMapVisualization();
     });
   }
   
@@ -101,11 +97,16 @@ export class FirePresenter extends IFirePresenter {
    * Handle fire analysis submission
    */
   async handleFireAnalysisSubmission() {
+
     const formValues = this.view.getFormValues();
-    const geometry = this.view.getGeometryFromMap();
+    const drawnGeometry = this.view.getGeometryFromMap();
+    const geoJsonGeometry = this.view.getActiveGeoJson();
+    
+    // Use the manually drawn geometry if available, otherwise use the geometry from the layer group
+    const geometry = drawnGeometry || geoJsonGeometry;
     
     // Validate inputs
-    if (!geometry && this.view.geoJsonLayerGroup.getLayers().length === 0) {
+    if (!geometry) {
       alert('Please either draw a polygon on the map or upload a shapefile');
       return;
     }
@@ -121,24 +122,28 @@ export class FirePresenter extends IFirePresenter {
     
     // Update fire event name in model if provided
     if (formValues.fireEventName) {
-      this.model.setFireEventName(formValues.fireEventName);
+      this.model.setFireEventName(fireEventName);
     }
 
-    // Format data for API request
-    const fireSevData = {
-      fire_event_name: fireEventName,
-      geometry: geometry || this.view.geoJsonLayerGroup.toGeoJSON().features[0].geometry,
-      prefire_date_range: [
-        formValues.prefireStart,
-        formValues.prefireEnd
-      ],
-      postfire_date_range: [
-        formValues.postfireStart,
-        formValues.postfireEnd
-      ]
-    };
-    
     try {
+      // First, upload the coarse boundary as GeoJSON
+      await this.model.submitCoarseGeojson(fireEventName, geometry);
+      
+      // Format data for fire analysis API request
+      const fireSevData = {
+        fire_event_name: fireEventName,
+        coarse_geojson: geometry,
+        prefire_date_range: [
+          formValues.prefireStart,
+          formValues.prefireEnd
+        ],
+        postfire_date_range: [
+          formValues.postfireStart,
+          formValues.postfireEnd
+        ]
+      };
+      
+      // Then analyze the fire
       const result = await this.model.analyzeFire(fireSevData);
       this.handleAnalysisComplete(result, formValues);
     } catch (error) {
@@ -154,6 +159,33 @@ export class FirePresenter extends IFirePresenter {
   handleAnalysisComplete(result, formValues) {
     // The view will automatically update based on model state changes
     this.view.showDateSummary(formValues);
+
+    // Check if refined boundary was already set (e.g., from shapefile upload)
+    // If so, automatically copy coarse COGs to refined and move to resolve step
+    const sharedState = stateManager.getSharedState();
+    const coarseGeojsonUrl = sharedState.assets?.coarse?.geojsonUrl;
+    const refinedGeojsonUrl = sharedState.assets?.refined?.geojsonUrl;
+
+    // If both URLs exist and are the same, shapefile was uploaded
+    if (coarseGeojsonUrl && refinedGeojsonUrl && coarseGeojsonUrl === refinedGeojsonUrl) {
+      // Copy coarse COG URLs to refined
+      const coarseCogUrls = sharedState.assets?.coarse?.severityCogUrls || {};
+      if (Object.keys(coarseCogUrls).length > 0) {
+        stateManager.updateAsset('refined.severityCogUrls', coarseCogUrls, 'fire');
+
+        // Move to resolve step
+        stateManager.updateCurrentStep('resolve', 'fire');
+
+        // Show metrics and table
+        this.view.showMetricsAndTable();
+
+        // Show accept button as already accepted
+        this.view.showAcceptSuccessState();
+
+        // Add vegetation button (will be enabled since both boundary and COGs exist)
+        this.addVegetationButton();
+      }
+    }
     this.view.refreshMapVisualization();
   }
   
@@ -176,9 +208,7 @@ export class FirePresenter extends IFirePresenter {
     
     const refinementData = {
       fire_event_name: fireEventName,
-      refine_geojson: {
-        geometry: refinedGeometry
-      }
+      refined_geojson: refinedGeometry
     };
     
     try {
@@ -189,86 +219,123 @@ export class FirePresenter extends IFirePresenter {
     }
   }
 
+
+  /**
+   * Submit the coarse boundary as the refined boundary
+   * Uses the existing coarse geometry from state manager
+   * @returns {Promise<Object>} Result of the refinement
+   */
+  async submitCoarseAsRefined() {
+    const state = this.model.getState();
+    const fireEventName = state.fireEventName;
+    
+    if (!fireEventName) {
+      throw new Error('No fire event name set');
+    }
+    
+    // Get the coarse geometry - either from the map or from the state
+    let geometry = this.view.getActiveGeoJson();
+    
+    if (!geometry) {
+      throw new Error('No boundary available to accept');
+    }
+    
+    // Submit the coarse geometry as the refined boundary
+    const refinementData = {
+      fire_event_name: fireEventName,
+      refined_geojson: geometry
+    };
+    
+    return await this.model.submitRefinement(refinementData);
+  }
+
   /**
    * Handle refinement acceptance
    */
-  handleAcceptRefinement() {
-    // Update the model to mark the refinement as accepted
-    stateManager.updateCurrentStep('resolve', 'fire');
+  async handleAcceptRefinement() {
+    try {
+      const state = this.model.getState();
 
-    // Show metrics and table in the view
-    this.view.showMetricsAndTable();
-    
-    // Get the refined boundary URL from state
-    const state = stateManager.getSharedState();
-    const refinedGeojsonUrl = state.assets?.refined?.geojsonUrl;
-    
-    // If we have a refined boundary, display it (and clear user drawings)
-    if (refinedGeojsonUrl) {
-      this.view.displayGeoJSONFromUrl(refinedGeojsonUrl, {
-        clearExisting: true  // Clear user drawings when showing the refined boundary
-      });
+      // If we don't already have refined assets, create them and wait for completion
+      if (!state.finalAssets.geojsonUrl || !state.finalAssets.cogUrl) {
+        await this.submitCoarseAsRefined();
+
+        // Wait for the state to be updated with the new refined assets
+        // The submitRefinement in submitCoarseAsRefined() will trigger model events
+        // when the polling completes, so we need to get the updated state
+        const updatedState = this.model.getState();
+        if (!updatedState.finalAssets.geojsonUrl) {
+          throw new Error('Failed to create refined boundary assets');
+        }
+      }
+
+      // Move to resolve step and update UI
+      stateManager.updateCurrentStep('resolve', 'fire');
+      this.view.showMetricsAndTable();
+
+      // Display the refined boundary - get fresh URL from state
+      const refinedGeojsonUrl = stateManager.getActiveGeojsonUrl(true);
+      if (refinedGeojsonUrl) {
+        this.view.displayGeoJSONFromUrl(refinedGeojsonUrl, {
+          clearExisting: true
+        });
+      }
+
+      // Show success state for accept button (now handled by ActionAcceptGroup)
+      // this.view.showAcceptSuccessState();
+
+      // Enable vegetation workflow (buttons are now in HTML)
+      this.view.enableVegetationWorkflow();
+
+    } catch (error) {
+      console.error('Error accepting boundary:', error);
+      this.view.showErrorState(`Error accepting boundary: ${error.message}`);
+      throw error;
     }
-    
-    // TODO: Re-able when veg impact analysis is ready
-    // // Get vegetation view and let IT add its own button
-    // const vegView = window.app.components.vegetation.view;
-    // if (vegView) {
-    //   vegView.addVegetationButton();
-    // }
   }
 
   /**
-   * Add Vegetation Analysis Button
+   * Handle shapefile upload completion
+   * When a user uploads a shapefile, treat it as BOTH coarse and refined boundary
+   * User still needs to run fire severity analysis to generate COG data
+   * @param {Object} response - API response from shapefile upload
+   * @param {string} fireEventName - Fire event name
    */
-  addVegetationButton() {
-    // Target specifically the button group inside the refinement container
-    const buttonGroup = document.querySelector('#refinement-container .button-group');
-    if (!buttonGroup) return;
-    
-    // Check if button already exists
-    let resolveButton = document.getElementById('resolve-button');
-    if (resolveButton) {
-      // Reset it if it exists
-      resolveButton.disabled = false;
-      resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
-      return;
-    }
-    
-    // Create new button if it doesn't exist
-    resolveButton = document.createElement('button');
-    resolveButton.id = 'resolve-button';
-    resolveButton.className = 'action-button';
-    resolveButton.innerHTML = '<i class="fas fa-leaf"></i> Analyze Vegetation Impact';
-    
-    // Add event listener
-    resolveButton.addEventListener('click', () => {
-      const vegPresenter = window.app.components.vegetation.presenter;
-      if (vegPresenter) {
-        vegPresenter.handleVegMapResolution();
+  async handleShapefileUploadComplete(response, fireEventName) {
+    try {
+      // Update fire event name if provided
+      if (fireEventName) {
+        stateManager.updateSharedState('fireEventName', fireEventName, 'fire');
       }
-    });
-    
-    // Add to DOM
-    buttonGroup.appendChild(resolveButton);
-  }
 
+      // Update state with the boundary GeoJSON URL
+      // Set it as BOTH coarse and refined since shapefile is the final boundary
+      // The backend returns the URL where the shapefile was stored as GeoJSON
+      if (response.geojson_url) {
+        // Set as coarse boundary so fire severity analysis can use it
+        stateManager.updateNestedAsset('coarse', 'geojsonUrl', response.geojson_url, 'fire');
+        // Also set as refined boundary since this is the user's final boundary
+        stateManager.updateNestedAsset('refined', 'geojsonUrl', response.geojson_url, 'fire');
+      }
+
+      // NOTE: We do NOT update currentStep to 'resolve' here
+      // User still needs to fill out dates and run fire severity analysis
+      // Once that completes and creates COGs, THEN we can move to 'resolve'
+
+    } catch (error) {
+      console.error('Error processing shapefile upload:', error);
+      this.view.showErrorState(`Error processing shapefile: ${error.message}`);
+      throw error;
+    }
+  }
 
   /**
    * Update map visualization based on selected metric
    */
   updateMapVisualization() {
-    const state = this.model.getState();
-    const metric = state.activeMetric || 'RBR';
-    
-    // Get COG URL from state manager instead of direct access
-    const useRefined = state.currentStep === 'resolve' || state.currentStep === 'complete';
-    const cogUrl = stateManager.getActiveCogUrl(useRefined);
-    
-    if (cogUrl) {
-      // Display the COG layer with the URL
-      this.view.displayCOGLayer(cogUrl);
-    }
+    // Delegate to view's refreshMapVisualization which handles all the logic
+    // for selecting the correct COG (coarse vs refined) based on state
+    this.view.refreshMapVisualization();
   }
 
   
@@ -278,6 +345,7 @@ export class FirePresenter extends IFirePresenter {
    */
   handleShapefileUploaded(file) {
     const fireEventName = this.model.getState().fireEventName;
+    
     if (fireEventName) {
       api.uploadShapefile(fireEventName, file)
         .then(response => {

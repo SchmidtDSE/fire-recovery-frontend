@@ -56,14 +56,15 @@ export class VegetationPresenter extends IVegetationPresenter {
     this.model.updateFromFireState(fireState);
   }
 
-    /**
+  /**
    * Handle vegetation analysis requested by the view
    * This is triggered when the "Analyze Vegetation Impact" button is clicked
+   * @returns {Promise} - Returns the promise from handleVegMapResolution for proper async handling
    */
-  handleVegAnalysisRequested() {
+  async handleVegAnalysisRequested() {
     console.log('Vegetation analysis requested from view');
-    // Call the existing implementation
-    this.handleVegMapResolution();
+    // Call the existing implementation and await it
+    return await this.handleVegMapResolution();
   }
 
   async handleVegMapResolution() {
@@ -75,7 +76,8 @@ export class VegetationPresenter extends IVegetationPresenter {
     // Check for required data
     const fireEventName = sharedState.fireEventName || vegState.fireEventName;
     // Get the active COG URL for refined severity (true for refined)
-    const refinedCogUrl = stateManager.getActiveCogUrl(true); 
+    const refinedCogUrl = stateManager.getActiveCogUrl(true);
+    const refinedGeojsonUrl = stateManager.getActiveGeojsonUrl(true);
     const parkUnit = vegState.parkUnit || sharedState.parkUnit;
     if (!fireEventName || !refinedCogUrl) {
       this.view.showMessage('Error: Missing fire event name or severity data. Complete fire analysis first.', 'error');
@@ -90,12 +92,17 @@ export class VegetationPresenter extends IVegetationPresenter {
       return;
     }
     
+    // Get classification breaks from the model
+    const classificationBreaks = sharedState.colorBreaks.breaks;
+    
     // Prepare data for API request
     const resolveData = {
       fire_event_name: fireEventName,
       job_id: vegState.jobId,
       veg_gpkg_url: vegGpkgUrl,
-      fire_cog_url: refinedCogUrl
+      fire_cog_url: refinedCogUrl,
+      geojson_url: refinedGeojsonUrl,
+      severity_breaks: classificationBreaks
     };
     
     try {
@@ -107,7 +114,7 @@ export class VegetationPresenter extends IVegetationPresenter {
       
       // Show the vegetation impact results
       if (result.status === 'complete') {
-        this.view.showVegetationImpact(result.fire_veg_matrix_url);
+        this.view.showVegetationImpact();
       } else {
         this.view.showMessage('Error processing vegetation data', 'error');
       }
@@ -121,11 +128,9 @@ export class VegetationPresenter extends IVegetationPresenter {
     console.log('Refreshing Vegetation UI from imported state');
     
     // Check if we have vegetation results to display
-    if (state.vegMapResults) {
-      // Update vegetation table with results
-      if (state.vegMapResults.fire_veg_matrix_url) {
-        this.view.showVegetationImpact(state.vegMapResults.fire_veg_matrix_url);
-      }
+    if (state.vegMapResults && state.vegMapResults.vegetation_communities) {
+      // Show vegetation impact using structured data
+      this.view.showVegetationImpact();
       
       // Show vegetation tab
       this.view.showVegetationTab();

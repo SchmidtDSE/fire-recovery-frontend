@@ -29,12 +29,30 @@
   opacity: 0;
 }
 
-/* State Management Controls */
-.state-management-controls {
+/* Results Box - unified grey box styling for all result sections */
+.results-box {
   margin-bottom: 20px;
   padding: 15px;
   background-color: #f5f5f5;
   border-radius: 4px;
+}
+
+.results-box h4 {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.results-box p {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* State Management Controls */
+.state-management-controls {
+  /* Inherits from .results-box */
 }
 
 .state-buttons {

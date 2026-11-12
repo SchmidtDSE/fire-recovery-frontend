@@ -1,10 +1,12 @@
 import { IFireView } from './fire-contract.js';
 import { formatDate, getTodayISO } from '../../shared/utils/date-utils.js';
-import { displayCOGLayer, loadVegetationCOGLayer } from '../../shared/map/cog-renderer.js';
+import { displayCOGLayer, loadVegetationCOGLayer, updateCOGLayerColors, canUpdateExistingLayer, clearCOGLayerCaches } from '../../shared/map/cog-renderer.js';
 import { getDefaultGeoJsonStyle } from '../../shared/map/draw-tools.js';
 import { MapManager } from '../../shared/map/map-manager.js';
 import { parkUnits } from '../../core/config.js';
 import stateManager from '../../core/state-manager.js';
+import { ButtonStateManager } from '../../shared/ui/button-state-manager.js';
+import { ActionAcceptGroup } from '../../shared/ui/action-accept-group.js';
 
 /**
  * Implementation of the Fire View
@@ -28,6 +30,10 @@ export class FireView extends IFireView {
     
     // UI state
     this.hasDrawnRefinement = false;
+
+    // Workflow groups (initialized in setupEventListeners)
+    this.boundaryWorkflow = null;
+    this.vegetationWorkflow = null;
   }
   
   /**
@@ -86,7 +92,7 @@ export class FireView extends IFireView {
       this.geoJsonLayerGroup.clearLayers();
       const layer = event.layer;
       this.geoJsonLayerGroup.addLayer(layer);
-      this.hasDrawnRefinement = true;
+      // this.hasDrawnRefinement = true;
       document.getElementById('refine-button').disabled = false;
     });
   }
@@ -101,35 +107,65 @@ export class FireView extends IFireView {
       processButton.addEventListener('click', () => this.presenter.handleFireAnalysisSubmission());
     }
     
-    // Refinement buttons
-    document.getElementById('refine-button').addEventListener('click', () => {
-      if (!this.hasDrawnRefinement) {
-        alert('Please draw a refined boundary on the map');
-        return;
-      }
-      this.presenter.handleRefinementSubmission();
+    // Workflow 1: Boundary Refinement (Refine → Accept)
+    this.boundaryWorkflow = new ActionAcceptGroup({
+      actionButton: document.getElementById('refine-button'),
+      acceptButton: document.getElementById('accept-button'),
+      actionConfig: {
+        loadingText: 'Refining...',
+        successText: 'Refined'
+      },
+      acceptConfig: {
+        loadingText: 'Processing...',
+        successText: 'Accepted'
+      },
+      canAction: () => this.hasDrawnRefinement,
+      actionDisabledMessage: 'Please draw a refined boundary on the map',
+      onAction: () => this.presenter.handleRefinementSubmission(),
+      onAccept: () => this.presenter.handleAcceptRefinement()
     });
-    
+    this.boundaryWorkflow.initialize();
+
+    // Workflow 2: Vegetation Analysis (Analyze → Accept)
+    this.vegetationWorkflow = new ActionAcceptGroup({
+      actionButton: document.getElementById('analyze-veg-button'),
+      acceptButton: document.getElementById('accept-veg-button'),
+      actionConfig: {
+        loadingText: 'Analyzing...',
+        successText: 'Analyzed'
+      },
+      acceptConfig: {
+        loadingText: 'Finalizing...',
+        successText: 'Accepted'
+      },
+      canAction: () => this.canAnalyzeVegetation(),
+      actionDisabledMessage: 'Please complete boundary refinement first',
+      onAction: () => this.handleVegetationAnalysis(),
+      onAccept: () => this.handleVegetationAccept()
+    });
+    this.vegetationWorkflow.initialize();
+
+    // Reset button
     document.getElementById('reset-button').addEventListener('click', () => {
       this.presenter.handleReset();
     });
-    
+
     // Map layer buttons
     this.setupMapButtons();
-    
+
     // Shapefile upload
     this.setupShapefileUpload();
-    
+
     // Fire event name input
     document.getElementById('fire-event-name').addEventListener('input', (e) => {
       this.presenter.handleFireEventNameChange(e.target.value);
     });
-    
+
     // Fire severity metric dropdown
     document.getElementById('fire-severity-metric-select').addEventListener('change', (e) => {
       this.presenter.handleMetricChange(e.target.value);
     });
-    
+
     // Park unit dropdown
     document.getElementById('park-unit').addEventListener('change', (e) => {
       const select = e.target;
@@ -141,13 +177,6 @@ export class FireView extends IFireView {
         veg_geopkg_url: selectedOption.dataset.vegGeopkgUrl
       };
       this.presenter.handleParkUnitChange(parkData);
-    });
-
-    // Accept button for veg map resolution
-    document.getElementById('accept-button').addEventListener('click', () => {
-      this.presenter.handleAcceptRefinement();
-      document.getElementById('refine-button').disabled = true;
-      document.getElementById('accept-button').disabled = true;
     });
   }
   
@@ -228,29 +257,45 @@ export class FireView extends IFireView {
   setupShapefileUpload() {
     document.getElementById('upload-shapefile').addEventListener('change', (event) => {
       const file = event.target.files[0];
-      const uploadStatus = document.getElementById('uploadStatus');
+      const uploadStatus = document.getElementById('upload-status');
     
       if (!file || !file.name.endsWith('.zip')) {
         uploadStatus.textContent = 'File upload failed. Please upload a valid shapefile.';
         uploadStatus.style.color = 'red';
         return;
       }
-    
+      
       const reader = new FileReader();
-      reader.onload = (e) => {
-        shp(e.target.result).then((data) => {
+      reader.onload = async (e) => {
+        try {
+          const data = await shp(e.target.result);
+
+          // Display shapefile on map
           this.geoJsonLayerGroup.clearLayers();
           L.geoJSON(data, { style: getDefaultGeoJsonStyle() }).addTo(this.geoJsonLayerGroup);
-    
+
+          // Zoom to the bounds of the uploaded shapefile
+          const mapManager = MapManager.getInstance();
+          mapManager.zoomToLayerBounds(this.geoJsonLayerGroup);
+
           uploadStatus.textContent = `${file.name} was uploaded successfully.`;
           uploadStatus.style.color = 'black';
-          
-          this.presenter.handleShapefileUploaded(file);
-        }).catch((error) => {
-          console.error("Error while parsing shapefile:", error);
+
+          // Get fire event name (or create a placeholder)
+          const fireEventName = document.getElementById('fire-event-name').value ||
+                              `Fire_${new Date().getTime()}`;
+
+          // Upload the shapefile to the backend and update state
+          const response = await this.presenter.model.submitShapefile(file, fireEventName);
+
+          // Treat uploaded shapefile as refined boundary and update state
+          await this.presenter.handleShapefileUploadComplete(response, fireEventName);
+
+        } catch (error) {
+          console.error("Error while processing shapefile:", error);
           uploadStatus.textContent = "Upload failed. Please try again.";
           uploadStatus.style.color = 'red';
-        });
+        }
       };
       reader.readAsArrayBuffer(file);
     });
@@ -262,22 +307,22 @@ export class FireView extends IFireView {
   showLoadingState() {
     const statusIcon = document.getElementById('process-status');
     const processButton = document.getElementById('process-button');
-    
+
     statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     statusIcon.style.color = '#007bff';
     processButton.disabled = true;
   }
-  
+
   /**
    * Show success state
    */
   showSuccessState() {
     const statusIcon = document.getElementById('process-status');
-    
+
     statusIcon.innerHTML = '<i class="fas fa-check"></i>';
     statusIcon.style.color = 'green';
   }
-  
+
   /**
    * Show error state
    * @param {string} message - Error message
@@ -285,73 +330,131 @@ export class FireView extends IFireView {
   showErrorState(message) {
     const statusIcon = document.getElementById('process-status');
     const processButton = document.getElementById('process-button');
-    
+
     statusIcon.innerHTML = '<i class="fas fa-times"></i>';
     statusIcon.style.color = 'red';
     processButton.disabled = false;
-    
+
     alert(message);
   }
+
+  /**
+   * Show accept button success state
+   */
+  showAcceptSuccessState() {
+    ButtonStateManager.applySuccessState(
+      document.getElementById('accept-button'),
+      'Accepted'
+    );
+    // Also disable refine button (boundary is finalized)
+    const refineButton = document.getElementById('refine-button');
+    if (refineButton) {
+      refineButton.disabled = true;
+    }
+  }
+
+  /**
+   * Show refine button success state (called when Accept is successful)
+   */
+  showRefineSuccessState() {
+    ButtonStateManager.applySuccessState(
+      document.getElementById('refine-button'),
+      'Refined'
+    );
+  }
+
+  /**
+   * Check if vegetation analysis can be performed
+   * Requires: boundary workflow completed AND fire severity data exists
+   * @returns {boolean}
+   */
+  canAnalyzeVegetation() {
+    const sharedState = stateManager.getSharedState();
+    const hasRefinedBoundary = sharedState.assets?.refined?.geojsonUrl != null;
+    const refinedMetrics = stateManager.getAvailableMetrics(true);
+    const hasSeverityData = refinedMetrics.length > 0;
+    return hasRefinedBoundary && hasSeverityData;
+  }
+
+  /**
+   * Handle vegetation analysis action
+   * @returns {Promise}
+   */
+  async handleVegetationAnalysis() {
+    const vegPresenter = window.app?.components?.vegetation?.presenter;
+    if (vegPresenter) {
+      return await vegPresenter.handleVegMapResolution();
+    }
+    throw new Error('Vegetation presenter not available');
+  }
+
+  /**
+   * Handle vegetation accept action
+   * For now this is a simple acknowledgment - could be extended for export/save
+   * @returns {Promise}
+   */
+  async handleVegetationAccept() {
+    // Vegetation analysis is already complete, this just finalizes the workflow
+    // Could be extended to save results, export, etc.
+    console.log('Vegetation analysis accepted');
+    return Promise.resolve();
+  }
+
+  /**
+   * Enable the vegetation workflow (called after boundary is accepted)
+   */
+  enableVegetationWorkflow() {
+    const analyzeButton = document.getElementById('analyze-veg-button');
+    const acceptVegButton = document.getElementById('accept-veg-button');
+
+    if (analyzeButton) {
+      analyzeButton.disabled = false;
+    }
+    // Accept remains disabled until analysis is run
+  }
+
+  /**
+   * Enable vegetation accept button (called after analysis completes)
+   */
+  enableVegetationAccept() {
+    const acceptVegButton = document.getElementById('accept-veg-button');
+    if (acceptVegButton) {
+      acceptVegButton.disabled = false;
+    }
+  }
   
-  // /**
-  //  * Display COG layer on map
-  //  * @param {string} cogUrl - COG URL
-  //  */
-  // async displayCOGLayer(cogUrl) {
-  //   if (!cogUrl) {
-  //     console.warn('No COG URL provided');
-  //     return;
-  //   }
+  /**
+   * Get the active GeoJSON from the map
+   * @returns {Object|null} GeoJSON geometry object or null if none exists
+   */
+  getActiveGeoJson() {
+    // Check if the layer group exists and has layers
+    if (!this.geoJsonLayerGroup || this.geoJsonLayerGroup.getLayers().length === 0) {
+      return null;
+    }
     
-  //   try {
-  //     const cogResponse = await fetch(cogUrl);
-  //     if (!cogResponse.ok) {
-  //       throw new Error(`COG fetch failed with status: ${cogResponse.status}`);
-  //     }
-
-  //     const arrayBuffer = await cogResponse.arrayBuffer();
-  //     const georaster = await parseGeoraster(arrayBuffer);
-      
-  //     const resultLayer = new GeoRasterLayer({
-  //       georaster: georaster,
-  //       opacity: .8,
-  //       resolution: 256,
-  //       pixelValuesToColorFn: value => {
-  //         if (value === null || value === undefined || value <= 0) return 'transparent';
-  //         if (value < 0.1) return '#F0F921'; // bright yellow
-  //         if (value < 0.2) return '#FDC328';
-  //         if (value < 0.3) return '#F89441';
-  //         if (value < 0.4) return '#E56B5D';
-  //         if (value < 0.5) return '#CB4679';
-  //         if (value < 0.6) return '#A82296';
-  //         if (value < 0.7) return '#7D03A8';
-  //         if (value < 0.8) return '#4B03A1';
-  //         if (value < 0.9) return '#0D0887'; // darkest purple
-  //         return '#0D0887';
-  //       }
-  //     });
-
-  //     this.resultLayerGroup.clearLayers();
-  //     resultLayer.addTo(this.resultLayerGroup);
-      
-  //     // Force the result layer to the top
-  //     this.map.eachLayer(l => {
-  //       if (l === this.resultLayerGroup) {
-  //         l.eachLayer(resultL => resultL.bringToFront());
-  //       }
-  //     });
-
-  //     // Check if the layer has valid bounds before fitting
-  //     const bounds = resultLayer.getBounds();
-  //     if (bounds && bounds.isValid()) {
-  //       this.map.fitBounds(bounds);
-  //     }
-      
-  //   } catch (error) {
-  //     console.error('Error loading COG:', error);
-  //     this.showErrorState(`Error loading layer: ${error.message}`);
-  //   }
-  // }
+    // Convert the layer group to GeoJSON
+    const geoJson = this.geoJsonLayerGroup.toGeoJSON();
+    
+    // If it's a FeatureCollection, extract the first feature's geometry
+    if (geoJson.type === 'FeatureCollection' && geoJson.features && geoJson.features.length > 0) {
+      return geoJson.features[0].geometry;
+    }
+    
+    // If it's a direct Feature, return its geometry
+    if (geoJson.type === 'Feature' && geoJson.geometry) {
+      return geoJson.geometry;
+    }
+    
+    // If it's already a geometry object (unlikely but possible)
+    if (geoJson.type && ['Point', 'LineString', 'Polygon', 'MultiPoint', 
+                        'MultiLineString', 'MultiPolygon', 'GeometryCollection'].includes(geoJson.type)) {
+      return geoJson;
+    }
+    
+    // No valid geometry found
+    return null;
+  }
 
   /**
    * Setup date limits
@@ -604,21 +707,44 @@ export class FireView extends IFireView {
     const prefireDates = document.getElementById('prefire-dates');
     const postfireDates = document.getElementById('postfire-dates');
 
-    if (prefireDates) {
-      prefireDates.textContent = formValues.prefireStart && formValues.prefireEnd ? 
-        `Prefire Date Range: ${formValues.prefireStart} - ${formValues.prefireEnd}` : '';
+    // Hide placeholder text when showing actual content
+    const placeholder = document.getElementById('satellite-info-placeholder');
+    if (placeholder) {
+      placeholder.style.display = 'none';
     }
-    
-    if (postfireDates) {
-      postfireDates.textContent = formValues.postfireStart && formValues.postfireEnd ? 
-        `Postfire Date Range: ${formValues.postfireStart} - ${formValues.postfireEnd}` : '';
+
+    if (prefireDates && formValues.prefireStart && formValues.prefireEnd) {
+      prefireDates.innerHTML = `
+        <span class="date-label">Pre-fire:</span>
+        <span class="date-value">${this.formatDateRange(formValues.prefireStart, formValues.prefireEnd)}</span>
+      `;
     }
-    
+
+    if (postfireDates && formValues.postfireStart && formValues.postfireEnd) {
+      postfireDates.innerHTML = `
+        <span class="date-label">Post-fire:</span>
+        <span class="date-value">${this.formatDateRange(formValues.postfireStart, formValues.postfireEnd)}</span>
+      `;
+    }
+
     // Make sure the date ranges section is visible
     const dateRangesSection = document.querySelector('.date-ranges');
     if (dateRangesSection) {
       dateRangesSection.style.display = 'block';
     }
+  }
+
+  /**
+   * Format a date range for display
+   * @param {string} start - Start date (YYYY-MM-DD)
+   * @param {string} end - End date (YYYY-MM-DD)
+   * @returns {string} Formatted date range
+   */
+  formatDateRange(start, end) {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    const startDate = new Date(start).toLocaleDateString('en-US', options);
+    const endDate = new Date(end).toLocaleDateString('en-US', options);
+    return `${startDate} — ${endDate}`;
   }
 
   /**
@@ -677,28 +803,16 @@ export class FireView extends IFireView {
     // Show metrics
     document.getElementById('fire-severity-metric').style.display = 'block';
     document.getElementById('biomass-lost-metric').style.display = 'block';
-    
+
     // Show table only when in vegetation map view
     const vegMapButton = Array.from(document.querySelectorAll('.map-button'))
         .find(button => button.textContent.trim() === 'Vegetation Map');
-    
+
     if (vegMapButton && vegMapButton.classList.contains('active')) {
         document.getElementById('table-container').style.display = 'block';
     }
-    
-    // Add a button for vegetation resolution if it doesn't exist
-    const resolveButton = document.getElementById('resolve-button');
-    if (!resolveButton) {
-        const buttonGroup = document.querySelector('.button-group');
-        
-        const newResolveButton = document.createElement('button');
-        newResolveButton.id = 'resolve-button';
-        newResolveButton.className = 'action-button';
-        newResolveButton.textContent = 'Analyze Vegetation Impact';
-        newResolveButton.addEventListener('click', () => this.presenter.handleVegMapResolution());
-        
-        buttonGroup.appendChild(newResolveButton);
-    }
+
+    // Vegetation buttons are now in HTML and managed by ActionAcceptGroup
   }
 
   /**
@@ -784,12 +898,18 @@ export class FireView extends IFireView {
     this.resultLayerGroup.clearLayers();
     this.geoJsonLayerGroup.clearLayers();
     
-    // Clear date summary
+    // Clear date summary and restore placeholder
     document.getElementById('prefire-dates').textContent = '';
     document.getElementById('postfire-dates').textContent = '';
+    const satellitePlaceholder = document.getElementById('satellite-info-placeholder');
+    if (satellitePlaceholder) {
+      satellitePlaceholder.style.display = 'block';
+    }
     
-    // Hide veg table
+    // Hide veg table and restore placeholder
     document.body.classList.remove('veg-map-active');
+    const vegPlaceholder = document.getElementById('vegetation-placeholder');
+    if (vegPlaceholder) vegPlaceholder.style.display = 'block';
 
     // Reset refinement state
     this.hasDrawnRefinement = false;
@@ -839,8 +959,10 @@ export class FireView extends IFireView {
     document.getElementById('fire-severity-metric').style.display = 'none';
     document.getElementById('biomass-lost-metric').style.display = 'none';
     
-    // Make sure the vegetation table is hidden
+    // Make sure the vegetation table is hidden and placeholder is restored
     document.getElementById('vegetation-table-container').style.display = 'none';
+    const vegPlaceholder = document.getElementById('vegetation-placeholder');
+    if (vegPlaceholder) vegPlaceholder.style.display = 'block';
     
     // Remove vegetation resolution button if it exists
     const resolveButton = document.getElementById('resolve-button');
@@ -874,22 +996,32 @@ export class FireView extends IFireView {
     
     // Get current breaks and colors from state manager
     const { breaks, colors } = stateManager.getSharedState().colorBreaks;
-    
+
+    // Severity level labels for each break point
+    const severityLabels = [
+      { below: 'Unburned', above: 'Low' },
+      { below: 'Low', above: 'Moderate' },
+      { below: 'Moderate', above: 'High' }
+    ];
+
     // Create a slider for each break point
     breaks.forEach((breakValue, index) => {
       const colorBelow = colors[index];
       const colorAbove = colors[index + 1] || colors[index];
-      
+      const labels = severityLabels[index] || { below: '', above: '' };
+
       const sliderContainer = document.createElement('div');
       sliderContainer.className = 'color-break-slider';
-      
+
       sliderContainer.innerHTML = `
+        <span class="severity-label">${labels.below}</span>
         <div class="color-swatch" style="background-color: ${colorBelow}"></div>
-        <input type="range" min="-.25" max="1" step="0.01" value="${breakValue}" data-index="${index}" class="break-slider">
-        <input type="number" min="-.25" max="1" step="0.01" value="${breakValue}" class="break-value">
+        <input type="range" min="0" max="1" step="0.01" value="${breakValue}" data-index="${index}" class="break-slider">
+        <input type="number" min="0" max="1" step="0.01" value="${breakValue}" class="break-value">
         <div class="color-swatch" style="background-color: ${colorAbove}"></div>
+        <span class="severity-label">${labels.above}</span>
       `;
-      
+
       slidersContainer.appendChild(sliderContainer);
       
       // Add event listeners for changes
@@ -932,7 +1064,7 @@ export class FireView extends IFireView {
     if (resetButton) {
       resetButton.addEventListener('click', () => {
         this.resetColorBreaks();
-        this.refreshMapVisualization(); // Apply reset immediately
+        this.refreshMapVisualization();
       });
     }
   }
@@ -967,9 +1099,9 @@ export class FireView extends IFireView {
    * Reset color breaks to default values
    */
   resetColorBreaks() {
-    // Default values from the original implementation
-    const defaultBreaks = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
-    const defaultColors = ['#F0F921', '#FDC328', '#F89441', '#E56B5D', '#CB4679', '#A82296', '#7D03A8', '#4B03A1', '#0D0887', '#0D0887'];
+    // Default values - 3 breaks for 4 severity levels
+    const defaultBreaks = [0.1, 0.2, 0.3];
+    const defaultColors = ['#F0F921', '#E56B5D', '#7D03A8', '#0D0887'];
     
     // Update state with defaults
     stateManager.updateColorBreaks(defaultBreaks, defaultColors, 'fire-view');
@@ -1011,8 +1143,20 @@ export class FireView extends IFireView {
 
     // Prioritize refined URL if available, otherwise use coarse URL
     const cogUrl = refinedUrl || coarseUrl;
-    
+
     if (cogUrl) {
+      // If same URL, just update colors (for break changes) - much faster
+      if (canUpdateExistingLayer(cogUrl)) {
+        console.log('Updating COG layer colors with new breaks');
+        if (updateCOGLayerColors()) {
+          return; // Successfully updated
+        }
+        // Fall through to full reload if update failed
+      }
+
+      // URL is different (e.g., coarse → refined) - clear old caches including georaster
+      clearCOGLayerCaches(true);
+
       console.log(`Displaying ${refinedUrl ? 'refined' : 'coarse'} COG:`, cogUrl);
       displayCOGLayer(cogUrl, this.map, this.resultLayerGroup)
         .catch(error => {
@@ -1023,6 +1167,24 @@ export class FireView extends IFireView {
       console.warn("No COG URL available in current state");
       this.resultLayerGroup.clearLayers();
     }
+  }
+
+  /**
+   * Display COG layer on the map
+   * @param {string} cogUrl - URL to the COG file
+   */
+  displayCOGLayer(cogUrl) {
+    if (!cogUrl) {
+      console.warn('No COG URL provided to displayCOGLayer');
+      return;
+    }
+
+    console.log('Displaying COG:', cogUrl);
+    displayCOGLayer(cogUrl, this.map, this.resultLayerGroup)
+      .catch(error => {
+        console.error('Error displaying COG:', error);
+        this.showErrorState(`Error loading layer: ${error.message}`);
+      });
   }
 
   /**

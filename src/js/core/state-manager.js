@@ -35,8 +35,8 @@ class StateManager {
         }
       },
       colorBreaks: {
-        breaks: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
-        colors: ['#F0F921', '#FDC328', '#F89441', '#E56B5D', '#CB4679', '#A82296', '#7D03A8', '#4B03A1', '#0D0887', '#0D0887']
+        breaks: [0.1, 0.2, 0.3],
+        colors: ['#F0F921', '#E56B5D', '#7D03A8', '#0D0887']
       }
     };
     
@@ -79,22 +79,109 @@ class StateManager {
     return this;
   }
   
+  /**
+   * Update vegetation map results with structured data
+   * @param {Object} results - Vegetation results containing both URLs and structured data
+   * @param {string} source - Source component name
+   */
   updateVegMapResults(results, source) {
-    this.sharedState.vegMapResults = results;
+    // Handle both old format (just URLs) and new format (structured data)
+    let processedResults = results;
+    
+    // If we have the new structured vegetation_impact_data, prioritize it
+    if (results && results.vegetation_impact_data) {
+      processedResults = {
+        ...results,
+        // Store both URLs separately for different purposes
+        fire_veg_matrix_csv_url: results.fire_veg_matrix_csv_url,    // For download
+        fire_veg_matrix_json_url: results.fire_veg_matrix_json_url,  // For fetching structured data
+        // Add the structured data for visualization
+        vegetation_communities: results.vegetation_impact_data.vegetation_communities || [],
+        // Keep the raw data for export/other uses
+        raw_data: results.vegetation_impact_data
+      };
+    } else {
+      // Handle legacy format - just store the URLs
+      processedResults = {
+        ...results,
+        vegetation_communities: [],
+        raw_data: null
+      };
+    }
+    
+    this.sharedState.vegMapResults = processedResults;
     
     this.dispatch.call('vegMapResultsChanged', this, {
-      value: results,
+      value: processedResults,
       source
     });
     
     this.dispatch.call('sharedStateChanged', this, {
       property: 'vegMapResults',
-      value: results,
+      value: processedResults,
       source,
       state: this.sharedState
     });
     
     return this;
+  }
+
+  /**
+   * Get vegetation communities data
+   * @returns {Array} Array of vegetation communities with severity breakdown
+   */
+  getVegetationCommunities() {
+    return this.sharedState.vegMapResults?.vegetation_communities || [];
+  }
+
+  /**
+   * Get vegetation matrix URLs
+   * @returns {Object} Object containing CSV and JSON URLs
+   */
+  getVegetationMatrixUrls() {
+    const results = this.sharedState.vegMapResults;
+    return {
+      csv: results?.fire_veg_matrix_csv_url || null,
+      json: results?.fire_veg_matrix_json_url || null
+    };
+  }
+
+  /**
+   * Get CSV URL for direct download
+   * @returns {string|null} CSV URL for download
+   */
+  getVegetationCsvUrl() {
+    return this.sharedState.vegMapResults?.fire_veg_matrix_csv_url || null;
+  }
+
+  /**
+   * Get JSON URL for data fetching
+   * @returns {string|null} JSON URL for structured data
+   */
+  getVegetationJsonUrl() {
+    return this.sharedState.vegMapResults?.fire_veg_matrix_json_url || null;
+  }
+
+  /**
+   * Check if vegetation data is available
+   * @returns {boolean} True if vegetation communities data is available
+   */
+  hasVegetationData() {
+    const communities = this.getVegetationCommunities();
+    return Array.isArray(communities) && communities.length > 0;
+  }
+
+  /**
+   * Check if vegetation URLs are available
+   * @returns {Object} Object indicating which URLs are available
+   */
+  hasVegetationUrls() {
+    const urls = this.getVegetationMatrixUrls();
+    return {
+      csv: !!urls.csv,
+      json: !!urls.json,
+      any: !!(urls.csv || urls.json)
+    };
   }
 
   /**
@@ -255,6 +342,16 @@ class StateManager {
   }
   
   /**
+   * Get the active GeoJSON URL based on refinement status
+   * @param {boolean} useRefined - Whether to use refined GeoJSON URLs
+   * @returns {string|null} The active GeoJSON URL
+   */
+  getActiveGeojsonUrl(useRefined = false) {
+    const assetGroup = useRefined ? 'refined' : 'coarse';
+    return this.sharedState.assets[assetGroup]['geojsonUrl'] || null;
+  }
+
+  /**
    * Get all available metrics for a given refinement status
    * @param {boolean} useRefined - Whether to check refined COG URLs
    * @returns {string[]} Array of available metric names
@@ -302,6 +399,7 @@ class StateManager {
    * @returns {Object} JSON-serializable state object
    */
   exportState() {
+
     const exportedState = JSON.parse(JSON.stringify(this.sharedState));
     
     exportedState._metadata = {

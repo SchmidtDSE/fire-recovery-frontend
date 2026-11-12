@@ -109,21 +109,55 @@ export const resolveAgainstVegMap = async (data) => {
 };
 
 export const getVegMapResult = async (fireEventName, jobId) => {
-  const response = await fetch(
-    VEGETATION_ENDPOINTS.GET_RESULT(fireEventName, jobId),
-    {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-      mode: 'cors'
-    }
-  );
+  // Import state manager to get current severity breaks
+  const { default: stateManager } = await import('../../core/state-manager.js');
+  
+  // Get the first three classification breaks from the state
+  const colorBreaks = stateManager.getSharedState().colorBreaks;
+  const severityBreaks = colorBreaks.breaks.slice(0, 3); // Get first 3 breaks
+  
+  // Build URL with query parameters
+  const url = new URL(VEGETATION_ENDPOINTS.GET_RESULT(fireEventName, jobId));
+  severityBreaks.forEach(breakValue => {
+    url.searchParams.append('severity_breaks', breakValue);
+  });
+  
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+    mode: 'cors'
+  });
 
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(processErrorResponse(errorData, response.status));
   }
 
-  return await response.json();
+  const result = await response.json();
+  
+  // Store both URLs separately for different purposes
+  // CSV URL: for direct download
+  // JSON URL: for fetching structured data for visualization
+  
+  // If we have a fire_veg_matrix_json_url and status is complete, fetch the JSON data
+  if (result.fire_veg_matrix_json_url && result.status === 'complete') {
+    try {
+      console.log('Fetching vegetation matrix JSON from:', result.fire_veg_matrix_json_url);
+      const matrixResponse = await fetch(result.fire_veg_matrix_json_url);
+      if (matrixResponse.ok) {
+        const matrixData = await matrixResponse.json();
+        console.log('Successfully fetched vegetation matrix data:', matrixData);
+        // Merge the matrix data into the result for visualization
+        result.vegetation_impact_data = matrixData;
+      } else {
+        console.warn('Failed to fetch vegetation matrix JSON:', matrixResponse.status, matrixResponse.statusText);
+      }
+    } catch (error) {
+      console.warn('Error fetching vegetation matrix data:', error);
+    }
+  }
+  
+  return result;
 };
 
 /**
@@ -134,6 +168,7 @@ export const uploadShapefile = async (fireEventName, shapefileData) => {
   const formData = new FormData();
   formData.append('fire_event_name', fireEventName);
   formData.append('shapefile', shapefileData);
+  formData.append('boundary_type', 'refined');
 
   const response = await fetch(UPLOAD_ENDPOINTS.SHAPEFILE, {
     method: 'POST',
@@ -152,7 +187,8 @@ export const uploadShapefile = async (fireEventName, shapefileData) => {
 export const uploadGeojson = async (fireEventName, geojsonData) => {
   const data = {
     fire_event_name: fireEventName,
-    geojson: geojsonData
+    geojson: geojsonData,
+    boundary_type: 'coarse'
   };
 
   const response = await fetch(UPLOAD_ENDPOINTS.GEOJSON, {
@@ -183,6 +219,6 @@ export const uploadGeojson = async (fireEventName, geojsonData) => {
  *   - For refinement: result.refined_severity_cog_urls (dict mapping metric names to URLs)
  *   - For boundary: result.refined_boundary_geojson_url (string URL)
  */
-export const pollUntilComplete = (checkFunction, interval = 10000, maxAttempts = 500) => {
+export const pollUntilComplete = (checkFunction, interval = 2000, maxAttempts = 500) => {
   return createPollingMechanism(checkFunction, interval, maxAttempts);
 };

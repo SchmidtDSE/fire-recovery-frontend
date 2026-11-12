@@ -134,6 +134,47 @@
   margin: 20px 0;
 }
 
+/* Workflow groups - paired Action → Accept button patterns */
+.workflow-group {
+  padding: 15px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.workflow-group .section-title {
+  font-size: 14pt;
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.workflow-group .instructions {
+  font-size: 11pt;
+  margin: 0 0 12px 0;
+  color: #666;
+}
+
+.workflow-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.workflow-buttons .action-button {
+  flex: 1;
+  min-width: 100px;
+}
+
+.workflow-reset {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+}
+
+.workflow-reset .action-button {
+  width: 100%;
+}
+
 /* Container max widths for different screen sizes */
 @media (min-width: 576px) {
   .container {
