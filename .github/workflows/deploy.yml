@@ -1,4 +1,4 @@
-name: Deploy to Minio Storage
+name: Deploy to Storage
 
 on:
   push:
@@ -9,8 +9,18 @@ on:
 
 jobs:
   deploy-frontend:
-    name: Deploy Static Website to Minio
+    name: Deploy Static Website to Storage
     runs-on: ubuntu-latest
+
+    # GCS through its S3 endpoint with HMAC keys, via the AWS CLI preinstalled on
+    # the runner (as fire-recovery-backend does). The secrets keep their MinIO-era names.
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+      AWS_DEFAULT_REGION: auto
+      # GCS rejects the checksum headers AWS CLI >= 2.23 sends by default
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
 
     steps:
       - name: Checkout repository
@@ -21,38 +31,36 @@ jobs:
           echo "Current content of endpoints.js:"
           cat src/js/shared/api/endpoints.js
 
-      - name: Set environment variable for branch name
-        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+      - name: Set environment variables
+        run: |
+          echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+          # mc took the endpoint with or without a scheme; the AWS CLI needs one
+          endpoint="${{ secrets.MINIO_ENDPOINT }}"
+          case "$endpoint" in http://*|https://*) ;; *) endpoint="https://$endpoint" ;; esac
+          echo "S3_ENDPOINT_URL=$endpoint" >> $GITHUB_ENV
 
-      - name: Install Minio Client
+      - name: Debug storage connection
         run: |
-          wget https://dl.min.io/client/mc/release/linux-amd64/mc
-          chmod +x mc
-          sudo mv mc /usr/local/bin/mc
-
-      - name: Configure Minio Client
-        run: |
-          mc alias set gcp_minio ${{ secrets.MINIO_ENDPOINT }} ${{ secrets.MINIO_ACCESS_KEY }} ${{ secrets.MINIO_SECRET_KEY }}
-          
-      - name: Debug Minio connection
-        run: |
-          mc ls gcp_minio/fire-recovery-web/
+          aws --version
+          aws --endpoint-url "$S3_ENDPOINT_URL" s3 ls s3://fire-recovery-web/
           echo "Current content in target bucket"
 
       - name: Deploy to production bucket
         if: env.BRANCH_NAME == 'main'
         run: |
           echo "Deploying to production bucket with no-cache headers"
-          # Use --attr to set cache-control for all files during upload
-          mc mirror --overwrite --debug --summary --attr "Cache-Control=no-cache, no-store, must-revalidate" src/ gcp_minio/fire-recovery-web/prod/
+          aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp src/ s3://fire-recovery-web/prod/ \
+            --recursive --no-progress \
+            --cache-control "no-cache, no-store, must-revalidate"
           echo "Verifying deployment..."
-          mc ls gcp_minio/fire-recovery-web/prod/
+          aws --endpoint-url "$S3_ENDPOINT_URL" s3 ls s3://fire-recovery-web/prod/
 
       - name: Deploy to development bucket
         if: env.BRANCH_NAME == 'dev'
         run: |
           echo "Deploying to development bucket with no-cache headers"
-          # Use --attr to set cache-control for all files during upload
-          mc mirror --overwrite --debug --summary --attr "Cache-Control=no-cache, no-store, must-revalidate" src/ gcp_minio/fire-recovery-web/dev/
+          aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp src/ s3://fire-recovery-web/dev/ \
+            --recursive --no-progress \
+            --cache-control "no-cache, no-store, must-revalidate"
           echo "Verifying deployment..."
-          mc ls gcp_minio/fire-recovery-web/dev/
+          aws --endpoint-url "$S3_ENDPOINT_URL" s3 ls s3://fire-recovery-web/dev/
