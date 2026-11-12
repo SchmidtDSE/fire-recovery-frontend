@@ -63,13 +63,22 @@ const perimeterStatus = document.getElementById('perimeter-status');
 map.addSource('upload', { type: 'geojson', data: emptyCollection() });
 map.addLayer({ id: 'upload-line', type: 'line', source: 'upload', paint: { 'line-color': '#ff6b00', 'line-width': 2 } });
 
+document.getElementById('draw-button').addEventListener('click', () => {
+  setUploaded(null);
+  mapDraw.startDrawing();
+  setStatus('Drawing: click the map to add corners, then double-click to finish.');
+});
 window.addEventListener('region-drawn', () => {
   setUploaded(null);
-  perimeterStatus.textContent = 'Perimeter drawn on the map.';
+  setStatus('Perimeter drawn on the map.');
 });
 window.addEventListener('region-cleared', () => {
-  if (!uploaded) perimeterStatus.textContent = 'No perimeter yet.';
+  if (!uploaded) setStatus('No perimeter yet.');
 });
+
+function setStatus(text) {
+  perimeterStatus.innerHTML = `<strong>${escape(text)}</strong>`;
+}
 
 document.getElementById('upload-perimeter').addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -84,9 +93,9 @@ document.getElementById('upload-perimeter').addEventListener('change', async (e)
     mapDraw.clear();
     setUploaded({ type: 'MultiPolygon', coordinates: polygons });
     map.fitBounds(bbox(uploaded), { padding: 40 });
-    perimeterStatus.textContent = `Perimeter loaded from ${file.name}.`;
+    setStatus(`Perimeter loaded from ${file.name}.`);
   } catch (err) {
-    perimeterStatus.textContent = `Could not read ${file.name}: ${err.message}`;
+    setStatus(`Could not read ${file.name}: ${err.message}`);
   }
 });
 
