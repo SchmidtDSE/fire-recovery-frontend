@@ -37,6 +37,10 @@ const detectEnvironment = () => {
 const environment = detectEnvironment();
 const API_BASE = `${BACKEND_URLS[environment]}/fire-recovery`;
 
+// Severity v2 (no /fire-recovery prefix). Local uses the dev backend, which allows localhost CORS.
+export const V2_SEVERITY_URL =
+  `${BACKEND_URLS[environment === 'local' ? 'dev' : environment]}/v2/severity`;
+
 
 // Fire severity endpoints
 export const FIRE_ENDPOINTS = {
