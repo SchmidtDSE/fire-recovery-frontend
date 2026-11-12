@@ -60,7 +60,7 @@
     }
   },
 
-  "postCreateCommand": "bash -c 'corepack enable && corepack prepare pnpm@latest --activate && echo \"Frontend devcontainer ready! Run: pnpm install\"'",
+  "postCreateCommand": "bash -c 'corepack enable && pnpm install --frozen-lockfile'",
 
   "forwardPorts": [3000, 5173],
 
