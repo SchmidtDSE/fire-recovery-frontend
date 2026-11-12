@@ -34,8 +34,8 @@ const map = new maplibregl.Map({
       },
     },
     layers: [
-      { id: 'satellite', type: 'raster', source: 'satellite' },
-      { id: 'plain', type: 'raster', source: 'plain', layout: { visibility: 'none' } },
+      { id: 'satellite', type: 'raster', source: 'satellite', layout: { visibility: 'none' } },
+      { id: 'plain', type: 'raster', source: 'plain' },
     ],
   },
 });

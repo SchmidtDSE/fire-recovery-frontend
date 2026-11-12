@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         /* Full-height app: navbar, slim hero, then map (left) and panel (right) */
-        :root { --hero-height: 90px; --hero-text-height: 100%; --hero-text-width: auto; --black-bar-height: 6px; }
+        :root { --hero-height: 160px; --hero-text-height: 100%; --hero-text-width: auto; --black-bar-height: 6px; }
         html, body { height: 100%; margin: 0; }
         body { display: flex; flex-direction: column; overflow: hidden; }
         .hero-image { flex: none; }
@@ -69,7 +69,6 @@
                 <li class="nav-item"><a href="vegModel.html">Vegetation Modeling</a></li>
                 <li class="nav-item"><a href="resourceOpt.html">Resource Optimization</a></li>
             </div>
-            <li class="nav-item login"><a href="#">Login</a></li>
         </ul>
     </nav>
 
@@ -85,8 +84,8 @@
         <!-- Map -->
         <section class="app-map">
             <div class="basemap-toggle">
-                <button class="active" type="button" data-basemap="satellite">Satellite</button>
-                <button type="button" data-basemap="plain">Topographic</button>
+                <button class="active" type="button" data-basemap="plain">Topographic</button>
+                <button type="button" data-basemap="satellite">Satellite</button>
             </div>
             <div id="map"></div>
         </section>
