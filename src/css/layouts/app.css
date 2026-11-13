@@ -1,0 +1,77 @@
+/**
+ * Full-height app: navbar and hero, then the map (left) and a scrolling panel (right).
+ * The page itself never scrolls.
+ */
+html, body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.navbar, .hero-image {
+  flex: none;
+}
+
+.app {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.app-map {
+  flex: 1;
+  position: relative;
+}
+
+.app-map #map {
+  position: absolute;
+  inset: 0;
+}
+
+.app-panel {
+  width: var(--panel-width);
+  flex: none;
+  overflow-y: auto;
+  padding: 20px 24px;
+  border-left: 2px solid black;
+}
+
+.app-panel p {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: black;
+  margin: 18px 0 8px;
+}
+
+.section-title:first-child {
+  margin-top: 0;
+}
+
+.app-panel details {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.app-panel details ol {
+  margin: 6px 0 0 20px;
+}
+
+.app-panel li {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 800px) {
+  body { overflow: auto; }
+  .app { flex-direction: column; }
+  .app-map { height: 60vh; flex: none; }
+  .app-panel { width: auto; border-left: none; }
+}

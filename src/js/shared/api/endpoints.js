@@ -1,13 +1,13 @@
 /**
- * API Endpoint definitions
- * Centralizes API endpoints used in the application
+ * API endpoint definitions
  */
 
-// Backend URLs per environment
+// Backend per environment. There is no local backend: local development
+// talks to dev, whose CORS allows localhost.
 const BACKEND_URLS = {
-  local: 'http://localhost:8000',
+  local: 'https://fire-recovery-backend-dev-113009620257.us-central1.run.app',
   dev: 'https://fire-recovery-backend-dev-113009620257.us-central1.run.app',
-  prod: 'https://fire-recovery-backend-prod-113009620257.us-central1.run.app'
+  prod: 'https://fire-recovery-backend-prod-113009620257.us-central1.run.app',
 };
 
 /**
@@ -16,58 +16,15 @@ const BACKEND_URLS = {
  * - /prod/ in path → prod (the site is served at /fire-recovery-web/prod/...)
  * - otherwise → dev
  */
-const detectEnvironment = () => {
-  if (typeof window === 'undefined') return 'dev';
-
-  const hostname = window.location.hostname;
-  const pathname = window.location.pathname;
-
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'local';
-  }
-
-  if (pathname.includes('/prod/') || pathname.endsWith('/prod')) {
-    return 'prod';
-  }
-
+function detectEnvironment() {
+  const { hostname, pathname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return 'local';
+  if (pathname.includes('/prod/') || pathname.endsWith('/prod')) return 'prod';
   return 'dev';
+}
+
+const BACKEND_URL = BACKEND_URLS[detectEnvironment()];
+
+export const SEVERITY_ENDPOINTS = {
+  SUBMIT: `${BACKEND_URL}/v2/severity`,
 };
-
-// Base URL configuration - automatically set based on environment
-const environment = detectEnvironment();
-const API_BASE = `${BACKEND_URLS[environment]}/fire-recovery`;
-
-// Severity v2 (no /fire-recovery prefix). Local uses the dev backend, which allows localhost CORS.
-export const V2_SEVERITY_URL =
-  `${BACKEND_URLS[environment === 'local' ? 'dev' : environment]}/v2/severity`;
-
-
-// Fire severity endpoints
-export const FIRE_ENDPOINTS = {
-  ANALYZE: `${API_BASE}/process/analyze_fire_severity`,
-  GET_ANALYSIS_RESULT: (fireEventName, jobId) => 
-    `${API_BASE}/result/analyze_fire_severity/${fireEventName}/${jobId}`
-};
-
-// Boundary refinement endpoints
-export const REFINEMENT_ENDPOINTS = {
-  SUBMIT: `${API_BASE}/process/refine`,
-  GET_RESULT: (fireEventName, jobId) => 
-    `${API_BASE}/result/refine/${fireEventName}/${jobId}`
-};
-
-// Vegetation impact endpoints
-export const VEGETATION_ENDPOINTS = {
-  RESOLVE: `${API_BASE}/process/resolve_against_veg_map`,
-  GET_RESULT: (fireEventName, jobId) => 
-    `${API_BASE}/result/resolve_against_veg_map/${fireEventName}/${jobId}`
-};
-
-// File upload endpoints
-export const UPLOAD_ENDPOINTS = {
-  SHAPEFILE: `${API_BASE}/upload/shapefile`,
-  GEOJSON: `${API_BASE}/upload/geojson`
-};
-
-// Export the base URL for other configurations
-export const API_BASE_URL = API_BASE;

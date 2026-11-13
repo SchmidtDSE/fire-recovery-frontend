@@ -1,81 +1,53 @@
 /**
- * Base Map functionality
- * Provides core map initialization and configuration
+ * Base map: a MapLibre map with switchable raster basemaps.
+ *
+ * MapLibre ships no browser ES module build, so the page loads its UMD
+ * bundle (with SRI) and this is the only module that touches the global.
  */
+import { BASEMAPS, DEFAULT_BASEMAP, MAP_DEFAULTS } from '../../core/config.js';
+import { getBounds } from '../utils/geojson-utils.js';
+
+/* global maplibregl */
 
 /**
- * Initialize a Leaflet map with default settings
- * @param {string} elementId - ID of the DOM element to contain the map
- * @param {Array} center - Starting center coordinates [lat, lng]
- * @param {number} zoom - Initial zoom level
- * @returns {L.Map} Initialized map instance
+ * Create a map in `container` with every basemap as a layer, only the default one visible.
+ * @param {string|HTMLElement} container
+ * @returns {Promise<maplibregl.Map>} the map, once its style has loaded
  */
-export function initializeMap(elementId, center = [33.8734, -115.9010], zoom = 10) {
-  if (!window.L) {
-    console.error('Leaflet library not loaded. Make sure to include Leaflet in your HTML.');
-    return null;
-  }
-
-  // Create the map
-  const map = L.map(elementId).setView(center, zoom);
-  
+export async function createBaseMap(container) {
+  const names = Object.keys(BASEMAPS);
+  const map = new maplibregl.Map({
+    container,
+    ...MAP_DEFAULTS,
+    style: {
+      version: 8,
+      sources: Object.fromEntries(names.map((name) => [name, {
+        type: 'raster',
+        tileSize: 256,
+        tiles: [BASEMAPS[name].tiles],
+        attribution: BASEMAPS[name].attribution,
+      }])),
+      layers: names.map((name) => ({
+        id: name,
+        type: 'raster',
+        source: name,
+        layout: { visibility: name === DEFAULT_BASEMAP ? 'visible' : 'none' },
+      })),
+    },
+  });
+  map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+  await map.once('load');
   return map;
 }
 
-/**
- * Create a set of standard base layers for the map
- * @returns {Object} Object containing various base layers
- */
-export function createBaseLayers() {
-  if (!window.L) {
-    console.error('Leaflet library not loaded.');
-    return {};
+/** Show the basemap called `name` and hide the others. */
+export function setBasemap(map, name) {
+  for (const id of Object.keys(BASEMAPS)) {
+    map.setLayoutProperty(id, 'visibility', id === name ? 'visible' : 'none');
   }
-
-  // OpenStreetMap tile layer
-  const streetMapLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 20,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-  });
-  
-  // Google Satellite tile layer
-  const satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-    maxZoom: 20,
-    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-    attribution: 'Imagery ©2023 Google'
-  });
-
-  // Return an object containing the layers
-  return {
-    streetMapLayer,
-    satelliteLayer
-  };
 }
 
-/**
- * Initialize map with standard configuration
- * @param {string} elementId - ID of the DOM element to contain the map
- * @param {Array} center - Starting center coordinates [lat, lng]
- * @param {number} zoom - Initial zoom level
- * @returns {Object} Object containing the map and its layers
- */
-export function createStandardMap(elementId, center, zoom) {
-  const map = initializeMap(elementId, center, zoom);
-  if (!map) return null;
-  
-  const baseLayers = createBaseLayers();
-  
-  // Add default street map layer
-  baseLayers.streetMapLayer.addTo(map);
-  
-  // Create layer groups for GeoJSON data and results
-  const geoJsonLayerGroup = new L.FeatureGroup().addTo(map);
-  const resultLayerGroup = L.layerGroup().addTo(map);
-  
-  return {
-    map,
-    baseLayers,
-    geoJsonLayerGroup,
-    resultLayerGroup
-  };
+/** Zoom the map to a GeoJSON geometry. */
+export function fitToGeometry(map, geometry) {
+  map.fitBounds(getBounds(geometry), { padding: 40 });
 }
