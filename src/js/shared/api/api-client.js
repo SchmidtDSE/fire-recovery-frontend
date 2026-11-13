@@ -1,224 +1,57 @@
-import { 
-  FIRE_ENDPOINTS, 
-  REFINEMENT_ENDPOINTS, 
-  VEGETATION_ENDPOINTS, 
-  UPLOAD_ENDPOINTS 
-} from './endpoints.js';
-import { processErrorResponse, createPollingMechanism } from './response-parser.js';
+import { SEVERITY_ENDPOINTS } from './endpoints.js';
+import { processErrorResponse } from './response-parser.js';
 
 /**
- * Fire severity analysis API calls
+ * A non-2xx response. `detail` is the body's `detail` (an array of field
+ * errors on 422); `retryAfter` is the Retry-After header (seconds) on 429.
  */
-export const analyzeFire = async (data) => {
-  const response = await fetch(FIRE_ENDPOINTS.ANALYZE, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    mode: 'cors',
-    body: JSON.stringify(data)
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(processErrorResponse(errorData, response.status));
+export class ApiError extends Error {
+  constructor(status, message, { detail = null, retryAfter = null } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.detail = detail;
+    this.retryAfter = retryAfter;
   }
-
-  return await response.json();
-};
-
-export const getFireAnalysisStatus = async (fireEventName, jobId) => {
-  const response = await fetch(
-    FIRE_ENDPOINTS.GET_ANALYSIS_RESULT(fireEventName, jobId),
-    {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-      mode: 'cors'
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(processErrorResponse(errorData, response.status));
-  }
-
-  return await response.json();
-};
+}
 
 /**
- * Boundary refinement API calls
+ * Submit a severity analysis.
+ * @param {Object} request - SeverityRequest
+ * @returns {Promise<Object>} SeverityResult (200: already computed) or SeverityAccepted (202: queued)
+ * @throws {ApiError} on any non-2xx response
  */
-export const submitRefinement = async (data) => {
-  const response = await fetch(REFINEMENT_ENDPOINTS.SUBMIT, {
+export function submitSeverity(request) {
+  return requestJson(SEVERITY_ENDPOINTS.SUBMIT, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    mode: 'cors',
-    body: JSON.stringify(data)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
   });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(processErrorResponse(errorData, response.status));
-  }
-
-  return await response.json();
-};
-
-export const getRefinementStatus = async (fireEventName, jobId) => {
-  const response = await fetch(
-    REFINEMENT_ENDPOINTS.GET_RESULT(fireEventName, jobId),
-    {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-      mode: 'cors'
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(processErrorResponse(errorData, response.status));
-  }
-
-  return await response.json();
-};
+}
 
 /**
- * Vegetation impact API calls
+ * Where a severity analysis stands.
+ * @param {string} jobId
+ * @returns {Promise<Object>} SeverityStatus
+ * @throws {ApiError} on any non-2xx response (404: unknown job)
  */
-export const resolveAgainstVegMap = async (data) => {
-  const response = await fetch(VEGETATION_ENDPOINTS.RESOLVE, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
+export function getSeverityStatus(jobId) {
+  return requestJson(SEVERITY_ENDPOINTS.STATUS(jobId), { method: 'GET' });
+}
+
+async function requestJson(url, { headers = {}, ...init }) {
+  const response = await fetch(url, {
+    ...init,
+    headers: { 'Accept': 'application/json', ...headers },
     mode: 'cors',
-    body: JSON.stringify(data)
   });
 
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(processErrorResponse(errorData, response.status));
+    throw new ApiError(response.status, processErrorResponse(data, response.status), {
+      detail: data.detail ?? null,
+      retryAfter: response.headers.get('Retry-After'),
+    });
   }
-
-  return await response.json();
-};
-
-export const getVegMapResult = async (fireEventName, jobId) => {
-  // Import state manager to get current severity breaks
-  const { default: stateManager } = await import('../../core/state-manager.js');
-  
-  // Get the first three classification breaks from the state
-  const colorBreaks = stateManager.getSharedState().colorBreaks;
-  const severityBreaks = colorBreaks.breaks.slice(0, 3); // Get first 3 breaks
-  
-  // Build URL with query parameters
-  const url = new URL(VEGETATION_ENDPOINTS.GET_RESULT(fireEventName, jobId));
-  severityBreaks.forEach(breakValue => {
-    url.searchParams.append('severity_breaks', breakValue);
-  });
-  
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers: { 'Accept': 'application/json' },
-    mode: 'cors'
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(processErrorResponse(errorData, response.status));
-  }
-
-  const result = await response.json();
-  
-  // Store both URLs separately for different purposes
-  // CSV URL: for direct download
-  // JSON URL: for fetching structured data for visualization
-  
-  // If we have a fire_veg_matrix_json_url and status is complete, fetch the JSON data
-  if (result.fire_veg_matrix_json_url && result.status === 'complete') {
-    try {
-      console.log('Fetching vegetation matrix JSON from:', result.fire_veg_matrix_json_url);
-      const matrixResponse = await fetch(result.fire_veg_matrix_json_url);
-      if (matrixResponse.ok) {
-        const matrixData = await matrixResponse.json();
-        console.log('Successfully fetched vegetation matrix data:', matrixData);
-        // Merge the matrix data into the result for visualization
-        result.vegetation_impact_data = matrixData;
-      } else {
-        console.warn('Failed to fetch vegetation matrix JSON:', matrixResponse.status, matrixResponse.statusText);
-      }
-    } catch (error) {
-      console.warn('Error fetching vegetation matrix data:', error);
-    }
-  }
-  
-  return result;
-};
-
-/**
- * File upload API calls
- */
-export const uploadShapefile = async (fireEventName, shapefileData) => {
-  // Create FormData object for file upload
-  const formData = new FormData();
-  formData.append('fire_event_name', fireEventName);
-  formData.append('shapefile', shapefileData);
-  formData.append('boundary_type', 'refined');
-
-  const response = await fetch(UPLOAD_ENDPOINTS.SHAPEFILE, {
-    method: 'POST',
-    mode: 'cors',
-    body: formData
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(processErrorResponse(errorData, response.status));
-  }
-
-  return await response.json();
-};
-
-export const uploadGeojson = async (fireEventName, geojsonData) => {
-  const data = {
-    fire_event_name: fireEventName,
-    geojson: geojsonData,
-    boundary_type: 'coarse'
-  };
-
-  const response = await fetch(UPLOAD_ENDPOINTS.GEOJSON, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    mode: 'cors',
-    body: JSON.stringify(data)
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(processErrorResponse(errorData, response.status));
-  }
-
-  return await response.json();
-};
-
-/**
- * Polling utility to check for completion of long-running processes
- * @param {Function} checkFunction - Function to call to check status
- * @param {number} interval - Interval between checks in milliseconds
- * @param {number} maxAttempts - Maximum number of polling attempts
- * @returns {Promise} Promise that resolves with the result object containing:
- *   - For fire severity: result.coarse_severity_cog_urls (dict mapping metric names to URLs)
- *   - For refinement: result.refined_severity_cog_urls (dict mapping metric names to URLs)
- *   - For boundary: result.refined_boundary_geojson_url (string URL)
- */
-export const pollUntilComplete = (checkFunction, interval = 2000, maxAttempts = 500) => {
-  return createPollingMechanism(checkFunction, interval, maxAttempts);
-};
+  return data;
+}

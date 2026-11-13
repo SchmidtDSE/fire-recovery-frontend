@@ -1,97 +1,48 @@
 /**
- * Map layers management functionality
- * Handle addition, removal, and switching of map layers
+ * Data layers on a MapLibre map: vector outlines and COG rasters.
+ * Each layer uses one id for both its source and its layer.
  */
+import { TITILER_URL } from '../../core/config.js';
+import { createGeoJSONFeature, createGeoJSONFeatureCollection } from '../utils/geojson-utils.js';
+import { cogTileUrl } from './glen.js';
 
 /**
- * Switch to a different base layer while preserving result layers
- * @param {L.Map} map - Leaflet map instance
- * @param {L.TileLayer} newBaseLayer - New base layer to display
- * @param {L.LayerGroup} resultLayerGroup - Layer group containing result layers
- * @param {L.FeatureGroup} geoJsonLayerGroup - Feature group containing GeoJSON data
+ * Add an empty outline layer, to be filled with setOutline().
+ * @param {maplibregl.Map} map
+ * @param {string} id
+ * @param {string} color - Line color
  */
-export function switchBaseLayer(map, newBaseLayer, resultLayerGroup, geoJsonLayerGroup) {
-  // Remove all existing base layers but keep result and GeoJSON layers
-  map.eachLayer(layer => {
-    if (layer !== resultLayerGroup && layer !== geoJsonLayerGroup) {
-      map.removeLayer(layer);
-    }
-  });
+export function addOutlineLayer(map, id, color) {
+  map.addSource(id, { type: 'geojson', data: createGeoJSONFeatureCollection() });
+  map.addLayer({ id, type: 'line', source: id, paint: { 'line-color': color, 'line-width': 2 } });
+}
 
-  // Add the new base layer at the bottom
-  newBaseLayer.addTo(map);
-  newBaseLayer.bringToBack();
-
-  // Ensure result layers stay on top
-  if (resultLayerGroup) {
-    resultLayerGroup.eachLayer(layer => {
-      if (layer instanceof L.Layer) {
-        layer.bringToFront();
-      }
-    });
-  }
+/** Draw `geometry` in an outline layer, or clear it with null. */
+export function setOutline(map, id, geometry) {
+  map.getSource(id).setData(geometry ? createGeoJSONFeature(geometry) : createGeoJSONFeatureCollection());
 }
 
 /**
- * Toggle layer visibility
- * @param {L.Map} map - Leaflet map instance
- * @param {L.Layer} layer - Layer to toggle
- * @returns {boolean} New visibility state (true if visible)
+ * Show a COG, rendered by TiTiler, adding the layer or pointing it at new tiles.
+ * @param {maplibregl.Map} map
+ * @param {string} id
+ * @param {string} cogUrl
+ * @param {{colormap: string, rescale: string, nodata: number}} style - TiTiler colormap name, "min,max" and no-data value
+ * @param {string} [beforeId] - Existing layer to draw beneath
  */
-export function toggleLayerVisibility(map, layer) {
-  if (map.hasLayer(layer)) {
-    map.removeLayer(layer);
-    return false;
-  } else {
-    layer.addTo(map);
-    return true;
+export function setCogLayer(map, id, cogUrl, style, beforeId) {
+  const tiles = [cogTileUrl(TITILER_URL, cogUrl, style)];
+  const source = map.getSource(id);
+  if (source) {
+    source.setTiles(tiles);
+    return;
   }
+  map.addSource(id, { type: 'raster', tileSize: 256, tiles });
+  map.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': 0.8 } }, beforeId);
 }
 
-
-/**
- * Remove all layers from the map.
- * 
- * @param {L.Map} map - Leaflet map instance
- */
-export function clearLayers(map) {
-  if (map) {
-    map.eachLayer(layer => {
-      if (layer instanceof L.Layer) {
-        map.removeLayer(layer);
-      }
-    });
-  }
-}
-
-/**
- * Set layer opacity
- * @param {L.Layer} layer - Layer to adjust
- * @param {number} opacity - Opacity value (0-1)
- */
-export function setLayerOpacity(layer, opacity) {
-  if (layer && typeof layer.setOpacity === 'function') {
-    layer.setOpacity(opacity);
-  }
-}
-
-/**
- * Clear all layers from a layer group
- * @param {L.LayerGroup} layerGroup - Layer group to clear
- */
-export function clearLayerGroup(layerGroup) {
-  if (layerGroup) {
-    layerGroup.clearLayers();
-  }
-}
-
-/**
- * Create a layer control for the map
- * @param {L.Map} map - Leaflet map instance
- * @param {Object} baseLayers - Object containing base layers
- * @param {Object} overlays - Object containing overlay layers
- * @returns {L.Control.Layers} Layer control
- */
-export function createLayerControl(map, baseLayers, overlays) {
-  return L.control.layers(baseLayers, overlays).addTo(map);
+/** Remove a layer and its source, if present. */
+export function removeLayer(map, id) {
+  if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(id)) map.removeSource(id);
 }

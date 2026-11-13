@@ -3,33 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Fire severity analysis tools for National Park Service fire recovery">
+    <meta name="description" content="Fire severity analysis for National Park Service fire recovery">
     <title>Fire Recovery: Fire Severity Analysis</title>
-    
-    <!-- Stylesheets -->
+
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700&display=swap">
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.22.0/dist/maplibre-gl.css"
+        integrity="sha384-MGCxhspF/+ufueUgol3FDkiAYQbpSNRhBT0VWHJt64U8qIy9qlnXWx8LAbj6niPH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+        integrity="sha384-DyZ88mC6Up2uqS4h/KRgHuoeGwBcD4Ng9SiP4dIRy0EXTlnuz47vAwmeGwVChigm" crossorigin="anonymous">
     <link rel="stylesheet" href="./css/main.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
+
+    <!-- Integrity for the GLEN modules imported by js/shared/map/glen.js (bump together) -->
+    <script type="importmap">
+    {
+        "integrity": {
+            "https://cdn.jsdelivr.net/gh/SchmidtDSE/glen@v3.51.0/app/map-draw.js": "sha384-GTVih5vT/RNiHHCLT5p2sgYejw0WTZxjjc/u4scuTOoz23gwq41kD7iHz6dVja/+",
+            "https://cdn.jsdelivr.net/gh/SchmidtDSE/glen@v3.51.0/app/cog-tiles.js": "sha384-cr5zEk7FXQ88rUJnsU66pQISvAORwWCGsB3xYUh65itZg3RqH5PACG6ERQyKA61u"
+        }
+    }
+    </script>
 </head>
 <body>
-    <!-- Navigation -->
     <nav class="navbar">
         <ul class="nav-list">
-            <li class="nav-item home"><a href="index.html">Home</a></li>
-            <div class="center-links">
-                <li class="nav-item"><a href="fireSeverity.html">Fire Severity</a></li>
-                <li class="nav-item"><a href="vegModel.html">Vegetation Modeling</a></li>
-                <li class="nav-item"><a href="resourceOpt.html">Resource Optimization</a></li>
-            </div>
-            <li class="nav-item login"><a href="#">Login</a></li>
+            <li class="nav-item"><a href="fireSeverity.html" aria-current="page">Fire Severity</a></li>
         </ul>
     </nav>
 
-    <!-- Hero Banner -->
     <header class="hero-image">
         <div class="black-bar"></div>
         <div class="hero-text-box">
@@ -37,217 +37,97 @@
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="main-container">
-        <!-- Analysis Controls -->
-        <section class="analysis-controls">
-            <div class="form-section">
-                <h2 class="section-title">Analysis Parameters</h2>
-                <p class="instructions">Make selections for fire analysis. Upload a shapefile or draw a polygon on the map.</p>
-                
-                <!-- Park Unit Selector -->
-                <div class="form-field">
-                    <label class="field-label" for="park-unit">Park Unit:</label>
-                    <select id="park-unit" class="field-input" required>
-                        <option value="">-- Select a park unit --</option>
-                        <!-- Options populated by JavaScript -->
-                    </select>
-                </div>
-
-                <!-- Fire Event Name -->
-                <div class="form-field">
-                    <label class="field-label" for="fire-event-name">Fire Event Name:</label>
-                    <input type="text" id="fire-event-name" class="field-input" 
-                        placeholder="Enter a name for this fire event" required>
-                </div>
-
-                <!-- Fire Severity Metric -->
-                <div class="form-field">
-                    <label class="field-label" for="fire-severity-metric-select">Severity Metric:</label>
-                    <select id="fire-severity-metric-select" class="field-input">
-                        <!-- Options populated by JavaScript -->
-                    </select>
-                </div>
-                
-                <!-- File Upload -->
-                <div class="form-field file-upload">
-                    <label for="upload-shapefile" class="primary-button">
-                        <i class="fas fa-upload"></i> Upload Shapefile
-                    </label>
-                    <input type="file" id="upload-shapefile" accept=".zip" hidden>
-                    <span id="upload-status" class="upload-status"></span>
-                </div>
+    <main class="app">
+        <section class="app-map">
+            <div class="toggle-group basemap-toggle">
+                <button class="active" type="button" data-basemap="topographic">Topographic</button>
+                <button type="button" data-basemap="satellite">Satellite</button>
             </div>
+            <div id="map"></div>
+        </section>
 
-            <div class="date-section">
-                <h2 class="section-title">Date Range Selection</h2>
-                <p class="instructions">Specify dates for pre and post fire time ranges.</p>
-                </p>
-                
-                <!-- Pre-fire Date Range -->
-                <div class="date-group">
-                    <h3 class="date-title">Pre-fire Period</h3>
-                    <div class="date-field-pair">
-                        <div class="date-field">
-                            <label for="prefire-start-date">Start Date:</label>
-                            <input type="date" id="prefire-start-date" required>
-                        </div>
-                        <div class="date-field">
-                            <label for="prefire-end-date">End Date:</label>
-                            <input type="date" id="prefire-end-date" required>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Post-fire Date Range -->
-                <div class="date-group">
-                    <h3 class="date-title">Post-fire Period</h3>
-                    <div class="date-field-pair">
-                        <div class="date-field">
-                            <label for="postfire-start-date">Start Date:</label>
-                            <input type="date" id="postfire-start-date" required>
-                        </div>
-                        <div class="date-field">
-                            <label for="postfire-end-date">End Date:</label>
-                            <input type="date" id="postfire-end-date" required>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Process Button -->
-                <div class="action-container">
-                    <button id="process-button" type="button" class="primary-button">
-                        <i class="fas fa-fire"></i> Process Fire Analysis
+        <aside class="app-panel">
+            <p id="load-error" class="results-box error" role="alert" hidden>
+                The map could not load. Check your connection and reload the page.
+            </p>
+            <form id="severity-form">
+                <h2 class="section-title">Burn Severity Analysis</h2>
+                <p>Outline a fire and choose dates. We compute dNBR, RdNBR and RBR from satellite
+                    imagery and email you when the maps are ready.</p>
+                <details>
+                    <summary>How it works</summary>
+                    <ol>
+                        <li>Draw the fire perimeter on the map, or upload it as a file.</li>
+                        <li>Name the fire, choose a satellite and set the pre-fire and post-fire dates.</li>
+                        <li>Submit. The analysis runs on our servers and can take a while.</li>
+                        <li>When it finishes, the results appear here if the page is still open,
+                            and we email you links to them.</li>
+                    </ol>
+                    <p>Only the perimeter's bounding box is used, and the perimeter is not stored.
+                        If the same analysis has been run before, the results appear right away.</p>
+                </details>
+
+                <h2 class="section-title">1. Fire Perimeter</h2>
+                <div class="button-row">
+                    <button id="draw-button" type="button" class="primary-button">
+                        <i class="fas fa-draw-polygon"></i> Draw on Map
                     </button>
-                    <span id="process-status" class="process-status"></span>
+                    <label for="upload-perimeter" class="primary-button">
+                        <i class="fas fa-upload"></i> Upload File
+                    </label>
+                    <input type="file" id="upload-perimeter" accept=".zip,.geojson,.json" hidden>
                 </div>
-            </div>
-            
-            <!-- Boundary Refinement UI (hidden initially) -->
-            <div id="refinement-container" class="refinement-container hidden">
-                <!-- Workflow 1: Boundary Refinement -->
-                <div class="workflow-group" id="boundary-workflow">
-                    <h2 class="section-title">1. Boundary Refinement</h2>
-                    <p class="instructions">Draw an outline on the map to refine the boundary, then accept when satisfied.</p>
-                    <div class="workflow-buttons">
-                        <button id="refine-button" class="action-button" disabled>Refine</button>
-                        <button id="accept-button" class="action-button">Accept</button>
-                    </div>
+                <span class="hint">Upload a zipped shapefile (.zip containing .shp, .shx, .dbf and .prj)
+                    or a GeoJSON file (.geojson or .json).</span>
+                <p class="hint"><strong id="perimeter-status" role="status">No perimeter yet.</strong></p>
+
+                <h2 class="section-title">2. Details</h2>
+                <div class="field">
+                    <label for="fire-event-name">Fire event name</label>
+                    <input type="text" id="fire-event-name" placeholder="e.g. Geology_Fire"
+                        pattern="[A-Za-z0-9_\-]+" maxlength="128" required>
+                    <span class="hint">Letters, numbers, _ and - only.</span>
+                </div>
+                <div class="field">
+                    <label for="sensor">Satellite</label>
+                    <select id="sensor">
+                        <option value="sentinel-2" selected>Sentinel-2 (20 m)</option>
+                        <option value="landsat">Landsat (30 m)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" maxlength="254" placeholder="you@nps.gov" required>
+                    <span class="hint">Only used to send you the results. Not stored.</span>
                 </div>
 
-                <!-- Workflow 2: Vegetation Analysis -->
-                <div class="workflow-group" id="vegetation-workflow">
-                    <h2 class="section-title">2. Vegetation Analysis</h2>
-                    <p class="instructions">Analyze vegetation impact, then accept when satisfied.</p>
-                    <div class="workflow-buttons">
-                        <button id="analyze-veg-button" class="action-button" disabled>
-                            <i class="fas fa-leaf"></i> Analyze
-                        </button>
-                        <button id="accept-veg-button" class="action-button" disabled>Accept</button>
-                    </div>
+                <h2 class="section-title">3. Dates</h2>
+                <div class="dates">
+                    <span></span><span>Start</span><span>End</span>
+                    <label for="prefire-start-date"><strong>Pre-fire</strong></label>
+                    <input type="date" id="prefire-start-date" required>
+                    <input type="date" id="prefire-end-date" aria-label="Pre-fire end date" required>
+                    <label for="postfire-start-date"><strong>Post-fire</strong></label>
+                    <input type="date" id="postfire-start-date" required>
+                    <input type="date" id="postfire-end-date" aria-label="Post-fire end date" required>
                 </div>
+                <span class="hint">Each date starts out at the one before it. An end date can't be
+                    earlier than its start.</span>
 
-                <!-- Reset button (affects all workflows) -->
-                <div class="workflow-reset">
-                    <button id="reset-button" class="action-button secondary">Reset All</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Map and Results -->
-        <section class="map-and-results">
-            <div class="map-container">
-                <div class="map-controls">
-                    <button class="map-button active" data-map="street">Street Map</button>
-                    <button class="map-button" data-map="satellite">Satellite</button>
-                    <button class="map-button" data-map="vegetation">Vegetation</button>
-                </div>
-                <div id="map"></div>
-            </div>
-            
-            <!-- Results Panel -->
-            <div class="results-panel hidden">
-                <!-- Satellite Info Box -->
-                <div class="results-box" id="metrics-tab">
-                    <h4>Satellite Info</h4>
-                    <p id="satellite-info-placeholder" class="placeholder-text">Satellite imagery date ranges will appear here after running fire analysis.</p>
-                    <div class="metrics-group">
-                        <div id="prefire-dates" class="metric-value"></div>
-                        <div id="postfire-dates" class="metric-value"></div>
-                    </div>
-                    <!-- Hidden fire severity metric div (required by JS) -->
-                    <div id="fire-severity-metric" class="metric-value" style="display:none;"></div>
-                    <div id="biomass-lost-metric" class="metric-value"></div>
-                </div>
-
-                <!-- Vegetation Impact Box -->
-                <div class="results-box" id="vegetation-tab">
-                    <h4>Vegetation Impact Analysis</h4>
-                    <p id="vegetation-placeholder" class="placeholder-text">Vegetation community impacts will appear here after clicking Analyze in the vegetation workflow.</p>
-                    <!-- Status message area for vegetation analysis -->
-                    <div id="vegetation-status" class="status-message"></div>
-
-                    <!-- Loading indicator for vegetation analysis -->
-                    <div class="loading-container" id="vegetation-loading" style="display:none;">
-                        <div class="spinner"></div>
-                        <p>Analyzing vegetation impact...</p>
-                    </div>
-
-                    <div class="table-container" id="vegetation-table-container">
-                    </div>
-                </div>
-
-                <!-- Analysis State Box -->
-                <div class="results-box state-management-controls">
-                    <h4>Analysis State</h4>
-                    <p>Save your current analysis to continue later, or load a previous analysis.</p>
-                    <div class="state-buttons">
-                        <button id="export-state-button" class="action-button">
-                            <i class="fas fa-download"></i> Save State
-                        </button>
-                        <button id="import-state-button" class="action-button">
-                            <i class="fas fa-upload"></i> Upload State
-                        </button>
-                        <input type="file" id="import-state-file" accept=".json" hidden>
-                    </div>
-                </div>
-
-                <!-- Color Break Controls Box -->
-                <div class="results-box color-break-controls">
-                    <h4>Fire Severity Color Breaks</h4>
-                    <p>Adjust the threshold values for each color break:</p>
-                    <div class="color-sliders">
-                        <!-- Sliders will be populated by JavaScript -->
-                    </div>
-                </div>
-            </div>
-        </section>
+                <button id="submit-button" type="submit" class="primary-button form-submit">
+                    <i class="fas fa-fire"></i> Submit Fire Analysis
+                </button>
+                <div id="submit-result" class="results-box" role="status" aria-live="polite" hidden></div>
+            </form>
+        </aside>
     </main>
 
-    <!-- Footer -->
-    <footer class="site-footer">
-        <nav class="footer-nav">
-            <ul>
-                <li><a href="#methodology">Methodology</a></li>
-                <li><a href="#contact">Contact</a></li>
-                <li><a href="#about">About</a></li>
-            </ul>
-        </nav>
-    </footer>
-    
-    <!-- Core Libraries -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-    <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
-    <script src="https://unpkg.com/georaster"></script>
-    <script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <!-- Application Scripts -->
-    <script type="module" src="js/core/app.js"></script>
+    <!-- MapLibre and shpjs ship no browser ES module builds; js/shared/ wraps their globals -->
+    <script src="https://unpkg.com/maplibre-gl@5.22.0/dist/maplibre-gl.js"
+        integrity="sha384-U054LTKiMIJKEecR8PKFiUZdvkGWHjfPBnen5hSmR9TwfOfgZmKbskC8Rs9dCm/1" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/shpjs@6.1.0/dist/shp.min.js"
+        integrity="sha384-Wup4ONw019cqQVJaAgNVcwH4fVvYGHb88fyI18ExUSxTWAing8m6jbriAtG7mfNV" crossorigin="anonymous"></script>
+    <script type="module" src="js/fire-severity.js"></script>
     <script src="js/core/hero-image.js"></script>
-
 </body>
 </html>
