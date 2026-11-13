@@ -1,10 +1,9 @@
 import { ISeverityView } from './severity-contract.js';
 import { createBaseMap, setBasemap, fitToGeometry } from '../../shared/map/base-map.js';
 import { DrawTool } from '../../shared/map/draw-tools.js';
-import { addOutlineLayer, setOutline, setClippedRasterLayer } from '../../shared/map/map-layers.js';
-import { classifiedTileUrl } from '../../shared/map/titiler.js';
+import { addOutlineLayer, setOutline, setCogLayer } from '../../shared/map/map-layers.js';
 import { createElement as h } from '../../shared/utils/ui-utils.js';
-import { SEVERITY_CLASSES, SEVERITY_NODATA, SEVERITY_PRODUCTS } from '../../core/config.js';
+import { SEVERITY_COLORMAP, SEVERITY_NODATA, SEVERITY_PRODUCTS } from '../../core/config.js';
 
 const UPLOAD_LAYER = 'upload';
 const SEVERITY_LAYER = 'severity';
@@ -61,13 +60,10 @@ export class SeverityView extends ISeverityView {
       const button = e.target.closest('.product-toggle button');
       if (button) this.presenter.handleProductChange(button.value);
     });
-    this.result.addEventListener('input', (e) => {
-      if (e.target.matches('.severity-classes input')) showBreakValue(e.target);
-    });
     this.result.addEventListener('change', (e) => {
-      if (e.target.matches('.severity-classes input')) {
-        this.presenter.handleBreakChange(Number(e.target.dataset.index), Number(e.target.value));
-      }
+      if (!e.target.matches('.color-range input')) return;
+      const [min, max] = this.result.querySelectorAll('.color-range input');
+      this.presenter.handleRangeChange(min.valueAsNumber, max.valueAsNumber);
     });
   }
 
@@ -126,30 +122,28 @@ export class SeverityView extends ISeverityView {
     const products = Object.keys(rasters);
     this.#showMessage('',
       h('h4', {}, 'Results ready'),
-      products.length > 0 && h('p', {}, 'Shown on the map within the perimeter. Drag a slider to change where a class starts.'),
+      products.length > 0 && h('p', {}, 'Shown on the map from yellow to red. Set the values at either end to stretch the colours.'),
       products.length > 0 && h('div', { className: 'toggle-group product-toggle', role: 'group', ariaLabel: 'Severity product' },
         ...products.map((name) => h('button', { type: 'button', value: name }, SEVERITY_PRODUCTS[name].label))),
-      products.length > 0 && severityClasses(),
+      products.length > 0 && colorRange(),
       h('ul', {}, ...products.map((name) =>
         h('li', {}, h('a', { href: rasters[name] }, `${SEVERITY_PRODUCTS[name].label} (GeoTIFF)`)))),
       h('p', {}, externalLink(catalogUrl, 'STAC catalog')));
   }
 
-  showSeverityControls(product, breaks) {
+  showSeverityControls(product, range) {
     for (const button of this.result.querySelectorAll('.product-toggle button')) {
       button.classList.toggle('active', button.value === product);
       button.ariaPressed = String(button.value === product);
     }
-    this.result.querySelectorAll('.severity-classes input').forEach((input, i) => {
-      input.max = SEVERITY_PRODUCTS[product].max;
-      input.value = breaks[i];
-      showBreakValue(input);
+    this.result.querySelectorAll('.color-range input').forEach((input, i) => {
+      input.value = range[i];
     });
   }
 
-  showSeverityOverlay(cogUrl, breaks, perimeter) {
-    const tileUrl = classifiedTileUrl(cogUrl, breaks, SEVERITY_CLASSES.map((c) => c.color), SEVERITY_NODATA);
-    setClippedRasterLayer(this.map, SEVERITY_LAYER, tileUrl, perimeter, UPLOAD_LAYER);
+  showSeverityOverlay(cogUrl, [min, max]) {
+    const style = { colormap: SEVERITY_COLORMAP, rescale: `${min},${max}`, nodata: SEVERITY_NODATA };
+    setCogLayer(this.map, SEVERITY_LAYER, cogUrl, style, UPLOAD_LAYER);
   }
 
   zoomTo(geometry) {
@@ -170,22 +164,12 @@ export class SeverityView extends ISeverityView {
   }
 }
 
-/** The severity legend: per class a swatch, its name and, past the first, a slider for where it starts. */
-function severityClasses() {
-  return h('div', { className: 'severity-classes' }, ...SEVERITY_CLASSES.flatMap(({ name, color }, i) => {
-    const swatch = h('span', { className: 'swatch' });
-    swatch.style.background = color;
-    if (i === 0) return [swatch, h('span', {}, name), h('span'), h('span')];
-    const id = `severity-break-${i - 1}`;
-    const slider = h('input', { type: 'range', id, min: '0', step: '0.001' });
-    slider.dataset.index = String(i - 1);
-    return [swatch, h('label', { htmlFor: id }, name), slider, h('output', { htmlFor: id })];
-  }));
-}
-
-/** Show a break slider's value in the output beside it. */
-function showBreakValue(slider) {
-  slider.nextElementSibling.value = Number(slider.value).toFixed(3);
+/** The colour ramp between number inputs for the values at its ends. */
+function colorRange() {
+  return h('div', { className: 'color-range' },
+    h('input', { type: 'number', step: 'any', name: 'range-min', ariaLabel: 'Value shown as yellow' }),
+    h('span', { className: 'color-ramp' }),
+    h('input', { type: 'number', step: 'any', name: 'range-max', ariaLabel: 'Value shown as red' }));
 }
 
 function externalLink(href, text) {

@@ -68,26 +68,23 @@
   margin: 0 0 8px 20px;
 }
 
-/* Severity classes: a swatch, a name and, above the first, a slider for its lower bound */
-.severity-classes {
+/* A colour ramp between the values at its ends */
+.color-range {
   display: grid;
-  grid-template-columns: 16px auto 1fr 3.5em;
-  gap: 6px 8px;
+  grid-template-columns: 5em 1fr 5em;
+  gap: 8px;
   align-items: center;
   margin: 12px 0;
 }
 
-.severity-classes .swatch {
-  width: 16px;
+.color-range input {
+  min-width: 0;
+  padding: 4px;
+}
+
+/* TiTiler's 'ylorrd' (config.js SEVERITY_COLORMAP) */
+.color-ramp {
   height: 16px;
   border: 1px solid #999;
-}
-
-.severity-classes input {
-  min-width: 0;
-}
-
-.severity-classes output {
-  font-variant-numeric: tabular-nums;
-  text-align: right;
+  background: linear-gradient(to right, #ffffcc, #ffeda0, #fed976, #feb24c, #fd8d3c, #fc4e2a, #e31a1c, #bd0026, #800026);
 }

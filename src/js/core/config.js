@@ -25,26 +25,17 @@ export const STATUS_POLL_INTERVAL_MS = 15000;
 /** TiTiler instance that renders result COGs as map tiles (GLEN's default). */
 export const TITILER_URL = 'https://titiler.nrp-nautilus.io';
 
-/** Severity classes, low to high, drawn yellow to red (ColorBrewer YlOrRd). */
-export const SEVERITY_CLASSES = [
-  { name: 'Unburned', color: '#ffffb2' },
-  { name: 'Low', color: '#fecc5c' },
-  { name: 'Moderate', color: '#fd8d3c' },
-  { name: 'High', color: '#e31a1c' },
-];
-
 /**
- * The severity products, keyed by result asset name. `breaks` are the default
- * lower bounds of every class above Unburned (unitless, as the rasters store
- * them); `max` is the top of their sliders.
- *   dNBR: Key & Benson (2006). RdNBR: Miller & Thode (2007). RBR: Parks et al. (2014).
+ * The severity products, keyed by result asset name, and the default range of
+ * values their colour ramp spans (unitless, as the rasters store them).
  */
 export const SEVERITY_PRODUCTS = {
-  dnbr: { label: 'dNBR', breaks: [0.1, 0.27, 0.66], max: 1.3 },
-  rdnbr: { label: 'RdNBR', breaks: [0.069, 0.316, 0.641], max: 1.5 },
-  rbr: { label: 'RBR', breaks: [0.035, 0.13, 0.298], max: 0.6 },
+  dnbr: { label: 'dNBR', range: [0, 0.8] },
+  rdnbr: { label: 'RdNBR', range: [0, 1.2] },
+  rbr: { label: 'RBR', range: [0, 0.4] },
 };
 export const DEFAULT_PRODUCT = 'rbr';
 
-/** Pixel value the result rasters use for no data. */
+/** How severity rasters are drawn: TiTiler's yellow-orange-red ramp, and the rasters' no-data value. */
+export const SEVERITY_COLORMAP = 'ylorrd';
 export const SEVERITY_NODATA = -9999;

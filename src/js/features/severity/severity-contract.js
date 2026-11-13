@@ -1,8 +1,8 @@
 /**
  * Contract for the fire severity MVP: collect a perimeter, dates, sensor and
  * email, and submit one batch analysis (POST /v2/severity). While the page is
- * open it checks on a queued analysis and maps the result, classed by severity
- * with adjustable breaks; the backend also emails the requester when it finishes.
+ * open it checks on a queued analysis and maps the result on a colour ramp whose
+ * range the user can set; the backend also emails the requester when it finishes.
  */
 
 /**
@@ -23,7 +23,7 @@
  */
 
 /**
- * Model: the perimeter, the request and the severity class breaks. Talks to the API; knows nothing of the DOM.
+ * Model: the perimeter, the request and each product's colour range. Talks to the API; knows nothing of the DOM.
  */
 export class ISeverityModel {
   /** @returns {{geometry: Object, source: 'drawn'|'uploaded'}|null} */
@@ -68,17 +68,17 @@ export class ISeverityModel {
 
   /**
    * @param {string} product - A key of SEVERITY_PRODUCTS
-   * @returns {Array<number>} The product's class breaks, ascending
+   * @returns {[number, number]} The values at the ends of the product's colour ramp
    */
-  getBreaks(product) {}
+  getRange(product) {}
 
   /**
-   * Move one break, kept between its neighbours and within the product's range.
+   * Set a product's colour range; ignored unless min < max.
    * @param {string} product
-   * @param {number} index - Which break
-   * @param {number} value
+   * @param {number} min
+   * @param {number} max
    */
-  setBreak(product, index, value) {}
+  setRange(product, min, max) {}
 }
 
 /**
@@ -123,19 +123,18 @@ export class ISeverityView {
   showResult(outcome) {}
 
   /**
-   * Mark the selected product and set the break sliders.
+   * Mark the selected product and show its colour range.
    * @param {string} product
-   * @param {Array<number>} breaks
+   * @param {[number, number]} range
    */
-  showSeverityControls(product, breaks) {}
+  showSeverityControls(product, range) {}
 
   /**
-   * Map a severity raster, classed by `breaks` and cropped to `perimeter`.
+   * Map a severity raster on the colour ramp, from range[0] to range[1].
    * @param {string} cogUrl
-   * @param {Array<number>} breaks
-   * @param {Object} perimeter
+   * @param {[number, number]} range
    */
-  showSeverityOverlay(cogUrl, breaks, perimeter) {}
+  showSeverityOverlay(cogUrl, range) {}
 
   /** @param {Object} geometry */
   zoomTo(geometry) {}
@@ -170,8 +169,8 @@ export class ISeverityPresenter {
   handleProductChange(product) {}
 
   /**
-   * @param {number} index - Which break
-   * @param {number} value
+   * @param {number} min - NaN if left empty
+   * @param {number} max - NaN if left empty
    */
-  handleBreakChange(index, value) {}
+  handleRangeChange(min, max) {}
 }

@@ -54,9 +54,9 @@ export class SeverityPresenter extends ISeverityPresenter {
     this.#showSeverity();
   }
 
-  handleBreakChange(index, value) {
-    this.model.setBreak(this.#mapped.product, index, value);
-    this.#showSeverity();
+  handleRangeChange(min, max) {
+    this.model.setRange(this.#mapped.product, min, max);
+    this.#showSeverity(); // also puts back an invalid entry
   }
 
   handleDateChange(index) {
@@ -127,7 +127,7 @@ export class SeverityPresenter extends ISeverityPresenter {
     }
   }
 
-  /** The result on the map: its rasters, the perimeter they are cropped to, and the product shown. */
+  /** The result on the map: its rasters and the product shown. */
   #mapped = null;
 
   #showResult(outcome, perimeter) {
@@ -135,16 +135,16 @@ export class SeverityPresenter extends ISeverityPresenter {
     const products = Object.keys(outcome.rasters);
     if (products.length === 0) return;
     const product = products.includes(DEFAULT_PRODUCT) ? DEFAULT_PRODUCT : products[0];
-    this.#mapped = { rasters: outcome.rasters, perimeter, product };
+    this.#mapped = { rasters: outcome.rasters, product };
     this.#showSeverity();
     this.view.zoomTo(perimeter);
   }
 
   #showSeverity() {
-    const { rasters, perimeter, product } = this.#mapped;
-    const breaks = this.model.getBreaks(product);
-    this.view.showSeverityControls(product, breaks);
-    this.view.showSeverityOverlay(rasters[product], breaks, perimeter);
+    const { rasters, product } = this.#mapped;
+    const range = this.model.getRange(product);
+    this.view.showSeverityControls(product, range);
+    this.view.showSeverityOverlay(rasters[product], range);
   }
 }
 

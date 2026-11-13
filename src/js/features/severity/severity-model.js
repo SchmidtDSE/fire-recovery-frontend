@@ -6,11 +6,11 @@ import { SEVERITY_PRODUCTS } from '../../core/config.js';
 
 /**
  * The fire perimeter (drawn or uploaded: the last one wins), the severity
- * request, and the class breaks each product is drawn with.
+ * request, and the colour range each product is drawn with.
  */
 export class SeverityModel extends ISeverityModel {
   #perimeter = null;
-  #breaks = Object.fromEntries(Object.entries(SEVERITY_PRODUCTS).map(([name, { breaks }]) => [name, [...breaks]]));
+  #ranges = Object.fromEntries(Object.entries(SEVERITY_PRODUCTS).map(([name, { range }]) => [name, range]));
 
   getPerimeter() {
     return this.#perimeter;
@@ -52,15 +52,12 @@ export class SeverityModel extends ISeverityModel {
     return toOutcome(await getSeverityStatus(jobId));
   }
 
-  getBreaks(product) {
-    return [...this.#breaks[product]];
+  getRange(product) {
+    return this.#ranges[product];
   }
 
-  setBreak(product, index, value) {
-    const breaks = this.#breaks[product];
-    const lower = breaks[index - 1] ?? 0;
-    const upper = breaks[index + 1] ?? SEVERITY_PRODUCTS[product].max;
-    breaks[index] = Math.min(Math.max(value, lower), upper);
+  setRange(product, min, max) {
+    if (min < max) this.#ranges[product] = [min, max];
   }
 }
 
