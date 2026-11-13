@@ -1,6 +1,7 @@
 import { ISeverityPresenter } from './severity-contract.js';
 import { ApiError } from '../../shared/api/api-client.js';
 import { anchorNextDate } from '../../shared/utils/date-utils.js';
+import { STATUS_POLL_INTERVAL_MS } from '../../core/config.js';
 
 /**
  * Fire severity presenter: turns user actions into model updates and view changes.
@@ -63,21 +64,63 @@ export class SeverityPresenter extends ISeverityPresenter {
       return;
     }
 
+    this.#watchedJob = null;
     this.view.setSubmitting(true);
+    let outcome;
     try {
-      const outcome = await this.model.submit(request);
-      if (outcome.kind === 'queued') {
-        this.view.showQueued(outcome, request.email);
-      } else {
-        this.view.showResult(outcome);
-        if (outcome.overlayUrl) this.view.showSeverityOverlay(outcome.overlayUrl, request.geometry);
-      }
+      outcome = await this.model.submit(request);
+      this.#showOutcome(outcome, request);
     } catch (err) {
       this.view.showError(...describeError(err));
+      return;
     } finally {
       this.view.setSubmitting(false);
     }
+    if (outcome.kind === 'queued') this.#watch(outcome, request);
   }
+
+  /** The job polled by #watch(); a new submission replaces it, which stops the old loop. */
+  #watchedJob = null;
+
+  /**
+   * Check on a queued analysis until it succeeds or fails, showing each change of state.
+   * Failed checks are retried on the next tick: the backend's email is the fallback.
+   */
+  async #watch(queued, request) {
+    const { jobId } = queued;
+    this.#watchedJob = jobId;
+    let shown = queued;
+    while (this.#watchedJob === jobId) {
+      await delay(STATUS_POLL_INTERVAL_MS);
+      if (this.#watchedJob !== jobId) return;
+      let outcome;
+      try {
+        outcome = await this.model.getStatus(jobId);
+      } catch (err) {
+        console.warn(`Status check for ${jobId} failed; retrying`, err);
+        continue;
+      }
+      if (this.#watchedJob !== jobId) return;
+      if (outcome.kind !== 'queued') this.#watchedJob = null;
+      if (outcome.kind !== shown.kind || outcome.state !== shown.state) this.#showOutcome(outcome, request);
+      shown = outcome;
+    }
+  }
+
+  #showOutcome(outcome, request) {
+    if (outcome.kind === 'queued') {
+      this.view.showQueued(outcome, request.email);
+    } else if (outcome.kind === 'failed') {
+      this.view.showError(`The analysis failed: ${outcome.error}`);
+    } else {
+      this.view.showResult(outcome);
+      if (outcome.overlayUrl) this.view.showSeverityOverlay(outcome.overlayUrl, request.geometry);
+    }
+  }
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /** @returns {[string, Array<string>]} A message and its details, for view.showError() */

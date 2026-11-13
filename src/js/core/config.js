@@ -19,6 +19,9 @@ export const BASEMAPS = {
 };
 export const DEFAULT_BASEMAP = 'topographic';
 
+/** How often to check on a queued analysis while the page is open. */
+export const STATUS_POLL_INTERVAL_MS = 15000;
+
 /** TiTiler instance that renders result COGs as map tiles (GLEN's default). */
 export const TITILER_URL = 'https://titiler.nrp-nautilus.io';
 

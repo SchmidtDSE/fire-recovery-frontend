@@ -21,15 +21,29 @@ export class ApiError extends Error {
  * @returns {Promise<Object>} SeverityResult (200: already computed) or SeverityAccepted (202: queued)
  * @throws {ApiError} on any non-2xx response
  */
-export async function submitSeverity(request) {
-  const response = await fetch(SEVERITY_ENDPOINTS.SUBMIT, {
+export function submitSeverity(request) {
+  return requestJson(SEVERITY_ENDPOINTS.SUBMIT, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-    mode: 'cors',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
+  });
+}
+
+/**
+ * Where a severity analysis stands.
+ * @param {string} jobId
+ * @returns {Promise<Object>} SeverityStatus
+ * @throws {ApiError} on any non-2xx response (404: unknown job)
+ */
+export function getSeverityStatus(jobId) {
+  return requestJson(SEVERITY_ENDPOINTS.STATUS(jobId), { method: 'GET' });
+}
+
+async function requestJson(url, { headers = {}, ...init }) {
+  const response = await fetch(url, {
+    ...init,
+    headers: { 'Accept': 'application/json', ...headers },
+    mode: 'cors',
   });
 
   const data = await response.json().catch(() => ({}));

@@ -1,5 +1,5 @@
 import { ISeverityModel } from './severity-contract.js';
-import { submitSeverity } from '../../shared/api/api-client.js';
+import { getSeverityStatus, submitSeverity } from '../../shared/api/api-client.js';
 import { readGeoJSONFile } from '../../shared/utils/file-utils.js';
 import { toMultiPolygon } from '../../shared/utils/geojson-utils.js';
 import { SEVERITY_OVERLAY } from '../../core/config.js';
@@ -43,18 +43,30 @@ export class SeverityModel extends ISeverityModel {
   }
 
   async submit(request) {
-    const response = await submitSeverity(request);
-    if (!('assets' in response)) {
-      return { kind: 'queued', jobId: response.job_id, state: response.state, statusUrl: response.status_url };
-    }
-    const { thumbnail = null, ...rasters } = response.assets;
-    return {
-      kind: 'ready',
-      jobId: response.job_id,
-      catalogUrl: response.catalog_url,
-      thumbnail,
-      rasters,
-      overlayUrl: rasters[SEVERITY_OVERLAY.asset] ?? null,
-    };
+    return toOutcome(await submitSeverity(request));
   }
+
+  async getStatus(jobId) {
+    return toOutcome(await getSeverityStatus(jobId));
+  }
+}
+
+/** A SeverityResult, SeverityAccepted or SeverityStatus response as a SubmitOutcome. */
+function toOutcome(response) {
+  const jobId = response.job_id;
+  if (response.state === 'failed') {
+    return { kind: 'failed', jobId, error: response.error || 'no reason given' };
+  }
+  if (response.state !== 'succeeded') {
+    return { kind: 'queued', jobId, state: response.state };
+  }
+  const { thumbnail = null, ...rasters } = response.assets;
+  return {
+    kind: 'ready',
+    jobId,
+    catalogUrl: response.catalog_url,
+    thumbnail,
+    rasters,
+    overlayUrl: rasters[SEVERITY_OVERLAY.asset] ?? null,
+  };
 }

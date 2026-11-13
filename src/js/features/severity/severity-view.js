@@ -100,17 +100,17 @@ export class SeverityView extends ISeverityView {
     if (busy) this.#showMessage('', h('p', {}, 'Submitting…'));
   }
 
-  showQueued({ jobId, state, statusUrl }, email) {
+  showQueued({ jobId, state }, email) {
     this.#showMessage('',
       h('h4', {}, 'Submitted'),
-      h('p', {}, 'Analysis ', h('code', {}, jobId), ` is ${state}. We will email `, h('strong', {}, email), ' when it finishes.'),
-      h('p', {}, externalLink(statusUrl, 'Status (JSON)')));
+      h('p', {}, 'Analysis ', h('code', {}, jobId), ` is ${state}.`),
+      h('p', {}, 'This page updates when it finishes, and we will also email ', h('strong', {}, email), '.'));
   }
 
   showResult({ thumbnail, rasters, catalogUrl }) {
     this.#showMessage('',
       h('h4', {}, 'Results ready'),
-      h('p', {}, 'This analysis has already been run. The RBR layer is shown on the map.'),
+      h('p', {}, 'The RBR layer is shown on the map.'),
       thumbnail && h('p', {}, h('img', { src: thumbnail, alt: 'RBR thumbnail' })),
       h('ul', {}, ...Object.entries(rasters).map(([name, url]) =>
         h('li', {}, h('a', { href: url }, `${name.toUpperCase()} (GeoTIFF)`)))),

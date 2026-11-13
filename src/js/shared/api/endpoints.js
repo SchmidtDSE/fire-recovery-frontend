@@ -27,4 +27,5 @@ const BACKEND_URL = BACKEND_URLS[detectEnvironment()];
 
 export const SEVERITY_ENDPOINTS = {
   SUBMIT: `${BACKEND_URL}/v2/severity`,
+  STATUS: (jobId) => `${BACKEND_URL}/v2/severity/${encodeURIComponent(jobId)}`,
 };

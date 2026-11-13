@@ -1,7 +1,8 @@
 /**
  * Contract for the fire severity MVP: collect a perimeter, dates, sensor and
- * email, and submit one batch analysis (POST /v2/severity). No polling: the
- * backend emails the requester when the analysis finishes.
+ * email, and submit one batch analysis (POST /v2/severity). While the page is
+ * open it checks on a queued analysis and shows the result; the backend also
+ * emails the requester when it finishes.
  */
 
 /**
@@ -14,7 +15,8 @@
  */
 
 /**
- * @typedef {{kind: 'queued', jobId: string, state: string, statusUrl: string}
+ * @typedef {{kind: 'queued', jobId: string, state: 'pending'|'running'}
+ *   | {kind: 'failed', jobId: string, error: string}
  *   | {kind: 'ready', jobId: string, catalogUrl: string, thumbnail: string|null,
  *      rasters: Object<string, string>, overlayUrl: string|null}} SubmitOutcome
  */
@@ -55,6 +57,13 @@ export class ISeverityModel {
    * @throws {ApiError} on a rejected request
    */
   submit(request) {}
+
+  /**
+   * @param {string} jobId
+   * @returns {Promise<SubmitOutcome>}
+   * @throws {ApiError} on a failed check
+   */
+  getStatus(jobId) {}
 }
 
 /**
