@@ -1,8 +1,8 @@
 /**
  * Contract for the fire severity MVP: collect a perimeter, dates, sensor and
  * email, and submit one batch analysis (POST /v2/severity). While the page is
- * open it checks on a queued analysis and shows the result; the backend also
- * emails the requester when it finishes.
+ * open it checks on a queued analysis and maps the result, classed by severity
+ * with adjustable breaks; the backend also emails the requester when it finishes.
  */
 
 /**
@@ -17,12 +17,13 @@
 /**
  * @typedef {{kind: 'queued', jobId: string, state: 'pending'|'running'}
  *   | {kind: 'failed', jobId: string, error: string}
- *   | {kind: 'ready', jobId: string, catalogUrl: string, thumbnail: string|null,
- *      rasters: Object<string, string>, overlayUrl: string|null}} SubmitOutcome
+ *   | {kind: 'ready', jobId: string, catalogUrl: string,
+ *      rasters: Object<string, string>}} SubmitOutcome - `rasters` maps product names (keys of
+ *      SEVERITY_PRODUCTS) to GeoTIFF URLs
  */
 
 /**
- * Model: the perimeter and the request. Talks to the API; knows nothing of the DOM.
+ * Model: the perimeter, the request and the severity class breaks. Talks to the API; knows nothing of the DOM.
  */
 export class ISeverityModel {
   /** @returns {{geometry: Object, source: 'drawn'|'uploaded'}|null} */
@@ -64,6 +65,20 @@ export class ISeverityModel {
    * @throws {ApiError} on a failed check
    */
   getStatus(jobId) {}
+
+  /**
+   * @param {string} product - A key of SEVERITY_PRODUCTS
+   * @returns {Array<number>} The product's class breaks, ascending
+   */
+  getBreaks(product) {}
+
+  /**
+   * Move one break, kept between its neighbours and within the product's range.
+   * @param {string} product
+   * @param {number} index - Which break
+   * @param {number} value
+   */
+  setBreak(product, index, value) {}
 }
 
 /**
@@ -104,14 +119,26 @@ export class ISeverityView {
    */
   showQueued(outcome, email) {}
 
-  /** @param {SubmitOutcome} outcome - A 'ready' outcome */
+  /** @param {SubmitOutcome} outcome - A 'ready' outcome; its products get a toggle and links */
   showResult(outcome) {}
 
   /**
-   * @param {string} cogUrl
-   * @param {Object} geometry - Perimeter to zoom to
+   * Mark the selected product and set the break sliders.
+   * @param {string} product
+   * @param {Array<number>} breaks
    */
-  showSeverityOverlay(cogUrl, geometry) {}
+  showSeverityControls(product, breaks) {}
+
+  /**
+   * Map a severity raster, classed by `breaks` and cropped to `perimeter`.
+   * @param {string} cogUrl
+   * @param {Array<number>} breaks
+   * @param {Object} perimeter
+   */
+  showSeverityOverlay(cogUrl, breaks, perimeter) {}
+
+  /** @param {Object} geometry */
+  zoomTo(geometry) {}
 
   /**
    * @param {string} message
@@ -138,4 +165,13 @@ export class ISeverityPresenter {
   handleDateChange(index) {}
 
   handleSubmit() {}
+
+  /** @param {string} product - A product of the shown result */
+  handleProductChange(product) {}
+
+  /**
+   * @param {number} index - Which break
+   * @param {number} value
+   */
+  handleBreakChange(index, value) {}
 }

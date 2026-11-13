@@ -47,6 +47,15 @@ export function setBasemap(map, name) {
   }
 }
 
+/**
+ * Load URLs that start `name://` with `load` (see maplibregl.addProtocol).
+ * @param {string} name
+ * @param {(request: {url: string}, abortController: AbortController) => Promise<{data: ArrayBuffer}>} load
+ */
+export function addProtocol(name, load) {
+  maplibregl.addProtocol(name, load);
+}
+
 /** Zoom the map to a GeoJSON geometry. */
 export function fitToGeometry(map, geometry) {
   map.fitBounds(getBounds(geometry), { padding: 40 });

@@ -38,3 +38,23 @@
   flex: 1;
   padding: 8px;
 }
+
+/* A row of buttons, one of which is .active */
+.toggle-group {
+  display: inline-flex;
+  overflow: hidden;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-group button {
+  border: none;
+  padding: 6px 12px;
+  background: white;
+  cursor: pointer;
+}
+
+.toggle-group button.active {
+  background: black;
+  color: white;
+}

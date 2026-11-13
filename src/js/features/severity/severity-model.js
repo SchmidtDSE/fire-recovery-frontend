@@ -2,13 +2,15 @@ import { ISeverityModel } from './severity-contract.js';
 import { getSeverityStatus, submitSeverity } from '../../shared/api/api-client.js';
 import { readGeoJSONFile } from '../../shared/utils/file-utils.js';
 import { toMultiPolygon } from '../../shared/utils/geojson-utils.js';
-import { SEVERITY_OVERLAY } from '../../core/config.js';
+import { SEVERITY_PRODUCTS } from '../../core/config.js';
 
 /**
- * The fire perimeter (drawn or uploaded: the last one wins) and the severity request.
+ * The fire perimeter (drawn or uploaded: the last one wins), the severity
+ * request, and the class breaks each product is drawn with.
  */
 export class SeverityModel extends ISeverityModel {
   #perimeter = null;
+  #breaks = Object.fromEntries(Object.entries(SEVERITY_PRODUCTS).map(([name, { breaks }]) => [name, [...breaks]]));
 
   getPerimeter() {
     return this.#perimeter;
@@ -49,6 +51,17 @@ export class SeverityModel extends ISeverityModel {
   async getStatus(jobId) {
     return toOutcome(await getSeverityStatus(jobId));
   }
+
+  getBreaks(product) {
+    return [...this.#breaks[product]];
+  }
+
+  setBreak(product, index, value) {
+    const breaks = this.#breaks[product];
+    const lower = breaks[index - 1] ?? 0;
+    const upper = breaks[index + 1] ?? SEVERITY_PRODUCTS[product].max;
+    breaks[index] = Math.min(Math.max(value, lower), upper);
+  }
 }
 
 /** A SeverityResult, SeverityAccepted or SeverityStatus response as a SubmitOutcome. */
@@ -60,13 +73,10 @@ function toOutcome(response) {
   if (response.state !== 'succeeded') {
     return { kind: 'queued', jobId, state: response.state };
   }
-  const { thumbnail = null, ...rasters } = response.assets;
   return {
     kind: 'ready',
     jobId,
     catalogUrl: response.catalog_url,
-    thumbnail,
-    rasters,
-    overlayUrl: rasters[SEVERITY_OVERLAY.asset] ?? null,
+    rasters: Object.fromEntries(Object.entries(response.assets).filter(([name]) => name in SEVERITY_PRODUCTS)),
   };
 }

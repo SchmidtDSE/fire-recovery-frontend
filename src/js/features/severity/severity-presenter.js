@@ -1,7 +1,7 @@
 import { ISeverityPresenter } from './severity-contract.js';
 import { ApiError } from '../../shared/api/api-client.js';
 import { anchorNextDate } from '../../shared/utils/date-utils.js';
-import { STATUS_POLL_INTERVAL_MS } from '../../core/config.js';
+import { DEFAULT_PRODUCT, STATUS_POLL_INTERVAL_MS } from '../../core/config.js';
 
 /**
  * Fire severity presenter: turns user actions into model updates and view changes.
@@ -47,6 +47,16 @@ export class SeverityPresenter extends ISeverityPresenter {
     } catch (err) {
       this.view.setPerimeterStatus(`Could not read ${file.name}: ${err.message}`);
     }
+  }
+
+  handleProductChange(product) {
+    this.#mapped.product = product;
+    this.#showSeverity();
+  }
+
+  handleBreakChange(index, value) {
+    this.model.setBreak(this.#mapped.product, index, value);
+    this.#showSeverity();
   }
 
   handleDateChange(index) {
@@ -113,9 +123,28 @@ export class SeverityPresenter extends ISeverityPresenter {
     } else if (outcome.kind === 'failed') {
       this.view.showError(`The analysis failed: ${outcome.error}`);
     } else {
-      this.view.showResult(outcome);
-      if (outcome.overlayUrl) this.view.showSeverityOverlay(outcome.overlayUrl, request.geometry);
+      this.#showResult(outcome, request.geometry);
     }
+  }
+
+  /** The result on the map: its rasters, the perimeter they are cropped to, and the product shown. */
+  #mapped = null;
+
+  #showResult(outcome, perimeter) {
+    this.view.showResult(outcome);
+    const products = Object.keys(outcome.rasters);
+    if (products.length === 0) return;
+    const product = products.includes(DEFAULT_PRODUCT) ? DEFAULT_PRODUCT : products[0];
+    this.#mapped = { rasters: outcome.rasters, perimeter, product };
+    this.#showSeverity();
+    this.view.zoomTo(perimeter);
+  }
+
+  #showSeverity() {
+    const { rasters, perimeter, product } = this.#mapped;
+    const breaks = this.model.getBreaks(product);
+    this.view.showSeverityControls(product, breaks);
+    this.view.showSeverityOverlay(rasters[product], breaks, perimeter);
   }
 }
 

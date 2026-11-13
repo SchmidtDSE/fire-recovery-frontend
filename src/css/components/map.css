@@ -6,22 +6,6 @@
   top: 10px;
   right: 10px;
   z-index: 1;
-  display: flex;
-  overflow: hidden;
-  border-radius: 4px;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
-}
-
-.basemap-toggle button {
-  border: none;
-  padding: 6px 12px;
-  background: white;
-  cursor: pointer;
-}
-
-.basemap-toggle button.active {
-  background: black;
-  color: white;
 }
 
 /* GLEN's on-map draw button (it ships no style for this state) */

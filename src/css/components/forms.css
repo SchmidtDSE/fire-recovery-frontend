@@ -68,6 +68,26 @@
   margin: 0 0 8px 20px;
 }
 
-.results-box img {
-  border: 1px solid #ccc;
+/* Severity classes: a swatch, a name and, above the first, a slider for its lower bound */
+.severity-classes {
+  display: grid;
+  grid-template-columns: 16px auto 1fr 3.5em;
+  gap: 6px 8px;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.severity-classes .swatch {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #999;
+}
+
+.severity-classes input {
+  min-width: 0;
+}
+
+.severity-classes output {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
