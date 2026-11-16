@@ -63,7 +63,8 @@
                         <li>When it finishes, the results appear here if the page is still open,
                             and we email you links to them.</li>
                     </ol>
-                    <p>Only the perimeter's bounding box is used, and the perimeter is not stored.
+                    <p>A drawn outline only places the analysis: its bounding box is used, and the
+                        outline is not stored. An uploaded perimeter is published with the results.
                         If the same analysis has been run before, the results appear right away.</p>
                 </details>
 
@@ -113,6 +114,17 @@
                 </div>
                 <span class="hint">Each date starts out at the one before it. An end date can't be
                     earlier than its start.</span>
+
+                <details id="advanced-options">
+                    <summary>Advanced options</summary>
+                    <fieldset class="options-group">
+                        <legend>H3 tables</legend>
+                        <div id="h3-resolutions" class="checkbox-row"></div>
+                        <span class="hint">Also publish dNBR, RdNBR and RBR on an H3 grid at each ticked
+                            resolution; each cell takes the pixel under its centre. Fine resolutions
+                            over large areas may be refused.</span>
+                    </fieldset>
+                </details>
 
                 <button id="submit-button" type="submit" class="primary-button form-submit">
                     <i class="fas fa-fire"></i> Submit Fire Analysis

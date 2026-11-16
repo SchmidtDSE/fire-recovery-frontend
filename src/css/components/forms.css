@@ -39,6 +39,28 @@
   min-width: 0;
 }
 
+/* Advanced options: groups of checkboxes */
+.options-group {
+  border: none;
+  padding: 0;
+  margin-top: 8px;
+}
+
+.options-group legend {
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+.checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.checkbox-row label {
+  white-space: nowrap;
+}
+
 .form-submit {
   width: 100%;
   margin-top: 14px;

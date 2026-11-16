@@ -12,6 +12,14 @@
  * @property {string} email
  * @property {[string, string]} prefire - [start, end] ISO dates
  * @property {[string, string]} postfire - [start, end] ISO dates
+ * @property {SeverityOptionsForm} options
+ */
+
+/**
+ * Advanced options. One left empty is left out of the request, which keeps the
+ * job id it would otherwise change.
+ * @typedef {Object} SeverityOptionsForm
+ * @property {Array<number>} h3Resolutions - H3 resolutions to publish tables at (keys of H3_RESOLUTIONS)
  */
 
 /**
@@ -46,6 +54,8 @@ export class ISeverityModel {
   loadPerimeterFile(file) {}
 
   /**
+   * The request: geometry_kind 'perimeter' for an uploaded perimeter, 'aoi' for a
+   * drawn one, and `options` only when at least one is set.
    * @param {SeverityForm} form
    * @returns {Object} SeverityRequest
    * @throws {Error} if there is no perimeter
