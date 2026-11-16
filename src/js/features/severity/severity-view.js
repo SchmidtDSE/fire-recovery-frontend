@@ -3,7 +3,9 @@ import { createBaseMap, setBasemap, fitToGeometry } from '../../shared/map/base-
 import { DrawTool } from '../../shared/map/draw-tools.js';
 import { addOutlineLayer, setOutline, setCogLayer } from '../../shared/map/map-layers.js';
 import { createElement as h } from '../../shared/utils/ui-utils.js';
-import { SEVERITY_COLORMAP, SEVERITY_NODATA, SEVERITY_PRODUCTS } from '../../core/config.js';
+import {
+  DEFAULT_H3_RESOLUTIONS, H3_RESOLUTIONS, SEVERITY_COLORMAP, SEVERITY_NODATA, SEVERITY_PRODUCTS,
+} from '../../core/config.js';
 
 const UPLOAD_LAYER = 'upload';
 const SEVERITY_LAYER = 'severity';
@@ -23,6 +25,7 @@ export class SeverityView extends ISeverityView {
     this.submitButton = document.getElementById('submit-button');
     this.result = document.getElementById('submit-result');
     this.dates = DATE_IDS.map((id) => document.getElementById(id));
+    this.h3Resolutions = document.getElementById('h3-resolutions');
   }
 
   async initialize() {
@@ -30,7 +33,15 @@ export class SeverityView extends ISeverityView {
     this.drawTool = new DrawTool(this.map, (geometry) => this.presenter.handleDrawChange(geometry));
     await this.drawTool.init();
     addOutlineLayer(this.map, UPLOAD_LAYER, '#ff6b00');
+    this.#renderOptions();
     this.#bindEvents();
+  }
+
+  /** One checkbox per H3 resolution, the defaults ticked. */
+  #renderOptions() {
+    this.h3Resolutions.replaceChildren(...Object.entries(H3_RESOLUTIONS).map(([level, area]) => h('label', {},
+      h('input', { type: 'checkbox', value: level, checked: DEFAULT_H3_RESOLUTIONS.includes(Number(level)) }),
+      ` r${level} (~${area})`)));
   }
 
   #bindEvents() {
@@ -76,6 +87,9 @@ export class SeverityView extends ISeverityView {
       email: value('email'),
       prefire: [prefireStart, prefireEnd],
       postfire: [postfireStart, postfireEnd],
+      options: {
+        h3Resolutions: [...this.h3Resolutions.querySelectorAll('input:checked')].map((input) => Number(input.value)),
+      },
     };
   }
 

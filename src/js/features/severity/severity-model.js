@@ -34,14 +34,18 @@ export class SeverityModel extends ISeverityModel {
 
   buildRequest(form) {
     if (!this.#perimeter) throw new Error('Draw or upload a fire perimeter first.');
-    return {
+    const request = {
       fire_event_name: form.fireEventName,
       geometry: this.#perimeter.geometry,
+      geometry_kind: this.#perimeter.source === 'uploaded' ? 'perimeter' : 'aoi',
       prefire_window: form.prefire,
       postfire_window: form.postfire,
       sensor: form.sensor,
       email: form.email,
     };
+    const options = toRequestOptions(form.options);
+    if (options) request.options = options;
+    return request;
   }
 
   async submit(request) {
@@ -59,6 +63,17 @@ export class SeverityModel extends ISeverityModel {
   setRange(product, min, max) {
     if (min < max) this.#ranges[product] = [min, max];
   }
+}
+
+/**
+ * The form's advanced options as the request's `options`, or null if none is set.
+ * Unset ones are left out: an absent option keeps the job id unchanged, and the
+ * backend rejects empty or unknown ones.
+ */
+function toRequestOptions({ h3Resolutions = [] } = {}) {
+  const options = {};
+  if (h3Resolutions.length) options.h3_resolutions = [...new Set(h3Resolutions)].sort((a, b) => a - b);
+  return Object.keys(options).length ? options : null;
 }
 
 /** A SeverityResult, SeverityAccepted or SeverityStatus response as a SubmitOutcome. */

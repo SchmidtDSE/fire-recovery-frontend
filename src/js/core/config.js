@@ -36,6 +36,13 @@ export const SEVERITY_PRODUCTS = {
 };
 export const DEFAULT_PRODUCT = 'rbr';
 
+/**
+ * H3 resolutions a request may ask tables of the indices for (options.h3_resolutions),
+ * with each cell's average area for the labels, and the ones ticked by default.
+ */
+export const H3_RESOLUTIONS = { 8: '0.74 km²', 9: '0.11 km²', 10: '1.5 ha', 11: '2,150 m²', 12: '310 m²', 13: '44 m²' };
+export const DEFAULT_H3_RESOLUTIONS = [12, 13];
+
 /** How severity rasters are drawn: TiTiler's yellow-orange-red ramp, and the rasters' no-data value. */
 export const SEVERITY_COLORMAP = 'ylorrd';
 export const SEVERITY_NODATA = -9999;

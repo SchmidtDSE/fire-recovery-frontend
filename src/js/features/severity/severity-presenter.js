@@ -156,7 +156,10 @@ function delay(ms) {
 function describeError(err) {
   if (!(err instanceof ApiError)) return [`Could not reach the service: ${err.message}`, []];
   if (err.status === 422 && Array.isArray(err.detail)) {
-    return ['Please fix the following:', err.detail.map((d) => `${(d.loc || []).slice(1).join('.')}: ${d.msg}`)];
+    return ['Please fix the following:', err.detail.map((d) => {
+      const field = (d.loc || []).slice(1).join('.'); // empty for an error about the whole request
+      return field ? `${field}: ${d.msg}` : d.msg;
+    })];
   }
   if (err.status === 429) {
     return [`The service is busy. Please try again ${err.retryAfter ? `in ${err.retryAfter} seconds` : 'shortly'}.`, []];
